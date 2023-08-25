@@ -118,6 +118,18 @@ def get_shops_user_id(session: Session) -> object:
     return Shop.objects(uuid__in=uuid)
 
 
+def get_shops_uuid_user_id(session: Session) -> list:
+    """
+    :param session:
+    :return: [uuid, ...]
+    """
+    uuid = []
+    for item in Employees.objects(lastName=str(session.user_id)):
+        for store in item.stores:
+            if store not in uuid:
+                uuid.append(store)
+    return uuid
+
 def get_shops_in(session: Session, _in=[], id_=[]):
     uuid = []
     uuid_id = ['20220501-11CA-40E0-8031-49EADC90D1C4',

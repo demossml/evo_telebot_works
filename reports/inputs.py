@@ -1,6 +1,7 @@
 from bd.model import Shop, Products, Documents, Session, Employees
 from .util import get_intervals, \
-    period_to_date, get_shops_user_id, get_group, get_period_day, period_to_date_2, get_period
+    period_to_date, get_shops_user_id, get_group, get_period_day, period_to_date_2, get_period, get_products
+
 
 from arrow import utcnow, get
 from pprint import pprint
@@ -174,6 +175,209 @@ class ReportCommodityInput:
         return output
 
 
+class ReportSalaryInput:
+    """
+    Отчеты  по ЗП
+    """
+    desc = "Выберите отчет"
+    type = "SELECT"
+
+    def get_options(self, session: Session) -> [{str, str}]:
+        output = [
+            {"id": 'setting',
+             "name": "🛠 Настройка ➡️".upper()},
+            # {"id": 'get_sales_by_shop_product_group_unit',
+            #  "name": "🛒 Продажи по товарам в шт  ➡️".upper()},
+            # {"id": 'get_sales_by_shop_product_group_rub',
+            #  "name": "🛒 Продажи по товарам в ₽  ➡️".upper()},
+            # {"id": 'get_sales_by_employees',
+            #  "name": "🛒👱👱‍Продажи по продавцам ➡️".upper()},
+
+        ]
+
+        return output
+    
+
+
+class ReportsSalarySettingInput:
+    """
+    Настройка параметров ЗП
+    """
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = 'SELECT'
+
+    def get_options(self, session: Session):
+        output = [
+            {
+                'id': "group_uuid_accessory",
+                'name': "Групп аксессуаров ➡️".upper()
+            },
+            {
+                'id': "motivation_uuid_accessory",
+                'name': "Товар доб. мотивации ➡️".upper()
+            },
+            {
+                'id': "assigning_salary",
+                'name': "Оклады на ТТ ₱➡️".upper()
+            },
+            {
+                'id': "motivation",
+                'name': "Мотив. за вып. плана  ₱ ➡️".upper()
+            },
+            {
+                'id': "surcharge",
+                'name': "Доплата к зп ₱ ➡️".upper()
+            },
+
+        ]
+        return output
+
+
+class ReportGroupUuidAccessoryInput:
+    """
+    Добавление и просмотр групп аксессуаров
+    """
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = 'SELECT'
+
+    def get_options(self, session: Session):
+        output = [
+
+            {
+                'id': "get_group_uuid_accessory",
+                'name': "Просмотр групп аксессуаров ➡️".upper()
+            },
+            {
+                'id': "assigning_group_uuid_accessory",
+                'name': "Назначить группы аксессуаров ➡️".upper()
+            },
+
+        ]
+        return output
+
+
+class ReportMotivationInput:
+    """
+    Назначить сумму мотвиции за выполнение плана
+    """
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = 'SELECT'
+
+    def get_options(self, session: Session):
+        output = [
+
+            {
+                'id': "amount_of_motivation",
+                'name': "Назначить сум. за выпол. пл. ₱➡️".upper()
+            },
+            {
+                'id': "get_amount_of_motivation",
+                'name': "Сумма за выпол. пл. ₱ ➡️".upper()
+            },
+
+        ]
+        return output
+
+
+class ReportMotivationUuidInput:
+    """
+    Добавление и просмотр мотивационого товара
+    """
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = 'SELECT'
+
+    def get_options(self, session: Session):
+        output = [
+
+            {
+                'id': "product_ext_motivation",
+                'name': "Назначить товар доб. мотивации ➡️".upper()
+            },
+            {
+                'id': "get_product_ext_motivation",
+                'name': "Товар доб. мотивации  ➡️".upper()
+            },
+
+        ]
+        return output
+
+
+class ReportАssignSalaryInput:
+    '''
+    Назначение и просмотр окладов на ТТ
+    '''
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = 'SELECT'
+
+    def get_options(self, session: Session):
+        output = [
+
+            {
+                'id': "assigning_salary_",
+                'name': "Назначить оклад на ТТ ₱➡️".upper()
+            },
+            {
+                'id': "get_salary",
+                'name': "Оклады на ТТ₱ ➡️".upper()
+            },
+
+        ]
+        return output
+    
+
+class ReportMotivationInput:
+    '''
+    Назначение и просмотр сум. за выпол.
+    '''
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = 'SELECT'
+
+    def get_options(self, session: Session):
+        output = [
+
+            {
+                'id': "amount_of_motivation",
+                'name': "Назначить сум. за выпол. пл. ₱➡️".upper()
+            },
+            {
+                'id': "get_amount_of_motivation",
+                'name': "Сумма за выпол. пл. ₱ ➡️".upper()
+            },
+
+        ]
+        return output
+    
+
+class ReportSurchargeInput:
+    ''' 
+    Назначение и просмотр сум. доплату к зп.
+    '''
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = 'SELECT'
+
+    def get_options(self, session: Session):
+        output = [
+
+            {
+                'id': "assign_a_surcharge",
+                'name': "Назначить доплату к зп ➡️".upper()
+            },
+            {
+                'id': "get_surcharge",
+                'name': "Доплата к зп  ➡️".upper()
+            },
+
+        ]
+        return output  
+
+
 class ShopAllInput:
     """
     Магазины и все магазины
@@ -203,17 +407,67 @@ class ShopInput:
     def get_options(self, session: Session) -> [{str, str}]:
         output = []
 
+        uuid = []
+        # содоет ключи в session.params["inputs"]
+        for i in range(int(session['room']) + 1):
+            # если в 'uuid' есть в session.params["inputs"][str(i)]
+            if 'shop' in session.params["inputs"][str(i)]:
+                # если 'uuid' нет в словаре с ключем i в списке uuid
+                if session.params["inputs"][str(i)]['shop'] not in uuid:
+                    # добовляет 'uuid' в список uuid
+                    uuid.append(session.params["inputs"][str(i)]['shop'])
+
         for item in get_shops_user_id(session):
-            output.append({"id": item["uuid"],
-                           "name": '{} ➡️'.format(item["name"]).upper()
-                           })
+            if item["uuid"] not in uuid:
+                output.append({"id": item["uuid"],
+                            "name": '{} ➡️'.format(item["name"]).upper()
+                            })
 
         return output
 
 
+class EmployeesInput:
+    '''
+    Выбор одного или несколько сотрудников.
+    '''
+    name = "Магазин"
+    desc = "Выберите сотрудника".upper()
+
+    type = 'SELECT'
+
+    def get_options(self, session: Session):
+        output = []
+        # employees = Employees.objects(stores__in=session.employee.stores)
+        # for i in employees:
+        #     print(i['name'])
+
+        room = session['room']
+        # pprint(room)
+        uuid = []
+        # содоет ключи в session.params["inputs"]
+        for i in range(int(room) + 1):
+            # если в 'uuid' есть в session.params["inputs"][str(i)]
+            if 'uuid' in session.params["inputs"][str(i)]:
+                # если 'uuid' нет в словаре с ключем i в списке uuid
+                if session.params["inputs"][str(i)]['uuid'] not in uuid:
+                    # добовляет 'uuid' в список uuid
+                    uuid.append(session.params["inputs"][str(i)]['uuid'])
+
+        employees = Employees.objects(stores__in=session.employee.stores)
+
+        for item in employees:
+            if item["uuid"] not in uuid:
+                output.append({
+                    "id": item["uuid"],
+                    "name": item["name"]
+                })
+
+        return output
+    
+
 class GroupInput:
     """
-    Группы продуктов
+    Группу продуктов
     """
     name = "Группа товаров"
     desc = "Выберите группу товаров из списка 📋".upper()
@@ -227,6 +481,45 @@ class GroupInput:
                 "id": k,
                 "name": '{} ➡️'.format(v)
             })
+
+        return output
+
+
+class GroupsInput:
+    pprint('GroupsInput')
+    """
+    Группы продуктов
+    """
+    name = "Магазин"
+    desc = "Выберите группу(ы)".upper()
+
+    type = 'SELECT'
+
+    def get_options(self, session: Session):
+        output = []
+        
+        shops = get_shops_user_id(session)
+
+        shop_id = [i.uuid for i in shops]
+      
+
+        room = session['room']
+        uuid = []
+        # содоет ключи в session.params["inputs"]
+        for i in range(int(session['room']) + 1):
+            # если в 'uuid' есть в session.params["inputs"][str(i)]
+            if 'parentUuid' in session.params["inputs"][str(i)]:
+                # если 'uuid' нет в словаре с ключем i в списке uuid
+                if session.params["inputs"][str(i)]['parentUuid'] not in uuid:
+                    # добовляет 'uuid' в список uuid
+                    uuid.append(session.params["inputs"][str(i)]['parentUuid'])
+
+        for item in get_products(session, shop_id[-1]):
+            if item["uuid"] not in uuid:
+                output.append({
+                    "id": item["uuid"],
+                    "name": item["name"]
+                })
 
         return output
 
@@ -263,6 +556,44 @@ class ProductsInput:
             })
         return output
 
+
+class ProductInput:
+    """
+    Один или несколько продуктов
+    """
+    name = "Магазин"
+    desc = "Выберите один или несколько продуктов"
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        output = []
+        shops = Shop.objects(uuid__in=session.employee.stores)
+
+        shop_id = [i.uuid for i in shops]
+
+        room = session['room']
+        # pprint(room)
+        uuid = []
+        # содоет ключи в session.params["inputs"]
+        for i in range(int(session['room']) + 1):
+            # если в 'uuid' есть в session.params["inputs"][str(i)]
+            if 'uuid' in session.params["inputs"][str(i)]:
+                # если 'uuid' нет в словаре с ключем i в списке uuid
+                if session.params["inputs"][str(i)]['uuid'] not in uuid:
+                    # добовляет 'uuid' в список uuid
+                    uuid.append(session.params["inputs"][str(i)]['uuid'])
+        product = Products.objects(shop_id__exact=shop_id[-1], group__exact=False,
+                                   parentUuid=session.params["inputs"]['0']['parentUuid'])
+        for item in product:
+            # pprint(session.params['inputs'].values())
+            if item["uuid"] not in uuid:
+                output.append({
+                    "id": item["uuid"],
+                    "name": item["name"]
+                })
+
+        return output
+    
 
 class ProductElectroInput:
     name = "Выберите товар из списка"
@@ -383,7 +714,27 @@ class ProductsSaleInput:
                 })
         return output
 
+class DocStatusInput:
+    ''' Статус документа -
+    open продолжить выбор,
+    completed закончить выбор
+    '''
+    name = "Выберите продожить или закрыть документ"
+    desc = "Выберите продожить или закрыть документ"
+    type = 'SELECT'
 
+    def get_options(self, session: Session):
+        output = [{
+            'id': "open",
+            'name': 'Продожить'.upper()
+        },
+            {
+                'id': "completed",
+                'name': 'Закрыть документ'.upper()
+            },
+
+        ]
+        return output
 class PeriodDateInput:
     """
     Предыдущие периоды

@@ -45,7 +45,7 @@ async def handle_init_state(
 
     start_menu = types.InlineKeyboardMarkup(row_width=2)
     for name, report in get_reports(session).items():
-        print(name)
+        # print(name)
         button = types.InlineKeyboardButton(report.name, callback_data=name)
         start_menu.add(button)
     # await bot.delete_message(message.chat_id, message.message_id)
@@ -164,7 +164,7 @@ async def handle_reply_state(bot, message, session, next):
         session.params["inputs"][str(room)][input_name]["photo"] = message.photo[-1].file_id
         session.update(params=session.params)
     if message.document:
-        print(1)
+        # print(1)
         file_info = await bot.get_file(message.document.file_id)
         downloaded_file = await bot.download_file(file_info.file_path)
 

@@ -118,6 +118,11 @@ class PromoUuid(DynamicDocument):
     """ Содержит данные промо  продуктов """
     pass
 
+class GroupUuidAks(DynamicDocument):
+    '''
+    Содержит данные груп аксесуаров
+    '''
+    pass
 
 class AfsRequest(DynamicDocument):
     # ID магазина
