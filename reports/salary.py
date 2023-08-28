@@ -2,9 +2,13 @@ from bd.model import Shop, Products, Documents, Session, Employees, GroupUuidAks
 from .util import (
     get_shops_uuid_user_id,
     get_period,
-    get_shops_user_id,
+    get_aks_salary,
     get_shops,
     get_intervals,
+    get_mot_salary,
+    get_plan_bonus,
+    get_salary,
+    get_surcharge,
 )
 from pprint import pprint
 from collections import OrderedDict
@@ -197,6 +201,14 @@ def get_inputs(session: Session):
             }
         # Запрос ЗП за мотив. товар по одлноту сотруднику за период
         if session.params["inputs"]["0"]["reports"] == "get_salary_motivation_uuid":
+            return {
+                "employee_uuid": EmployeesInput,
+                "period": PeriodDateInput,
+                "openDate": OpenDatePastInput,
+                "closeDate": CloseDatePastInput,
+            }
+        # ЗП ИТОГО
+        if session.params["inputs"]["0"]["reports"] == "get_salary_total":
             return {
                 "employee_uuid": EmployeesInput,
                 "period": PeriodDateInput,
@@ -472,14 +484,14 @@ def generate(session: Session):
 
             result = []
             for k, v in employee_result.items():
-                employee = Employees.objects(uuid=k).only("name").first()
+                employee = Employees.objects(lastName=k).only("name").first()
                 result.append({"{}:".format(employee.name): "{}₱".format(v)})
 
             return result
         # Запрос назначенной сум. доплатs к зп
         if params["report"] == "get_surcharge":
             employee_uuid = params["employee_uuid"]
-            employee = Employees.objects(uuid=employee_uuid).only("name").first()
+            employee = Employees.objects(lastName=employee_uuid).only("name").first()
             documents = (
                 GroupUuidAks.objects(
                     employee_uuid=employee_uuid, x_type="ASSING_A_SURCHARGE"
@@ -500,7 +512,12 @@ def generate(session: Session):
         # Запрос ЗП по груп. акс. по одлноту сотруднику за период
         if params["reports"] == "get_salary_aks":
             result = []
-            employee_uuid = params["employee_uuid"]
+            employee_last_name = params["employee_uuid"]
+            user = [
+                element.uuid
+                for element in Employees.objects(lastName=employee_last_name)
+            ]
+            pprint(user)
 
             period = get_period(session)
             since = period["since"]
@@ -511,7 +528,7 @@ def generate(session: Session):
                 documents_open_session = Documents.objects(
                     __raw__={
                         "closeDate": {"$gte": since_, "$lt": until_},
-                        "openUserUuid": employee_uuid,
+                        "openUserUuid": {"$in": user},
                         "x_type": "OPEN_SESSION",
                     }
                 ).first()
@@ -570,11 +587,14 @@ def generate(session: Session):
                     _dict_total = {}
                     for k, v in _dict.items():
                         _dict_total[k] = "{}₽".format(v)
+
                     _dict_total.update(
                         {
                             "СУММА:": "{}₽".format(sum_sales),
                             "ПРОЦЕНТ:": "5%",
-                            "ЗП": "{}₽".format(sum_sales / 100 * 5),
+                            "ЗП": "{}₽".format(
+                                round(int(sum_sales / 100 * 5) / 10) * 10
+                            ),
                             "ДАТА:": since[:10],
                             "МАГАЗИН": shop.name,
                         }
@@ -585,7 +605,12 @@ def generate(session: Session):
         # Запрос ЗП за мотив. товар по одлноту сотруднику за период
         if params["reports"] == "get_salary_motivation_uuid":
             result = []
-            employee_uuid = params["employee_uuid"]
+            employee_last_name = params["employee_uuid"]
+            user = [
+                element.uuid
+                for element in Employees.objects(lastName=employee_last_name)
+            ]
+            pprint(user)
 
             period = get_period(session)
             since = period["since"]
@@ -596,7 +621,7 @@ def generate(session: Session):
                 documents_open_session = Documents.objects(
                     __raw__={
                         "closeDate": {"$gte": since_, "$lt": until_},
-                        "openUserUuid": employee_uuid,
+                        "openUserUuid": {"$in": user},
                         "x_type": "OPEN_SESSION",
                     }
                 ).first()
@@ -658,9 +683,12 @@ def generate(session: Session):
                             _dict_total[prod_name.name] = "{}₽".format(
                                 v * documents_mot.uuid[k]
                             )
+
                         _dict_total.update(
                             {
-                                "СУММА ЗП:": "{}₽".format(sum_mot),
+                                "СУММА ЗП:": "{}₽".format(
+                                    round(int(sum_mot / 100 * 5) / 10) * 10
+                                ),
                                 "ДАТА:": since_[:10],
                                 "МАГАЗИН": shop.name,
                             }
@@ -668,4 +696,58 @@ def generate(session: Session):
                         result.append(_dict_total)
                     else:
                         result.append({since_[:10]: "Нет данных".upper()})
+            return result
+        #  # ЗП ИТОГО
+        if params["reports"] == "get_salary_total":
+            # 'bonus за вып. плана'.upper(): '{}₱'.format(),
+            # 'percent за аксс'.upper(): '{}%'.format(),
+            # 'Оклад'.upper(): '{}₱'.format(),
+            # 'Доплата'.upper(): '{}₱'.format(),
+            # 'План'.upper(): '{}₱'.format(),
+            # 'Продажи'.upper(): '{}₱'.format(),
+            # 'Продавец'.upper(): '',
+            # 'Магазин'.upper(): '',
+            # 'Дата'.upper(): '',
+            # 'Итго зарплата'.upper(): '{}₱'.format(),
+            result = []
+            employee_last_name = params["employee_uuid"]
+            user = [
+                element.uuid
+                for element in Employees.objects(lastName=employee_last_name)
+            ]
+            pprint(user)
+            period = get_period(session)
+            since = period["since"]
+            until = period["until"]
+
+            intervals = get_intervals(since, until, "days", 1)
+            for since_, until_ in intervals:
+                # pprint(since_)
+                # pprint(until_)
+                documents_open_session = Documents.objects(
+                    __raw__={
+                        "closeDate": {"$gte": since_, "$lt": until_},
+                        "openUserUuid": {"$in": user},
+                        "x_type": "OPEN_SESSION",
+                    }
+                ).first()
+                pprint(documents_open_session)
+                if documents_open_session:
+                    # Название магазина (shop.name)
+                    shop = (
+                        Shop.objects(uuid=documents_open_session.shop_id)
+                        .only("name")
+                        .first()
+                    )
+                    sho_id = documents_open_session.shop_id
+                    employee_uuid = documents_open_session.openUserUuid
+
+                    result.append(get_aks_salary(sho_id, since_, until_))
+                    result.append(get_mot_salary(sho_id, since_, until_))
+                    result.append(get_plan_bonus(sho_id, since_, until_))
+                    result.append(get_salary(sho_id, until_))
+                    result.append(get_surcharge(employee_last_name, until_))
+
+                else:
+                    result.append({1: 1})
             return result

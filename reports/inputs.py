@@ -187,9 +187,10 @@ class ReportSalaryInput:
                 "id": "get_salary_motivation_uuid",
                 "name": "ЗП за мотив. товар ➡️".upper(),
             },
-            #  "name": "🛒 Продажи по товарам в ₽  ➡️".upper()},
-            # {"id": 'get_sales_by_employees',
-            #  "name": "🛒👱👱‍Продажи по продавцам ➡️".upper()},
+            {
+                "id": "get_salary_total",
+                "name": "ЗП ИТОГО".upper(),
+            },
         ]
 
         return output
@@ -426,7 +427,7 @@ class EmployeesInput:
 
         for item in employees:
             if item["uuid"] not in uuid:
-                output.append({"id": item["uuid"], "name": item["name"]})
+                output.append({"id": item["lastName"], "name": item["name"]})
 
         return output
 
