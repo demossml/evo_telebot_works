@@ -535,9 +535,9 @@ class ProductInput:
 
     def get_options(self, session: Session):
         output = []
-        shops = Shop.objects(uuid__in=session.employee.stores)
+        # shops = Shop.objects(uuid__in=session.employee.stores)
 
-        shop_id = [i.uuid for i in shops]
+        shop_id = get_shops_uuid_user_id(session)
 
         room = session["room"]
         # pprint(room)
@@ -551,14 +551,16 @@ class ProductInput:
                     # добовляет 'uuid' в список uuid
                     uuid.append(session.params["inputs"][str(i)]["uuid"])
         product = Products.objects(
-            shop_id__exact=shop_id[-1],
+            shop_id__in=shop_id,
             group__exact=False,
             parentUuid=session.params["inputs"]["0"]["parentUuid"],
         )
+        uuids = []
         for item in product:
             # pprint(session.params['inputs'].values())
             if item["uuid"] not in uuid:
-                output.append({"id": item["uuid"], "name": item["name"]})
+                if item["uuid"] not in uuids:
+                    output.append({"id": item["uuid"], "name": item["name"]})
 
         return output
 
