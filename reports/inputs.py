@@ -424,12 +424,15 @@ class EmployeesInput:
                 if session.params["inputs"][str(i)]["uuid"] not in uuid:
                     # добовляет 'uuid' в список uuid
                     uuid.append(session.params["inputs"][str(i)]["uuid"])
+        shop_id = get_shops_uuid_user_id(session)
+        employees = Employees.objects(stores__in=shop_id)
 
-        employees = Employees.objects(stores__in=session.employee.stores)
-
+        uuids = []
         for item in employees:
-            if item["uuid"] not in uuid:
-                output.append({"id": item["lastName"], "name": item["name"]})
+            if item["lastName"] not in uuid:
+                if item["lastName"] not in uuids:
+                    output.append({"id": item["lastName"], "name": item["name"]})
+                    uuids.append(item["lastName"])
 
         return output
 
