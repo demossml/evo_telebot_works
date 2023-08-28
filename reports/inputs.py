@@ -8,6 +8,8 @@ from .util import (
     period_to_date_2,
     get_period,
     get_products,
+    get_shops_uuid_user_id,
+    get_products_shops,
 )
 
 
@@ -463,9 +465,7 @@ class GroupsInput:
     def get_options(self, session: Session):
         output = []
 
-        shops = get_shops_user_id(session)
-
-        shop_id = [i.uuid for i in shops]
+        shop_id = get_shops_uuid_user_id(session)
 
         room = session["room"]
         uuid = []
@@ -477,10 +477,12 @@ class GroupsInput:
                 if session.params["inputs"][str(i)]["parentUuid"] not in uuid:
                     # добовляет 'uuid' в список uuid
                     uuid.append(session.params["inputs"][str(i)]["parentUuid"])
-
-        for item in get_products(session, shop_id[-1]):
+        uuids = []
+        for item in get_products_shops(session, shop_id):
             if item["uuid"] not in uuid:
-                output.append({"id": item["uuid"], "name": item["name"]})
+                if item["uuid"] not in uuids:
+                    output.append({"id": item["uuid"], "name": item["name"]})
+                    uuids.append(item["uuid"])
 
         return output
 
@@ -497,7 +499,7 @@ class ProductsInput:
     def get_options(self, session: Session) -> [{str, str}]:
         output = []
 
-        shop_id = [item["uuid"] for item in get_shops_user_id(session)]
+        shop_id = get_shops_uuid_user_id(session)
 
         parentUuid = session.params["inputs"]["0"]["Uuid"]
 

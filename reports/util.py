@@ -50,6 +50,18 @@ def get_products(session: Session, shop_id: str) -> object:
         return Products.objects(shop_id__exact=shop_id, group__exact=True)
 
 
+def get_products_shops(session: Session, shop_id: list) -> object:
+    """
+    :param session:
+    :param shop_id: uuid: str магазина
+    :return: Данные по продуктам магазина
+    """
+    if session.employee.role == "CASHIER":
+        return Products.objects(shop_id__in=shop_id, group__exact=True, uuid__in=None)
+    if session.employee.role == "ADMIN":
+        return Products.objects(shop_id__in=shop_id, group__exact=True)
+
+
 def get_group(session: Session) -> dict:
     """
     :param session:
