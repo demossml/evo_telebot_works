@@ -489,7 +489,7 @@ def generate(session: Session):
                 result.append({"{}:".format(employee.name): "{}₱".format(v)})
 
             return result
-        # Запрос назначенной сум. доплатs к зп
+        # Запрос назначенной сум. доплат к зп
         if params["report"] == "get_surcharge":
             employee_uuid = params["employee_uuid"]
             employee = Employees.objects(lastName=employee_uuid).only("name").first()

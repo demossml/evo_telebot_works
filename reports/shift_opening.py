@@ -193,7 +193,7 @@ def generate(session: Session):
             plan = Plan.objects(
                 __raw__={
                     "closeDate": {"$gte": since, "$lt": until},
-                    "shop_id": session.params["inputs"]["0"],
+                    "shop_id": shop,
                 }
             ).first()
         Shift_Opening_Report.objects(
@@ -202,14 +202,12 @@ def generate(session: Session):
         ).update(**params, upsert=True)
         # Товар доб. мотивации
         documents_mot = (
-            GroupUuidAks.objects(
-                shop_id=session.params["inputs"]["0"], x_type="MOTIVATION_UUID"
-            )
+            GroupUuidAks.objects(shop_id=shop, x_type="MOTIVATION_UUID")
             .order_by("-closeDate")
             .first()
         )
         if documents_mot:
-            products = Products.objects(group=False, uuid__in=documents.uuid)
+            # products = Products.objects(group=False, uuid__in=documents.uuid)
             dict_mot = {"Товар доб. мотивации".upper(): ""}
             for uuid, motivation in documents_mot.uuid.items():
                 products = Products.objects(group=False, uuid=uuid).only("name").first()
@@ -217,19 +215,32 @@ def generate(session: Session):
             result.append(dict_mot)
         # Оклад
         documents_salary = (
-            GroupUuidAks.objects(shop_id=session.params["inputs"]["0"], x_type="SALARY")
+            GroupUuidAks.objects(shop_id=shop, x_type="SALARY")
             .order_by("-closeDate")
             .first()
         )
         if documents_salary:
-            result.append({"ОКЛАД:": "{}₱".format(documents.salary)})
-        pprint(result)
+            result.append({"ОКЛАД:": "{}₱".format(documents_salary.salary)})
+        # Сумма доплаты к зп
+        documents_surcharge = (
+            GroupUuidAks.objects(
+                employee_uuid=session.user_id, x_type="ASSING_A_SURCHARGE"
+            )
+            .order_by("-closeDate")
+            .first()
+        )
+
+        if documents_surcharge:
+            result.append(
+                {"СУММА ДОПЛАТЫ:": "{}₱".format(documents.documents_surcharge)}
+            )
+
         result.append(
             {
                 "✅Смена открыта".upper(): get(params["location"]["data"]).isoformat()[
                     0:16
                 ],
-                "План по Fyzzi/Электро".upper(): int(plan.sum),
+                "План по Fyzzi/Электро".upper(): "{}₱".format(int(plan.sum)),
             }
         )
 
