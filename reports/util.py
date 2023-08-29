@@ -620,9 +620,14 @@ def remainder(shops_uuid: list):
     return result
 
 
+# Зп по назначенным группам аксессуаров
 def get_aks_salary(shop_id: str, since_: str, until_: str) -> dict:
-    pprint(since_)
-    pprint(shop_id)
+    """
+    return {
+            "accessory_sum_sell": int,
+            "bonus_accessory": int,
+        }
+    """
     documents_aks = (
         GroupUuidAks.objects(
             __raw__={
@@ -661,17 +666,23 @@ def get_aks_salary(shop_id: str, since_: str, until_: str) -> dict:
                         sum_sales_aks += trans["sum"]
 
         return {
-            "accessory_sum_sell".upper(): sum_sales_aks,
-            "bonus_accessory".upper(): round(int(sum_sales_aks / 100 * 5) / 10) * 10,
+            "accessory_sum_sell": sum_sales_aks,
+            "bonus_accessory": round(int(sum_sales_aks / 100 * 5) / 10) * 10,
         }
     else:
         return {
-            "accessory_sum_sell".upper(): 0,
-            "bonus_accessory".upper(): 0,
+            "accessory_sum_sell": 0,
+            "bonus_accessory": 0,
         }
 
 
+# Зп по продаже мотивационого товара
 def get_mot_salary(shop_id: str, since_: str, until_: str) -> dict:
+    """
+    return {
+             "bonus_motivation": int,
+        }
+    """
     documents_mot = (
         GroupUuidAks.objects(
             __raw__={
@@ -709,13 +720,21 @@ def get_mot_salary(shop_id: str, since_: str, until_: str) -> dict:
         for k, v in dict_salary.items():
             sum_mot += v * documents_mot.uuid[k]
 
-        return {"bonus_motivation".upper(): round(int(sum_mot / 100 * 5) / 10) * 10}
+        return {"bonus_motivation": int(sum_mot)}
 
     else:
         return {"bonus_motivation": 0}
 
 
+# План по группе, продажи, бонус за выполнение плана
 def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
+    """
+    return {
+            "plan_motivation_prod": int,
+            "sales_motivation_prod": int,
+            "bonus_motivation_prod": int,
+        }
+    """
     plan_ = Plan.objects(
         __raw__={
             "closeDate": {"$gte": since_, "$lt": until_},
@@ -797,7 +816,13 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
         }
 
 
+# Оклады продавцов
 def get_salary(shop_id: str, until_: str) -> dict:
+    """
+    return {
+            "salary": int
+        }
+    """
     documents_salary = GroupUuidAks.objects(
         __raw__={
             "closeDate": {"$lte": until_[:10]},
@@ -815,7 +840,13 @@ def get_salary(shop_id: str, until_: str) -> dict:
         }
 
 
+# Доплаты к окладу продовцов
 def get_surcharge(employee_uuid: str, until_: str) -> dict:
+    """
+    return {
+           "surcharge": int
+       }
+    """
     pprint(employee_uuid)
     documents_surcharge = (
         GroupUuidAks.objects(
@@ -837,3 +868,43 @@ def get_surcharge(employee_uuid: str, until_: str) -> dict:
         return {
             "surcharge": 0,
         }
+
+
+def get_total_salary(
+    employee_uuid: str, shop_id: str, since_: str, until_: str
+) -> dict:
+    """
+    return {
+            "accessory_sum_sell": int,
+            "bonus_accessory": int,
+            "bonus_motivation": int,
+            "plan_motivation_prod": int,
+            "sales_motivation_prod": int,
+            "bonus_motivation_prod": int,
+            "salary": int,
+            "surcharge": int,
+            "total_salary": int
+            "closeDate": until_[:10]
+
+
+        }
+    """
+    result = {}
+    result.update(get_aks_salary(shop_id, since_, until_))
+    result.update(get_mot_salary(shop_id, since_, until_))
+    result.update(get_plan_bonus(shop_id, since_, until_))
+    result.update(get_salary(shop_id, until_))
+    result.update(get_surcharge(employee_uuid, until_))
+    result.update({"closeDate": until_[:10]})
+
+    total_salary = (
+        result["bonus_accessory"]
+        + result["bonus_motivation"]
+        + result["bonus_motivation_prod"]
+        + result["salary"]
+        + result["surcharge"]
+    )
+
+    result.update({"total_salary": total_salary})
+
+    return result

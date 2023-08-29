@@ -9,6 +9,7 @@ from .util import (
     get_plan_bonus,
     get_salary,
     get_surcharge,
+    get_total_salary,
 )
 from pprint import pprint
 from collections import OrderedDict
@@ -742,11 +743,13 @@ def generate(session: Session):
                     sho_id = documents_open_session.shop_id
                     employee_uuid = documents_open_session.openUserUuid
 
-                    result.append(get_aks_salary(sho_id, since_, until_))
-                    result.append(get_mot_salary(sho_id, since_, until_))
-                    result.append(get_plan_bonus(sho_id, since_, until_))
-                    result.append(get_salary(sho_id, until_))
-                    result.append(get_surcharge(employee_last_name, until_))
+                    result.append(
+                        get_total_salary(employee_last_name, sho_id, since_, until_)
+                    )
+                    # result.append(get_mot_salary(sho_id, since_, until_))
+                    # result.append(get_plan_bonus(sho_id, since_, until_))
+                    # result.append(get_salary(sho_id, until_))
+                    # result.append(get_surcharge(employee_last_name, until_))
 
                 else:
                     result.append({1: 1})
