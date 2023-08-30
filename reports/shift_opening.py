@@ -105,8 +105,21 @@ class showcasePhoto3Input:
     type = "PHOTO"
 
 
+class CountingMoneyInput:
+    desc = "Выберете сходиться/не сходиться (пересчет денег)".upper()
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        output = [
+            {"id": "converge", "name": "Сходиться ➡️".upper()},
+            {"id": "more", "name": "Больше ➡️".upper()},
+            {"id": "less", "name": "Меньше ➡️".upper()},
+        ]
+        return output
+
+
 class Counting_MoneyInput:
-    desc = "Напишите ок/сумма + или - (пересчет денег)✍️".upper()
+    desc = "Напишите сумму ✍️".upper()
     type = "MESSAGE"
 
 
@@ -114,33 +127,42 @@ def get_inputs(session: Session):
     if session.params["inputs"]["0"]:
         if session.params["inputs"]["0"]["report"] == "shift_opening_report":
             if "shop" in session.params["inputs"]["0"]:
-                if (
-                    session.params["inputs"]["0"]["shop"]
-                    == "20220222-6C28-4069-8006-082BE12BEB32"
-                ):
-                    return {
-                        "location": AfsInput,
-                        "cash_register_photo": CashRegisterPhotoInput,
-                        "сabinets_photo": СabinetsPhotoInput,
-                        "showcase_photo1": showcasePhoto1Input,
-                        "showcase_photo2": showcasePhoto2Input,
-                        "showcase_photo3": showcasePhoto3Input,
-                        "photo_territory_1": PhotoTerritory1Input,
-                        "photo_territory_2": PhotoTerritory2Input,
-                        "counting_money": Counting_MoneyInput,
-                    }
+                if "counting" in session.params["inputs"]["0"]:
+                    if session.params["inputs"]["0"]["counting"] == "converge":
+                        return {}
+                    else:
+                        return {
+                            "counting_money": Counting_MoneyInput,
+                        }
+
                 else:
-                    return {
-                        "shop": ShopInput,
-                        "location": AfsInput,
-                        "cash_register_photo": CashRegisterPhotoInput,
-                        "сabinets_photo": СabinetsPhotoInput,
-                        "showcase_photo1": showcasePhoto1Input,
-                        "showcase_photo2": showcasePhoto2Input,
-                        "photo_territory_1": PhotoTerritory1Input,
-                        "photo_territory_2": PhotoTerritory2Input,
-                        "counting_money": Counting_MoneyInput,
-                    }
+                    if (
+                        session.params["inputs"]["0"]["shop"]
+                        == "20220222-6C28-4069-8006-082BE12BEB32"
+                    ):
+                        return {
+                            "location": AfsInput,
+                            "cash_register_photo": CashRegisterPhotoInput,
+                            "сabinets_photo": СabinetsPhotoInput,
+                            "showcase_photo1": showcasePhoto1Input,
+                            "showcase_photo2": showcasePhoto2Input,
+                            "showcase_photo3": showcasePhoto3Input,
+                            "photo_territory_1": PhotoTerritory1Input,
+                            "photo_territory_2": PhotoTerritory2Input,
+                            "counting": CountingMoneyInput,
+                        }
+                    else:
+                        return {
+                            "shop": ShopInput,
+                            "location": AfsInput,
+                            "cash_register_photo": CashRegisterPhotoInput,
+                            "сabinets_photo": СabinetsPhotoInput,
+                            "showcase_photo1": showcasePhoto1Input,
+                            "showcase_photo2": showcasePhoto2Input,
+                            "photo_territory_1": PhotoTerritory1Input,
+                            "photo_territory_2": PhotoTerritory2Input,
+                            "counting": CountingMoneyInput,
+                        }
             else:
                 return {"shop": ShopInput}
         if session.params["inputs"]["0"]["report"] == "get_shift_opening_report":
@@ -239,6 +261,22 @@ def generate(session: Session):
                 "План по Fyzzi/Электро".upper(): "{}₱".format(int(plan.sum)),
             }
         )
+        if session.params["inputs"]["0"]["counting"] == "converge":
+            result.append({"✅Рсхождений по кассе (пересчет денег)".upper(): "НЕТ"})
+        else:
+            if session.params["inputs"]["0"]["counting"] == "more":
+                counting = "+"
+            else:
+                counting = "-"
+
+            result.append(
+                {
+                    "🔴Рсхождений по кассе (пересчет денег)".upper(): "{}{}₱".format(
+                        counting, session.params["inputs"]["0"]["counting_money"]
+                    )
+                }
+            )
+
         result.append(
             {
                 "✅Смена открыта".upper(): get(params["location"]["data"]).isoformat()[
@@ -257,6 +295,7 @@ def generate(session: Session):
         shop_name = shops["shop_name"]
         pprint(shop_id)
         _dict = {}
+        _dict2 = {}
         documents = (
             Shift_Opening_Report.objects(
                 __raw__={
@@ -271,18 +310,40 @@ def generate(session: Session):
             for i in documents:
                 if "photo" in i:
                     _dict[i] = documents[i]["photo"]
-                    print(_dict)
             employees = Employees.objects(lastName=str(documents["user_id"])).first()
             last_name = employees.lastName
             name_ = employees.name
-            pprint(name_)
-            # for i in Employees.objects(lastName=str(documents['user_id'])):
-            _dict2 = {
-                "Магазин:".upper(): "{}:".format(shop_name).upper(),
-                "Сотрудник".upper(): name_,
-                "Время открытия TT".upper(): documents["locationData"][0:16],
-                "Касса".upper(): documents["counting_money"],
-            }
+            _dict2.update(
+                {
+                    "Магазин:".upper(): "{}:".format(shop_name).upper(),
+                }
+            )
+            if "counting" in documents:
+                if documents.counting == "converge":
+                    _dict2.update(
+                        {"✅Рсхождений по кассе (пересчет денег)".upper(): "НЕТ"}
+                    )
+                else:
+                    if documents.counting == "more":
+                        counting = "+"
+                    else:
+                        counting = "-"
+
+                    _dict2.update(
+                        {
+                            "🔴Рсхождений по кассе (пересчет денег)".upper(): "{}{}₱".format(
+                                counting, documents.counting_money
+                            )
+                        }
+                    )
+
+            _dict2.update(
+                {
+                    "Сотрудник".upper(): name_,
+                    "Время открытия TT".upper(): documents["locationData"][0:16],
+                    # "Касса".upper(): documents["counting_money"],
+                }
+            )
 
             return _dict, [_dict2]
         else:
