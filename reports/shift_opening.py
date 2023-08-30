@@ -232,7 +232,7 @@ def generate(session: Session):
 
         if documents_surcharge:
             result.append(
-                {"СУММА ДОПЛАТЫ:": "{}₱".format(documents.documents_surcharge)}
+                {"СУММА ДОПЛАТЫ:": "{}₱".format(documents_surcharge.surcharge)}
             )
         result.append(
             {
