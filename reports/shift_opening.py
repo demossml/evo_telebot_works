@@ -224,7 +224,7 @@ def generate(session: Session):
         # Сумма доплаты к зп
         documents_surcharge = (
             GroupUuidAks.objects(
-                employee_uuid=session.user_id, x_type="ASSING_A_SURCHARGE"
+                employee_uuid=str(session.user_id), x_type="ASSING_A_SURCHARGE"
             )
             .order_by("-closeDate")
             .first()
@@ -234,13 +234,16 @@ def generate(session: Session):
             result.append(
                 {"СУММА ДОПЛАТЫ:": "{}₱".format(documents.documents_surcharge)}
             )
-
+        result.append(
+            {
+                "План по Fyzzi/Электро".upper(): "{}₱".format(int(plan.sum)),
+            }
+        )
         result.append(
             {
                 "✅Смена открыта".upper(): get(params["location"]["data"]).isoformat()[
                     0:16
-                ],
-                "План по Fyzzi/Электро".upper(): "{}₱".format(int(plan.sum)),
+                ]
             }
         )
 
