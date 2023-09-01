@@ -284,7 +284,7 @@ class ReportMotivationUuidInput:
         output = [
             {
                 "id": "product_ext_motivation",
-                "name": "Назначить товар доб. мотивации ➡️".upper(),
+                "name": "Назначить товар доп. мотивации ➡️".upper(),
             },
             {
                 "id": "get_product_ext_motivation",
@@ -578,6 +578,7 @@ class ProductInput:
                             # 'name': item['name']
                         }
                     )
+                    uuids.append(item["uuid"])
                     pprint(output)
         # return output
         #             output.append({"id": item["uuid"], "name": item["name"]})
