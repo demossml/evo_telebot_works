@@ -450,24 +450,24 @@ def generate(session: Session):
                 + int(documents_z_report.aksSalary)
                 + int(documents_z_report.salaryPromo)
             )
-            pprint(salary_total)
+            # pprint(salary_total)
 
-            result.append(
-                {
-                    "Дата/Время:": documents_z_report.locationData[0:16],
-                    "Расхождения терминала с кассой:": "{} ₽".format(
-                        documents_z_report.terminal
-                    ),
-                    "Оклад:": "{} ₽".format(documents_z_report.salary),
-                    # 'План(Fyzzi/Электро):': documents.plan,
-                    "Зп план:": "{} ₽".format(documents_z_report.planSalary),
-                    "Зп акс:": "{} ₽".format(int(documents_z_report.aksSalary)),
-                    "Зп мотивация:": "{} ₽".format(documents_z_report.salaryPromo),
-                    "Итого зп:": "{} ₽".format(round(salary_total, 0)),
-                    "ТТ:": shop.name,
-                    "Продавец:": employeeName,
-                }
-            )
+            # result.append(
+            #     {
+            #         "Дата/Время:": documents_z_report.locationData[0:16],
+            #         "Расхождения терминала с кассой:": "{} ₽".format(
+            #             documents_z_report.terminal
+            #         ),
+            #         "Оклад:": "{} ₽".format(documents_z_report.salary),
+            #         # 'План(Fyzzi/Электро):': documents.plan,
+            #         "Зп план:": "{} ₽".format(documents_z_report.planSalary),
+            #         "Зп акс:": "{} ₽".format(int(documents_z_report.aksSalary)),
+            #         "Зп мотивация:": "{} ₽".format(documents_z_report.salaryPromo),
+            #         "Итого зп:": "{} ₽".format(round(salary_total, 0)),
+            #         "ТТ:": shop.name,
+            #         "Продавец:": employeeName,
+            #     }
+            # )
 
             if shop.uuid in shops_id_2:
                 shops_id = [shop.uuid, shops_id_2[shop.uuid]]
@@ -571,6 +571,22 @@ def generate(session: Session):
                 result.append(_dict)
                 register += 1
 
+            result.append(
+                {
+                    "Дата/Время:": documents_z_report.locationData[0:16],
+                    "Расхождения терминала с кассой:": "{} ₽".format(
+                        documents_z_report.terminal
+                    ),
+                    "Оклад:": "{} ₽".format(documents_z_report.salary),
+                    # 'План(Fyzzi/Электро):': documents.plan,
+                    "Зп план:": "{} ₽".format(documents_z_report.planSalary),
+                    "Зп акс:": "{} ₽".format(int(documents_z_report.aksSalary)),
+                    "Зп мотивация:": "{} ₽".format(documents_z_report.salaryPromo),
+                    "Итого зп:": "{} ₽".format(round(salary_total, 0)),
+                    "ТТ:": shop.name,
+                    "Продавец:": employeeName,
+                }
+            )
             total_salary = get_total_salary(
                 str(documents_z_report.user_id), shop.uuid, since, until
             )
@@ -607,7 +623,7 @@ def generate(session: Session):
                     }
                 )
 
-            return dict_1, [dict_]
+            return dict_1, result
     else:
         if session.params["inputs"]["0"]["report"] == "detailed_report":
             period = get_period_day(session)
