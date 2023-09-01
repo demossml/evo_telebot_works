@@ -579,7 +579,6 @@ class ProductInput:
                         }
                     )
                     uuids.append(item["uuid"])
-                    pprint(output)
         # return output
         #             output.append({"id": item["uuid"], "name": item["name"]})
 
