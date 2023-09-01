@@ -783,7 +783,7 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
                 if trans_2["commodityUuid"] in products_uuid:
                     sum_sell_today += trans_2["sum"]
 
-    documents_motv = (
+    documents_motiv = (
         GroupUuidAks.objects(
             __raw__={
                 "closeDate": {"$lte": until_[:10]},
@@ -794,12 +794,12 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
         .order_by("-closeDate")
         .first()
     )
-    if documents_motv:
+    if documents_motiv:
         if sum_sell_today >= plan.sum:
             return {
                 "plan_motivation_prod": plan.sum,
                 "sales_motivation_prod": sum_sell_today,
-                "bonus_motivation_prod": documents_motv.motivation,
+                "bonus_motivation_prod": documents_motiv.motivation,
             }
         else:
             return {

@@ -191,7 +191,11 @@ class ReportSalaryInput:
             },
             {
                 "id": "get_salary_total",
-                "name": "ЗП ИТОГО".upper(),
+                "name": "ЗП ПО ПРОДАВЦАМ",
+            },
+            {
+                "id": "get_salary_total_day",
+                "name": "ЗП ЗА ДЕНЬ",
             },
         ]
 
@@ -541,6 +545,7 @@ class ProductInput:
         # shops = Shop.objects(uuid__in=session.employee.stores)
 
         shop_id = get_shops_uuid_user_id(session)
+        pprint(shop_id)
 
         room = session["room"]
         # pprint(room)
@@ -558,12 +563,24 @@ class ProductInput:
             group__exact=False,
             parentUuid=session.params["inputs"]["0"]["parentUuid"],
         )
+        pprint(product)
         uuids = []
         for item in product:
             # pprint(session.params['inputs'].values())
             if item["uuid"] not in uuid:
                 if item["uuid"] not in uuids:
-                    output.append({"id": item["uuid"], "name": item["name"]})
+                    s = str(item["name"]).split(" ")
+
+                    output.append(
+                        {
+                            "id": item["uuid"],
+                            "name": " ".join(s[0:3]),
+                            # 'name': item['name']
+                        }
+                    )
+                    pprint(output)
+        # return output
+        #             output.append({"id": item["uuid"], "name": item["name"]})
 
         return output
 

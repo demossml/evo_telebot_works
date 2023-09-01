@@ -10,6 +10,7 @@ from .util import (
     get_salary,
     get_surcharge,
     get_total_salary,
+    get_period_day,
 )
 from pprint import pprint
 from collections import OrderedDict
@@ -210,12 +211,37 @@ def get_inputs(session: Session):
             }
         # ЗП ИТОГО
         if session.params["inputs"]["0"]["reports"] == "get_salary_total":
-            return {
-                "employee_uuid": EmployeesInput,
-                "period": PeriodDateInput,
-                "openDate": OpenDatePastInput,
-                "closeDate": CloseDatePastInput,
-            }
+            if "period" in session.params["inputs"]["0"]:
+                if session.params["inputs"]["0"]["period"] == "day":
+                    return {}
+                if session.params["inputs"]["0"]["period"] not in period:
+                    return {"openDate": OpenDatePastInput}
+                else:
+                    return {
+                        "openDate": OpenDatePastInput,
+                        "closeDate": CloseDatePastInput,
+                    }
+            else:
+                return {
+                    "employee_uuid": EmployeesInput,
+                    "period": PeriodDateInput,
+                }
+        #
+        if session.params["inputs"]["0"]["reports"] == "get_salary_total_day":
+            if "period" in session.params["inputs"]["0"]:
+                if session.params["inputs"]["0"]["period"] == "day":
+                    return {}
+                if session.params["inputs"]["0"]["period"] not in period:
+                    return {"openDate": OpenDatePastInput}
+                else:
+                    return {
+                        "openDate": OpenDatePastInput,
+                        # "closeDate": CloseDatePastInput,
+                    }
+            else:
+                return {
+                    "period": PeriodDateInput,
+                }
 
     else:
         return {"reports": ReportSalaryInput}
@@ -742,15 +768,111 @@ def generate(session: Session):
                     )
                     sho_id = documents_open_session.shop_id
                     employee_uuid = documents_open_session.openUserUuid
-
-                    result.append(
-                        get_total_salary(employee_last_name, sho_id, since_, until_)
+                    employee = (
+                        Employees.objects(uuid=employee_uuid).only("name").first()
                     )
+                    total_salary = get_total_salary(
+                        employee_last_name, sho_id, since_, until_
+                    )
+                    result.append(
+                        {
+                            "Продажа аксс:".upper(): "{}₱".format(
+                                total_salary["accessory_sum_sell"]
+                            ),
+                            "bonus за аксс:".upper(): "{}₱".format(
+                                total_salary["bonus_accessory"]
+                            ),
+                            "bonus за мотиа. тов.:".upper(): "{}₱".format(
+                                total_salary["bonus_motivation"]
+                            ),
+                            "План по Электронкам:".upper(): "{}₱".format(
+                                total_salary["plan_motivation_prod"]
+                            ),
+                            "Продажи по Электронкам:".upper(): "{}₱".format(
+                                total_salary["sales_motivation_prod"]
+                            ),
+                            "bonus за вып. плана:".upper(): "{}₱".format(
+                                total_salary["bonus_motivation_prod"]
+                            ),
+                            "percent за аксс:".upper(): "{}%".format(5),
+                            "Оклад:".upper(): "{}₱".format(total_salary["salary"]),
+                            "Доплата:".upper(): "{}₱".format(total_salary["surcharge"]),
+                            "Продавец:".upper(): employee.name.upper(),
+                            "Магазин:".upper(): shop.name.upper(),
+                            "Дата:".upper(): until_[:10],
+                            "Итго зарплата".upper(): "{}₱".format(
+                                total_salary["total_salary"]
+                            ),
+                        }
+                    )
+                    # result.append(
+                    #     get_total_salary(employee_last_name, sho_id, since_, until_)
+                    # )
                     # result.append(get_mot_salary(sho_id, since_, until_))
                     # result.append(get_plan_bonus(sho_id, since_, until_))
                     # result.append(get_salary(sho_id, until_))
                     # result.append(get_surcharge(employee_last_name, until_))
 
                 else:
-                    result.append({1: 1})
+                    result.append({until_[:10]: "ВЫХОДНОЙ"})
+            return result
+        #
+        if params["reports"] == "get_salary_total_day":
+            result = []
+
+            period = get_period_day(session)
+            since = period["since"]
+            until = period["until"]
+
+            intervals = get_intervals(since, until, "days", 1)
+            for since_, until_ in intervals:
+                documents_open_session = Documents.objects(
+                    __raw__={
+                        "closeDate": {"$gte": since_, "$lt": until_},
+                        # "openUserUuid": {"$in": user},
+                        "x_type": "OPEN_SESSION",
+                    }
+                )
+                pprint(documents_open_session)
+                for doc in documents_open_session:
+                    # Название магазина (shop.name)
+                    shop = Shop.objects(uuid=doc["shop_id"]).only("name").first()
+                    sho_id = doc["shop_id"]
+                    employee_uuid = doc["openUserUuid"]
+                    employee = Employees.objects(uuid=employee_uuid).first()
+                    total_salary = get_total_salary(
+                        employee.lastName, sho_id, since_, until_
+                    )
+                    result.append(
+                        {
+                            "Продажа аксс:".upper(): "{}₱".format(
+                                total_salary["accessory_sum_sell"]
+                            ),
+                            "bonus за аксс:".upper(): "{}₱".format(
+                                total_salary["bonus_accessory"]
+                            ),
+                            "bonus за мотиа. тов.:".upper(): "{}₱".format(
+                                total_salary["bonus_motivation"]
+                            ),
+                            "План по Электронкам:".upper(): "{}₱".format(
+                                total_salary["plan_motivation_prod"]
+                            ),
+                            "Продажи по Электронкам:".upper(): "{}₱".format(
+                                total_salary["sales_motivation_prod"]
+                            ),
+                            "bonus за вып. плана:".upper(): "{}₱".format(
+                                total_salary["bonus_motivation_prod"]
+                            ),
+                            "percent за аксс:".upper(): "{}%".format(5),
+                            "Оклад:".upper(): "{}₱".format(total_salary["salary"]),
+                            "Доплата:".upper(): "{}₱".format(total_salary["surcharge"]),
+                            "Продавец:".upper(): employee.name.upper(),
+                            "Магазин:".upper(): shop.name.upper(),
+                            "Дата:".upper(): until_[:10],
+                            "Итго зарплата".upper(): "{}₱".format(
+                                total_salary["total_salary"]
+                            ),
+                        }
+                    )
+
             return result
