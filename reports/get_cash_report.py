@@ -315,8 +315,13 @@ def generate(session: Session):
                 planSalary = 0
             session.params["inputs"]["0"]["planSalary"] = planSalary
 
-            aksSalary = int(session.params["inputs"]["0"]["salesAksInput"]) / 100 * 5
-            session.params["inputs"]["0"]["aksSalary"] = aksSalary
+            aksSalary = (
+                round(
+                    (int(session.params["inputs"]["0"]["salesAksInput"]) / 100 * 5) / 10
+                )
+                * 10
+            )
+            session.params["inputs"]["0"]["aksSalary"] = int(aksSalary)
 
             number = ZReopt.objects().order_by("-number").first()
             if number:
@@ -330,10 +335,10 @@ def generate(session: Session):
                 shop=session.params["inputs"]["0"]["shop"],
             ).update(**params, upsert=True)
 
-            shop_name = [i.name for i in Shop.objects(uuid=params["shop"])]
-            employees = [
-                i.name for i in Employees.objects(lastName=str(session.user_id))
-            ]
+            shop_name = Shop.objects(uuid=params["shop"]).only("name").first()
+            employees = (
+                Employees.objects(lastName=str(session.user_id)).only("name").first()
+            )
 
             salary = int(session.params["inputs"]["0"]["salary"])
 
@@ -354,8 +359,8 @@ def generate(session: Session):
                     session.params["inputs"]["0"]["salaryPromo"]
                 ),
                 "Итого зп:": "{} ₽".format(salary_total),
-                "ТТ:": shop_name[0],
-                "Продавец:": employees[0],
+                "ТТ:": shop_name.name,
+                "Продавец:": employees.name,
             }
             _dict1 = {}
             return _dict1, [_dict]
@@ -450,24 +455,6 @@ def generate(session: Session):
                 + int(documents_z_report.aksSalary)
                 + int(documents_z_report.salaryPromo)
             )
-            # pprint(salary_total)
-
-            # result.append(
-            #     {
-            #         "Дата/Время:": documents_z_report.locationData[0:16],
-            #         "Расхождения терминала с кассой:": "{} ₽".format(
-            #             documents_z_report.terminal
-            #         ),
-            #         "Оклад:": "{} ₽".format(documents_z_report.salary),
-            #         # 'План(Fyzzi/Электро):': documents.plan,
-            #         "Зп план:": "{} ₽".format(documents_z_report.planSalary),
-            #         "Зп акс:": "{} ₽".format(int(documents_z_report.aksSalary)),
-            #         "Зп мотивация:": "{} ₽".format(documents_z_report.salaryPromo),
-            #         "Итого зп:": "{} ₽".format(round(salary_total, 0)),
-            #         "ТТ:": shop.name,
-            #         "Продавец:": employeeName,
-            #     }
-            # )
 
             if shop.uuid in shops_id_2:
                 shops_id = [shop.uuid, shops_id_2[shop.uuid]]
@@ -492,10 +479,10 @@ def generate(session: Session):
                     if doc["x_type"] == "FPRINT":
                         for trans in doc["transactions"]:
                             if trans["x_type"] == "FPRINT_Z_REPORT":
-                                _dict["✅{} Магазин:".format("1").upper()] = [
+                                _dict["{} Магазин:".format("1").upper()] = [
                                     i.name for i in Shop.objects(uuid=doc["shop_id"])
                                 ][0]
-                                _dict["✅{} ДАТА/ВРЕМЯ ЗАКРЫТИЯ:".format("2")] = (
+                                _dict["{} ДАТА/ВРЕМЯ ЗАКРЫТИЯ:".format("2")] = (
                                     get(doc["closeDate"])
                                     .shift(hours=3)
                                     .isoformat()[0:16]
@@ -506,41 +493,41 @@ def generate(session: Session):
                                 ).first()
                                 last_name = employees.lastName
                                 name_ = employees.name
-                                _dict["✅{} ПРОДАВЕЦ:".format("3")] = "{} {}:".format(
+                                _dict["{} ПРОДАВЕЦ:".format("3")] = "{} {}:".format(
                                     last_name, name_
                                 ).upper()
 
                                 _dict[
-                                    "✅{} ПРОДАЖИ {}:".format(
+                                    "{} ПРОДАЖИ {}:".format(
                                         "4", trans["sales"]["sections"][1]["name"]
                                     )
                                 ] = "{}₽".format(trans["sales"]["sections"][1]["value"])
                                 _dict[
-                                    "✅{} ПРОДАЖИ {}:".format(
+                                    "{} ПРОДАЖИ {}:".format(
                                         "5", trans["sales"]["sections"][2]["name"]
                                     )
                                 ] = "{}₽".format(trans["sales"]["sections"][2]["value"])
                                 _dict[
-                                    "✅{} ВОЗВРАТЫ {}:".format(
+                                    "{} ВОЗВРАТЫ {}:".format(
                                         "6", trans["salesBack"]["sections"][1]["name"]
                                     )
                                 ] = "{}₽".format(
                                     trans["salesBack"]["sections"][1]["value"]
                                 )
                                 _dict[
-                                    "✅{} ВОЗВРАТЫ {}:".format(
+                                    "{} ВОЗВРАТЫ {}:".format(
                                         "7", trans["salesBack"]["sections"][2]["name"]
                                     )
                                 ] = "{}₽".format(
                                     trans["salesBack"]["sections"][2]["value"]
                                 )
-                                _dict["✅{} ИТОГО ПРОДАЖИ:".format("8")] = "{}₽".format(
+                                _dict["{} ИТОГО ПРОДАЖИ:".format("8")] = "{}₽".format(
                                     trans["sales"]["summ"]
                                 )
                                 _dict[
-                                    "✅{} НАЛИЧНЫМИ В КАССЕ:".format("9")
+                                    "{} НАЛИЧНЫМИ В КАССЕ:".format("9")
                                 ] = "{}₽".format(trans["cash"])
-                                _dict["✅{} ИТОГО ВЫПЛАТЫ:".format("10")] = "{}₽".format(
+                                _dict["{} ИТОГО ВЫПЛАТЫ:".format("10")] = "{}₽".format(
                                     trans["cashOut"]
                                 )
 
@@ -548,31 +535,31 @@ def generate(session: Session):
                         for trans in doc["transactions"]:
                             if trans["x_type"] == "CASH_OUTCOME":
                                 _dict[
-                                    "✅ВЫПЛАТА ЧЕК №{}".format(doc["number"])
+                                    "ВЫПЛАТА ЧЕК №{}".format(doc["number"])
                                 ] = "{}₽/{}".format(
                                     trans["sum"],
                                     payment_category[str(trans["paymentCategoryId"])],
                                 )
-                                if trans["paymentCategoryId"] == "5":
+                                if trans["paymentCategoryId"] == 5:
                                     summ_salary += trans["sum"]
 
                     if doc["x_type"] == "CASH_INCOME":
                         for trans in doc["transactions"]:
                             if trans["x_type"] == "CASH_INCOME":
                                 _dict[
-                                    "✅ВНЕСЕНИЕ ЧЕК №{}".format(doc["number"])
+                                    "ВНЕСЕНИЕ ЧЕК №{}".format(doc["number"])
                                 ] = "{}₽".format(trans["sum"])
 
                     if doc["x_type"] == "ACCEPT":
                         for trans in doc["transactions"]:
-                            _dict["✅ПРИНЯТО ТОВАРА НА"] = "{}₽".format(doc["closeSum"])
+                            _dict["ПРИНЯТО ТОВАРА НА"] = "{}₽".format(doc["closeSum"])
 
-                pprint(_dict)
                 result.append(_dict)
                 register += 1
 
             result.append(
                 {
+                    "Данные из Z отчета продавеца".upper(): " ",
                     "Дата/Время:": documents_z_report.locationData[0:16],
                     "Расхождения терминала с кассой:": "{} ₽".format(
                         documents_z_report.terminal
@@ -593,6 +580,7 @@ def generate(session: Session):
             if total_salary:
                 result.append(
                     {
+                        "Данные из Z отчета кассы".upper(): " ",
                         "Продажа аксс:".upper(): "{}₱".format(
                             total_salary["accessory_sum_sell"]
                         ),
