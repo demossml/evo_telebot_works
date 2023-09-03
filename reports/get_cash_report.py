@@ -373,9 +373,8 @@ def generate(session: Session):
                     __raw__={
                         "user_id": int(session.user_id),
                     }
-                )
-                .order_by("-number")
-                .only("number")
+                ).order_by("-number")
+                # .only("number")
                 .first()
             )
 
