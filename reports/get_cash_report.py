@@ -747,8 +747,12 @@ def generate(session: Session):
                                 employees = Employees.objects(
                                     uuid=trans["userUuid"]
                                 ).first()
-                                last_name = employees.lastName
-                                name_ = employees.name
+                                if employees:
+                                    last_name = employees.lastName
+                                    name_ = employees.name
+                                else:
+                                    name_ = " "
+                                    last_name = " "
                                 result.append(
                                     {
                                         "№ чека:".upper(): doc["number"],
