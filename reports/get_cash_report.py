@@ -227,6 +227,18 @@ def generate(session: Session):
         "5": "Заработная плата".upper(),
         "6": "Прочее".upper(),
     }
+    shops_id_2 = {
+        "20200630-3E0D-4061-80C1-F7897E112F00": "20220430-A472-40B8-8077-2EE96318B7E7",
+        "20220201-19C9-40B0-8082-DF8A9067705D": "20220501-9ADF-402C-8012-FB88547F6222",
+        "20220222-6C28-4069-8006-082BE12BEB32": "20220601-4E97-40A5-801B-1A29127AFA8B",
+        "20210923-FB1F-4023-80F6-9ECB3F5A0FA8": "20220501-11CA-40E0-8031-49EADC90D1C4",
+        # '20220202-B042-4021-803D-09E15DADE8A4': '20220501-CB2E-4020-808C-E3FD3CB1A1D4',
+        "20210712-1362-4012-8026-5A35685630B2": "20220501-DDCF-409A-8022-486441F27458",
+        "20220201-8B00-40C2-8002-EF7E53ED1220": "20220501-3254-40E5-809E-AC6BB204D373",
+        "20220201-A55A-40B8-8071-EC8733AFFA8E": "20220501-4D25-40AD-80DA-77FAE02A007E",
+        "20220202-B042-4021-803D-09E15DADE8A4": "20230214-33E5-4085-80A3-28C177E34112",
+    }
+
     if "report_surplus" in session.params["inputs"]["0"]:
         if session.params["inputs"]["0"]["report_surplus"] == "register_surplus":
             dict_ = {
@@ -393,27 +405,6 @@ def generate(session: Session):
             _dict1 = {}
             return _dict1, [_dict]
         if session.params["inputs"]["0"]["report_z"] == "get_z_report":
-            shops_id_2 = {
-                "20200630-3E0D-4061-80C1-F7897E112F00": "20220430-A472-40B8-8077-2EE96318B7E7",
-                "20220201-19C9-40B0-8082-DF8A9067705D": "20220501-9ADF-402C-8012-FB88547F6222",
-                "20220222-6C28-4069-8006-082BE12BEB32": "20220601-4E97-40A5-801B-1A29127AFA8B",
-                "20210923-FB1F-4023-80F6-9ECB3F5A0FA8": "20220501-11CA-40E0-8031-49EADC90D1C4",
-                # '20220202-B042-4021-803D-09E15DADE8A4': '20220501-CB2E-4020-808C-E3FD3CB1A1D4',
-                "20210712-1362-4012-8026-5A35685630B2": "20220501-DDCF-409A-8022-486441F27458",
-                "20220201-8B00-40C2-8002-EF7E53ED1220": "20220501-3254-40E5-809E-AC6BB204D373",
-                "20220201-A55A-40B8-8071-EC8733AFFA8E": "20220501-4D25-40AD-80DA-77FAE02A007E",
-                "20220202-B042-4021-803D-09E15DADE8A4": "20230214-33E5-4085-80A3-28C177E34112",
-            }
-
-            desctiption = {
-                "1": "Инкассация",
-                "2": "Оплата поставщику",
-                "3": "Оплата услуг",
-                "4": "Аренда",
-                "5": "Заработная плата",
-                "6": "Прочее",
-            }
-
             params = session.params["inputs"]["0"]
 
             shop = Shop.objects(uuid=params["shop"]).first()
@@ -719,7 +710,7 @@ def generate(session: Session):
             return {}, result
         if session.params["inputs"]["0"]["report"] == "report_cash_outcome":
             shops = get_shops(session)
-            shop_id = shops["shop_id"]
+            shops_id = shops["shop_id"]
             shop_name = shops["shop_name"]
 
             period = get_period(session)
@@ -729,7 +720,13 @@ def generate(session: Session):
             sum_payment_category = {"sum": 0}
             dict_ = {}
 
-            for shop_uuid in shop_id:
+            for shop_id in shops_id:
+                shops_uuid = [shop_id]
+            if shop_id in shops_id_2:
+                shops_uuid.append(shops_id_2[shop_id])
+            register = 1
+
+            for shop_uuid in shops_uuid:
                 x_type = ["CASH_OUTCOME"]
                 documents = Documents.objects(
                     __raw__={
@@ -745,7 +742,7 @@ def generate(session: Session):
                         for trans in doc["transactions"]:
                             if trans["x_type"] == "CASH_OUTCOME":
                                 employees = Employees.objects(
-                                    uuid=trans["userUuid"]
+                                    uuid=doc["openUserUuid"]
                                 ).first()
                                 if employees:
                                     last_name = employees.lastName
@@ -753,6 +750,8 @@ def generate(session: Session):
                                 else:
                                     name_ = " "
                                     last_name = " "
+                                pprint(trans["id"])
+                                pprint(payment_category[str(trans["id"])])
                                 result.append(
                                     {
                                         "№ чека:".upper(): doc["number"],
@@ -761,7 +760,7 @@ def generate(session: Session):
                                             last_name, name_
                                         ).upper(),
                                         "Категории платежа:".upper(): payment_category[
-                                            str(trans["id"])
+                                            str(trans["paymentCategoryId"])
                                         ],
                                         "Сумма:".upper(): "{} ₽".format(trans["sum"]),
                                     }
