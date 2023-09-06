@@ -38,16 +38,23 @@ def format_sell_groups(_dict: dict) -> list[dict]:
 
 def get_products(session: Session, shop_id: str) -> object:
     """
-    :param session:
-    :param shop_id: uuid: str магазина
-    :return: Данные по продуктам магазина
+    :param session: Объект сессии пользователя
+    :param shop_id: Список идентификаторов магазинов (UUID)
+    :return: Объект с данными по продуктам магазина
     """
+    # Определить роль сотрудника в сессии
     if session.employee.role == "CASHIER":
-        return Products.objects(
-            shop_id__exact=shop_id, group__exact=True, uuid__in=None
-        )
-    if session.employee.role == "ADMIN":
-        return Products.objects(shop_id__exact=shop_id, group__exact=True)
+        # Если роль сотрудника - кассир, вернуть продукты с фильтрами
+        # для кассиров, исключая продукты с указанным UUID
+        return Products.objects(shop_id__in=shop_id, group__exact=True, uuid__in=None)
+    elif session.employee.role == "ADMIN":
+        # Если роль сотрудника - администратор, вернуть продукты с фильтрами
+        # для администраторов магазина
+        return Products.objects(shop_id__in=shop_id, group__exact=True)
+    else:
+        # Если роль сотрудника не определена или не соответствует "CASHIER" или "ADMIN",
+        # можно добавить обработку других ролей или выбросить исключение
+        raise ValueError("Недопустимая роль сотрудника в сессии")
 
 
 def get_products_shops(session: Session, shop_id: list) -> object:
@@ -89,23 +96,31 @@ def get_shops(session: Session) -> dict:
                 'shop_name': 'name'
             }
     """
+    # Получение параметров из сессии
     params = session.params["inputs"]["0"]
+
+    # Создание списка для хранения уникальных идентификаторов магазинов (uuid)
     uuid = []
+    # Поиск сотрудников с заданной фамилией (session.user_id) и итерация по их магазинам
     for item in Employees.objects(lastName=str(session.user_id)):
         for store in item.stores:
             if store not in uuid:
                 uuid.append(store)
+    # Проверка наличия параметра "shop" в запросе
     if "shop" in params:
         if params["shop"] == "all":
+            # Возвращаем информацию о всех магазинах
             return {
                 "shop_id": [item["uuid"] for item in Shop.objects(uuid__in=uuid)],
                 "shop_name": "Все".upper(),
             }
         else:
+            # Возвращаем информацию о конкретном магазине, указанном в параметре "shop"
             shop = Shop.objects(uuid__exact=params["shop"]).only("name").first()
             return {"shop_id": [params["shop"]], "shop_name": shop.name}
 
     else:
+        # Если параметр "shop" отсутствует, возвращаем информацию о всех магазинах
         return {
             "shop_id": [item["uuid"] for item in Shop.objects(uuid__in=uuid)],
             "shop_name": "Все".upper(),
@@ -114,30 +129,48 @@ def get_shops(session: Session) -> dict:
 
 def get_shops_user_id(session: Session) -> object:
     """
-    :param session:
-    :return: shops пользователя telegram bot
+    Получить магазины, связанные с пользователем Telegram бота.
+
+    :param session: Объект сессии пользователя.
+    :return: Магазины, связанные с пользователем.
     """
+    # Создаем пустой список для хранения уникальных идентификаторов магазинов (uuid).
     uuid = []
+    # Итерируемся по сотрудникам с фамилией, равной user_id из сессии
     for item in Employees.objects(lastName=str(session.user_id)):
+        # Для каждого найденного сотрудника итерируемся по его магазинам.
         for store in item.stores:
+            # Проверяем, не находится ли магазин уже в списке UUID.
             if store not in uuid:
+                # Добавляем магазина в список UUID, если его там нет.
                 uuid.append(store)
+    # Возвращаем объект Shop, в котором UUID магазина содержатся в списке UUID
     return Shop.objects(uuid__in=uuid)
 
 
 def get_shops_uuid_user_id(session: Session) -> list:
     """
-    :param session:
-    :return: [uuid, ...]
+    :param session: Сессия пользователя
+    :return: Список уникальных UUID магазинов, связанных с пользователем
     """
+    # Создаем пустой список для хранения уникальных UUID магазинов
     uuid = []
+    # Итерируемся по всем сотрудникам с фамилией, совпадающей с идентификатором пользователя
     for item in Employees.objects(lastName=str(session.user_id)):
+        # Для каждого сотрудника итерируемся по списку магазинов, к которым он привязан
         for store in item.stores:
+            # Проверяем, не был ли магазин уже добавлен в список UUID
             if store not in uuid:
+                # Если магазина еще нет в списке, добавляем его
                 uuid.append(store)
+    # Возвращаем список уникальных UUID магазинов
     return uuid
 
 
+# Определение состояния сеанса:
+# 1. Проверка наличия элементов в списке id_
+# 2. Получение списка магазинов в зависимости от состояния сеанса и параметров
+# 3. Формирование и возврат списка магазинов
 def get_shops_in(session: Session, _in=[], id_=[]):
     uuid = []
     uuid_id = [
@@ -177,9 +210,10 @@ def get_shops_in(session: Session, _in=[], id_=[]):
 
 def period_to_date(period: str) -> utcnow:
     """
-    :param period: day, week,  fortnight, month, two months,
-    :return: utcnow - period
+    :param period: строка, представляющая период времени ("day", "week", "fortnight", "month", "two months", "6 months", "12 months", "24 months", "48 months")
+    :return: строка с датой и временем в ISO формате, отстоящая на указанный период времени назад от текущего времени в UTC с временем 03:00.
     """
+    # Проверяем значение параметра "period" и выполняем соответствующее смещение времени
     if period == "day":
         return utcnow().to("local").replace(hour=3, minute=00).isoformat()
     if period == "week":
@@ -255,6 +289,8 @@ def period_to_date_2(period: str) -> utcnow:
     raise Exception("Period is not supported")
 
 
+# Получить интервалы дат между минимальной и максимальной датами с определенным шагом в указанных единицах измерения (unit: days, weeks, fortnights, months).
+# Возвращает список кортежей (минимальная дата, максимальная дата).
 def get_intervals(
     min_date: str, max_date: str, unit: str, measure: float
 ) -> List[Tuple[str, str]]:
@@ -267,61 +303,83 @@ def get_intervals(
     """
     output = []
     while min_date < max_date:
-        # записывет в перменную temp минимальную дату плюс (unit: measure)
+        # Получить новую дату, добавив или вычтя указанное количество времени в указанных единицах измерения
         temp = get(min_date).shift(**{unit: measure}).isoformat()
-        # записывает в output пару дат min_date и  меньшую дату min_date max_date или temp
+        # Записать пару дат (min_date, min(temp, max_date)) в список выходных данных
         output.append((min_date, min(temp, max_date)))
-        # меняет значение min_date на temp
+        # Обновить min_date на новую дату temp
         min_date = temp
     return output
 
 
 def get_employees(session: Session) -> object:
     """
-    :param session:
-    :return: employees пользователя telegram bot
+    Получает список сотрудников пользователя Telegram бота на основе их session.user_id.
+
+    :param session: Сеанс пользователя бота.
+    :return: Объект (список или другая структура), содержащий информацию о сотрудниках.
     """
+    # Инициализируем пустой список uuid для сохранения идентификаторов сотрудников
     uuid = []
+    # Получаем список хранилищ (stores) сотрудников с фамилией, соответствующей session.user_id
     users = [
         element.stores for element in Employees.objects(lastName=str(session.user_id))
     ]
+    # Итерируемся по списку хранилищ и добавляем их uuid в список uuid
     for i in users:
         for e in i:
             uuid.append(e)
+    # Возвращаем  структуру, содержащую информацию о сотрудниках
 
     return Employees.objects(stores__in=uuid)
 
 
 def get_employees(last_name: str) -> list:
     """
-    :param session:
-    :return: employees uuid пользователя telegram bot
+    Возвращает список UUID пользователей Telegram Bot, чья фамилия совпадает с заданной.
+
+    :param last_name: Фамилия сотрудника для поиска.
+    :return: Список UUID пользователей Telegram Bot.
     """
+    # Используем список-выражение для получения UUID сотрудников, у которых фамилия совпадает с заданной.
     users = [element.uuid for element in Employees.objects(lastName=last_name)]
 
+    # Возвращаем список UUID пользователей.
     return users
 
 
 def get_products_all(session: Session, shop_id: list):
     """
-    :param shop_id: [shop_id, ...]
-    :param session:
-    :return: {'uuid': 'name'}
+    Получает список продуктов для указанных магазинов.
+
+    :param shop_id: Список идентификаторов магазинов, для которых нужно получить продукты.
+    :param session: Сессия (предположительно, объект сессии для взаимодействия с базой данных).
+    :return: Словарь, содержащий информацию о продуктах в формате {'uuid': 'name'}.
     """
+    # Создаем пустой словарь для хранения информации о продуктах
     result = {}
     for item in Products.objects(shop_id__in=shop_id, group__exact=True):
+        # Если 'uuid' продукта еще не добавлен в результат, то добавляем его в словарь.
         if item["uuid"] not in result:
+            # Добавляем информацию о продукте в словар
             result[item["uuid"]] = item["name"]
+    # Возвращаем словарь с информацией о продуктах
     return result
 
 
 def get_period(session: Session):
     """
+    Функция get_period_day принимает объект сессии Session и возвращает словарь,
+    содержащий информацию о временном периоде 'since' и 'until'.
+
     :param session:
     :return: {'since': str, 'until': str}
     """
+    # Список возможных периодов
     period_in = ["day", "week", "fortnight", "month"]
+    # Проверка, что указанный период находится в списке возможных периодов
     if session.params["inputs"]["0"]["period"] not in period_in:
+        # Если период - "day", то 'since' устанавливаем в начало дня, а 'until' в конец дня
         return {
             "since": get(session.params["inputs"]["0"]["openDate"])
             .replace(day=1)
@@ -330,12 +388,13 @@ def get_period(session: Session):
             .ceil("month")
             .isoformat(),
         }
+    # Если выбран период "day", возвращаем начальную дату как период "сегодня", а конечную - текущую дату и время
     if session.params["inputs"]["0"]["period"] == "day":
         return {
             "since": period_to_date(session.params["inputs"]["0"]["period"]),
             "until": utcnow().isoformat(),
         }
-
+    # Если выбран другой период, возвращаем начальную и конечную дату с учетом указанных дат
     else:
         return {
             "since": get(session.params["inputs"]["0"]["openDate"])
@@ -352,7 +411,9 @@ def get_period_day(session: Session):
     :param session:
     :return: {'since': str, 'until': str}
     """
+    # Проверяем, является ли период "day"
     if session.params["inputs"]["0"]["period"] == "day":
+        # Если период - "day", то возвращаем период с начала дня до конца дня
         return {
             "since": period_to_date(session.params["inputs"]["0"]["period"]),
             "until": get(period_to_date(session.params["inputs"]["0"]["period"]))
@@ -361,6 +422,7 @@ def get_period_day(session: Session):
         }
 
     else:
+        # Если период не "day", то возвращаем весь день (от 00:01 до 23:59) указанной даты
         return {
             "since": get(session.params["inputs"]["0"]["openDate"])
             .replace(hour=0, minute=1)
@@ -376,18 +438,22 @@ def get_period_order(session: Session):
     :param session:
     :return: {'since': str, 'until': str}
     """
+    # Получаем данные о периоде заказа
     data = get(period_to_date(session.params["inputs"]["0"]["period"]))
     pprint(data)
     if session.params["inputs"]["0"]["period"] == "day":
+        # Строим диапазон "since" с началом дня и концом дня, сдвинутыми на 7 дней назад.
         return {
             "since": get(period_to_date(session.params["inputs"]["0"]["period"]))
             .shift(days=-7)
             .replace(hour=00, minute=1)
             .isoformat(),
+            # Строим диапазон "since" с началом дня и концом дня, сдвинутыми на 7 дней назад.
             "until": utcnow().shift(days=-7).replace(hour=23, minute=59).isoformat(),
         }
 
     else:
+        # В противном случае возвращаем период на основе даты открытия
         return {
             "since": get(session.params["inputs"]["0"]["openDate"])
             .shift(days=-7)
@@ -401,32 +467,40 @@ def get_period_order(session: Session):
 
 
 def get_commodity_balances(session: Session) -> dict:
+    # Создаем пустой словарь для хранения балансов товаров
     _dict = {}
-
+    # Получаем параметры из сессии
     params = session.params["inputs"]["0"]
-
+    # Список типов транзакций
     x_type = ["SELL", "PAYBACK", "ACCEPT"]
-
+    # Получаем список магазинов из функции get_shops
     shops = get_shops(session)
     shop_id = shops["shop_id"]
-
+    # Итерируемся по идентификаторам магазинов
     for shop_uuid in shop_id:
+        # Если параметр "group" равен "all", получаем все товары в магазине
         if params["group"] == "all":
             products = Products.objects(
                 __raw__={
                     "shop_id": shop_uuid,
                 }
             )
+            # Устанавливаем название группы товаров как "Все"
             group_name = "Все"
         else:
+            # Иначе получаем товары, принадлежащие определенной группе
             products = Products.objects(
                 __raw__={"shop_id": shop_uuid, "parentUuid": params["group"]}
             )
+            # Получаем информацию о группе товаров по ее идентификатору
             porod = Products.objects(uuid=params["group"], group__exact=True).first()
+            # Устанавливаем название группы товаров
             group_name = porod.name
+        # Получаем идентификаторы всех товаров в текущей группе
         products_uuid = [element.uuid for element in products]
-
+        # Итерируемся по идентификаторам товаров
         for uuid in products_uuid:
+            # Ищем документы, связанные с текущим товаром
             documents = (
                 Documents.objects(
                     __raw__={
@@ -439,33 +513,40 @@ def get_commodity_balances(session: Session) -> dict:
                 .first()
             )
 
-            if documents is not None:
+            if documents:
                 for trans in documents["transactions"]:
                     if trans["x_type"] == "REGISTER_POSITION":
                         if trans["commodityUuid"] == uuid:
                             if documents.x_type == "SELL":
+                                # Обновляем баланс товара при продаже
                                 _dict[trans["commodityUuid"]] = (
                                     trans["balanceQuantity"] - trans["quantity"]
                                 )
 
                             if documents.x_type == "PAYBACK":
+                                # Обновляем баланс товара при возврате
                                 _dict[trans["commodityUuid"]] = (
                                     trans["balanceQuantity"] + trans["quantity"]
                                 )
 
                             if documents.x_type == "ACCEPT":
+                                # Обновляем баланс товара при приемке
                                 _dict[trans["commodityUuid"]] = trans["balanceQuantity"]
-
+    # Возвращаем словарь с балансами товаров
     return _dict
 
 
 def generate_plan():
+    """
+    Эта функция создает и возвращает планы для магазинов на основе определенных условий.
+    """
+    # Список идентификаторов групп
     group_id = [
         "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
         "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
         "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
     ]
-
+    # Список идентификаторов для фильтрации магазинов
     _in = [
         "20190411-5A3A-40AC-80B3-8B405633C8BA",
         "20190327-A48C-407F-801F-DA33CB4FBBE9",
@@ -479,6 +560,7 @@ def generate_plan():
         "20220201-A55A-40B8-8071-EC8733AFFA8E",
         "20220202-B042-4021-803D-09E15DADE8A4",
     ]
+    # Список идентификаторов магазинов на основе фильтрации
     uuid = [
         "20210712-1362-4012-8026-5A35685630B2",
         "20220222-6C28-4069-8006-082BE12BEB32",
@@ -489,7 +571,7 @@ def generate_plan():
         "20220201-A55A-40B8-8071-EC8733AFFA8E",
         "20220202-B042-4021-803D-09E15DADE8A4",
     ]
-
+    # Получение магазинов с использованием фильтрации
     shops = Shop.objects(__raw__={"uuid": {"$in": _in}})
 
     _dict = {}
@@ -500,21 +582,22 @@ def generate_plan():
         else:
             period = [7, 14, 21, 28]
         for element in period:
-            # pprint('{} {}'. format(shop['name'], element))
-            # pprint(shop['uuid'])
+            # Рассчитываем временные интервалы с использованием UTC времени
             since = utcnow().shift(days=-element).replace(hour=3, minute=00).isoformat()
             # pprint(since)
             until = (
                 utcnow().shift(days=-element).replace(hour=21, minute=00).isoformat()
             )
-            # pprint(until)
+            # Получаем продукты для магазина и группы товаров
             products = Products.objects(
                 __raw__={"shop_id": shop["uuid"], "parentUuid": {"$in": group_id}}
             )
 
             products_uuid = [element.uuid for element in products]
             # pprint(products_uuid)
+            # Определяем типы транзакций
             x_type = ["SELL", "PAYBACK"]
+            # Получаем документы из базы данных на основе фильтров
             documents = Documents.objects(
                 __raw__={
                     "closeDate": {"$gte": since, "$lt": until},
@@ -525,17 +608,18 @@ def generate_plan():
             )
 
             sum_sell = 0
-
+            # Вычисляем и добавляем результат в словарь
             for doc in documents:
                 for trans in doc["transactions"]:
                     if trans["x_type"] == "REGISTER_POSITION":
                         if trans["commodityUuid"] in products_uuid:
                             sum_sell += trans["sum"]
+            # Устанавливаем значение _day
             if shop["uuid"] in uuid:
                 _day = 4
             else:
                 _day = 4
-
+            # Обновляем словарь суммами продаж
             if shop["uuid"] in _dict:
                 _dict[shop["uuid"]] += round(
                     (int(sum_sell) / _day + int(sum_sell) / 5 / 100 * 4)
@@ -544,6 +628,7 @@ def generate_plan():
                 _dict[shop["uuid"]] = round(
                     (int(sum_sell) / _day + int(sum_sell) / 5 / 100 * 4)
                 )
+    # Обновляем параметры плана в базе данных
     for k, v in _dict.items():
         params = {"closeDate": utcnow().isoformat(), "shop_id": k}
 
@@ -553,6 +638,7 @@ def generate_plan():
             params["sum"] = v
         # print(params)
         Plan.objects(closeDate=utcnow().isoformat()).update(**params, upsert=True)
+    # Возвращаем параметры плана
     return params
 
 
@@ -623,11 +709,19 @@ def remainder(shops_uuid: list):
 # Зп по назначенным группам аксессуаров
 def get_aks_salary(shop_id: str, since_: str, until_: str) -> dict:
     """
-    return {
-            "accessory_sum_sell": int,
-            "bonus_accessory": int,
-        }
+    Возвращает информацию о зарплате сотрудников в отделе aks.
+
+    Args:
+        shop_id (str): Идентификатор магазина.
+        since_ (str): Начальная дата для анализа продаж.
+        until_ (str): Конечная дата для анализа продаж.
+
+    Returns:
+        dict: Словарь с информацией о продажах и бонусах сотрудников aks.
+            - "accessory_sum_sell" (int): Сумма продаж аксессуаров.
+            - "bonus_accessory" (int): Рассчитанный бонус сотрудникам за продажи аксессуаров.
     """
+    # Получаем документы aks для указанного магазина и периода времени
     documents_aks = (
         GroupUuidAks.objects(
             __raw__={
@@ -636,19 +730,20 @@ def get_aks_salary(shop_id: str, since_: str, until_: str) -> dict:
                 "x_type": "MOTIVATION_PARENT_UUID",
             }
         )
-        .order_by("-closeDate")
+        .order_by("-closeDate")  # Сортировка по убыванию даты закрытия
         .first()
     )
     if documents_aks:
+        # Получаем группу продуктов, связанных с документами aks
         group = Products.objects(
             __raw__={
                 "shop_id": shop_id,
                 "parentUuid": {"$in": documents_aks.parentUuids},
             }
         )
-
+        # Получаем список UUID продуктов
         products_uuid = [i.uuid for i in group]
-
+        # Получаем документы о продажах для указанного магазина, периода и продуктов aks
         documents_sale = Documents.objects(
             __raw__={
                 "closeDate": {"$gte": since_, "$lt": until_},
@@ -657,19 +752,20 @@ def get_aks_salary(shop_id: str, since_: str, until_: str) -> dict:
                 "transactions.commodityUuid": {"$in": products_uuid},
             }
         )
-
+        # Вычисляем общую сумму продаж аксессуаров.
         sum_sales_aks = 0
         for doc in documents_sale:
             for trans in doc["transactions"]:
                 if trans["x_type"] == "REGISTER_POSITION":
                     if trans["commodityUuid"] in products_uuid:
                         sum_sales_aks += trans["sum"]
-
+        # Вычисляем бонус за продажу аксессуаров (5% от общей суммы продаж).
         return {
             "accessory_sum_sell": sum_sales_aks,
             "bonus_accessory": round(int(sum_sales_aks / 100 * 5) / 10) * 10,
         }
     else:
+        # Если не найдено документов GroupUuidAks, возвращаем нули.
         return {
             "accessory_sum_sell": 0,
             "bonus_accessory": 0,
@@ -679,10 +775,18 @@ def get_aks_salary(shop_id: str, since_: str, until_: str) -> dict:
 # Зп по продаже мотивационого товара
 def get_mot_salary(shop_id: str, since_: str, until_: str) -> dict:
     """
-    return {
-             "bonus_motivation": int,
-        }
+    Функция возвращает бонус мотивации для магазина на основе продаж и данных о мотивации.
+
+    Args:
+        shop_id (str): Идентификатор магазина.
+        since_ (str): Начальная дата для анализа продаж (включительно).
+        until_ (str): Конечная дата для анализа продаж (исключительно).
+
+    Returns:
+        dict: Словарь, содержащий бонус мотивации в виде "bonus_motivation".
     """
+
+    # Запрашиваем данные о мотивации для магазина
     documents_mot = (
         GroupUuidAks.objects(
             __raw__={
@@ -695,8 +799,9 @@ def get_mot_salary(shop_id: str, since_: str, until_: str) -> dict:
         .first()
     )
     if documents_mot:
+        # Извлекаем идентификаторы продуктов из данных о мотивации
         products_uuid = [k for k, v in documents_mot.uuid.items()]
-
+        # Запрашиваем данные о продажах продуктов в указанный период времени
         documents_sale = Documents.objects(
             __raw__={
                 "closeDate": {"$gte": since_, "$lt": until_},
@@ -705,42 +810,57 @@ def get_mot_salary(shop_id: str, since_: str, until_: str) -> dict:
                 "transactions.commodityUuid": {"$in": products_uuid},
             }
         )
+        # Создаем словарь для хранения данных о зарплате
         dict_salary = {}
 
         for doc in documents_sale:
             for trans in doc["transactions"]:
                 if trans["x_type"] == "REGISTER_POSITION":
                     if trans["commodityUuid"] in products_uuid:
+                        # Если продукт уже присутствует в словаре, увеличиваем его количество
                         if trans["commodityUuid"] in dict_salary:
                             dict_salary[trans["commodityUuid"]] += trans["quantity"]
-
+                        # Если продукта нет в словаре, добавляем его с количеством из текущей транзакции
                         else:
                             dict_salary[trans["commodityUuid"]] = trans["quantity"]
+        # Инициализируем сумму мотивации
         sum_mot = 0
+        # Вычисляем сумму мотивации на основе данных о продажах и мотивации
         for k, v in dict_salary.items():
             sum_mot += v * documents_mot.uuid[k]
-
+        # Возвращаем бонус мотивации в виде словаря
         return {"bonus_motivation": int(sum_mot)}
 
     else:
+        # Если данных о мотивации нет, возвращаем нулевой бонус мотивации
         return {"bonus_motivation": 0}
 
 
 # План по группе, продажи, бонус за выполнение плана
 def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
     """
-    return {
-            "plan_motivation_prod": int,
-            "sales_motivation_prod": int,
-            "bonus_motivation_prod": int,
-        }
+    Функция возвращает информацию о бонусах за выполнение плана для магазина на основе данных о планах и продажах.
+
+    Args:
+        shop_id (str): Идентификатор магазина.
+        since_ (str): Начальная дата периода.
+        until_ (str): Конечная дата периода.
+
+    Returns:
+        dict: Словарь с информацией о бонусе:
+            - "plan_motivation_prod": Заданный план продаж.
+            - "sales_motivation_prod": Фактические продажи в периоде.
+            - "bonus_motivation_prod": Рассчитанный бонус за выполнение плана.
     """
+
+    # Поиск планов для магазина и периода
     plan_ = Plan.objects(
         __raw__={
             "closeDate": {"$gte": since_, "$lt": until_},
             "shop_id": shop_id,
         }
     )
+    # Если нет найденных планов, генерируем новый
     if len(plan_) > 0:
         plan = Plan.objects(
             __raw__={
@@ -756,17 +876,21 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
                 "shop_id": shop_id,
             }
         ).first()
+    # Группы товаров для анализа
     group_id = [
         "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
         "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
         "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
     ]
+    # Поиск товаров в указанных группах
     products = Products.objects(
         __raw__={"shop_id": shop_id, "parentUuid": {"$in": group_id}}
     )
-
+    # Список UUID товаров
     products_uuid = [element.uuid for element in products]
+    # Типы транзакций, которые учитываем (продажи и возвраты)
     x_type = ["SELL", "PAYBACK"]
+    # Получаем документы с продажами и возвратами товаров из списка products_uuid
     documents_2 = Documents.objects(
         __raw__={
             "closeDate": {"$gte": since_, "$lt": until_},
@@ -782,7 +906,7 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
             if trans_2["x_type"] == "REGISTER_POSITION":
                 if trans_2["commodityUuid"] in products_uuid:
                     sum_sell_today += trans_2["sum"]
-
+    # Получаем информацию о мотивации из последнего документа
     documents_motiv = (
         GroupUuidAks.objects(
             __raw__={
@@ -794,6 +918,7 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
         .order_by("-closeDate")
         .first()
     )
+    # Функция для расчета бонуса по выполнению плана
     if documents_motiv:
         if sum_sell_today >= plan.sum:
             return {
@@ -816,13 +941,21 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
         }
 
 
-# Оклады продавцов
+# Функция для получения оклада продавцов в магазине
 def get_salary(shop_id: str, until_: str) -> dict:
     """
-    return {
-            "salary": int
-        }
+    Возвращает оклад продавцов в магазине до указанной даты.
+
+    Args:
+        shop_id (str): Идентификатор магазина.
+        until_ (str): Дата, до которой нужно получить оклад (включительно).
+
+    Returns:
+        dict: Словарь с информацией о окладе. Если информация найдена, то содержит "salary",
+              иначе "salary" равно 0.
     """
+
+    # Ищем документы о зарплате продавцов в указанном магазине до указанной даты
     documents_salary = GroupUuidAks.objects(
         __raw__={
             "closeDate": {"$lte": until_[:10]},
@@ -830,24 +963,33 @@ def get_salary(shop_id: str, until_: str) -> dict:
             "x_type": "SALARY",
         }
     ).first()
+    # Если найдена информация о зарплате, возвращаем ее
     if documents_salary:
         return {
             "salary": documents_salary.salary,
         }
     else:
+        # Если документ не найден, возвращаем нулевую зарплату (0)
         return {
             "salary": 0,
         }
 
 
-# Доплаты к окладу продовцов
+# Функция для получения доплаты к окладу продавцов на основе их идентификатора и даты окончания
 def get_surcharge(employee_uuid: str, until_: str) -> dict:
     """
-    return {
-           "surcharge": int
-       }
+    Функция для получения доплаты к окладу продавцов.
+
+    Args:
+        employee_uuid (str): Уникальный идентификатор сотрудника.
+        until_ (str): Дата (включительно), до которой нужно получить доплату.
+
+    Returns:
+        dict: Словарь, содержащий информацию о доплате к окладу:
+            - "surcharge" (int): Размер доплаты, если есть, или 0, если доплаты нет.
     """
-    pprint(employee_uuid)
+    # pprint(employee_uuid)
+    # Ищем документы о доплатах к окладу для указанного сотрудника и даты окончания
     documents_surcharge = (
         GroupUuidAks.objects(
             __raw__={
@@ -859,12 +1001,14 @@ def get_surcharge(employee_uuid: str, until_: str) -> dict:
         .order_by("-closeDate")
         .first()
     )
-    pprint(documents_surcharge)
+    # pprint(documents_surcharge)
+    # Если есть информация о доплате, возвращаем её
     if documents_surcharge:
         return {
             "surcharge": documents_surcharge.surcharge,
         }
     else:
+        # Если информации нет, возвращаем 0
         return {
             "surcharge": 0,
         }
@@ -874,29 +1018,42 @@ def get_total_salary(
     employee_uuid: str, shop_id: str, since_: str, until_: str
 ) -> dict:
     """
-    return {
-            "accessory_sum_sell": int,
-            "bonus_accessory": int,
-            "bonus_motivation": int,
-            "plan_motivation_prod": int,
-            "sales_motivation_prod": int,
-            "bonus_motivation_prod": int,
-            "salary": int,
-            "surcharge": int,
-            "total_salary": int
-            "closeDate": until_[:10]
+    Возвращает структуру, содержащую информацию о заработной плате сотрудника.
 
+    Args:
+        employee_uuid (str): Уникальный идентификатор сотрудника.
+        shop_id (str): Идентификатор магазина.
+        since_ (str): Дата начала периода.
+        until_ (str): Дата окончания периода.
 
-        }
+    Returns:
+        dict: Словарь с информацией о заработной плате сотрудника.
+
+    Структура словаря:
+    {
+        "accessory_sum_sell": int,         # Сумма продаж аксессуаров
+        "bonus_accessory": int,           # Бонус за продажу аксессуаров
+        "bonus_motivation": int,          # Бонус за мотивацию
+        "plan_motivation_prod": int,      # План мотивации продаж
+        "sales_motivation_prod": int,     # Продажи мотивации продаж
+        "bonus_motivation_prod": int,     # Бонус за мотивацию продаж
+        "salary": int,                   # Заработная плата
+        "surcharge": int,                # Надбавка
+        "total_salary": int,             # Общая заработная плата
+        "closeDate": until_[:10]         # Дата окончания периода (обрезанная до дня)
+    }
     """
+    # Инициализируем пустой словарь, в который будем добавлять информацию о заработке сотрудника
     result = {}
+    # Получаем информацию о заработной плате с помощью различных функций
     result.update(get_aks_salary(shop_id, since_, until_))
     result.update(get_mot_salary(shop_id, since_, until_))
     result.update(get_plan_bonus(shop_id, since_, until_))
     result.update(get_salary(shop_id, until_))
     result.update(get_surcharge(employee_uuid, until_))
+    # Добавляем дату окончания периода в результат (обрезанную до дня)
     result.update({"closeDate": until_[:10]})
-
+    # Вычисляем общую заработную плату
     total_salary = (
         result["bonus_accessory"]
         + result["bonus_motivation"]
@@ -904,7 +1061,7 @@ def get_total_salary(
         + result["salary"]
         + result["surcharge"]
     )
-
+    # Добавляем общую заработную плату в результат
     result.update({"total_salary": total_salary})
-
+    # Возвращаем словарь result с информацией о заработке сотрудника
     return result

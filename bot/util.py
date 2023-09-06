@@ -1,76 +1,94 @@
-
-
 def format_message_list2(obj):
-    text = ''
-    messages = []
-    if len(obj) > 0:
-        for k, v in obj.items():
-            key = str(k)
-            val = str(v)
-            total_len = (len(key) + len(val))
-            pad = 31 - total_len % 31
+    text = ""  # Создаем пустую строку, в которую будем добавлять текст
+    messages = []  # Создаем пустой список для хранения сообщений
 
-            text += key
+    if len(obj) > 0:  # Проверяем, что входной объект не пуст
+        for k, v in obj.items():  # Проходим по ключам и значениям в объекте
+            key = str(k)  # Преобразуем ключ в строку
+            val = str(v)  # Преобразуем значение в строку
+            total_len = len(key) + len(val)  # Вычисляем общую длину ключа и значения
+            pad = 31 - total_len % 31  # Вычисляем количество пробелов для выравнивания
+
+            text += key  # Добавляем ключ в текст
 
             if pad > 0:
-                text += ' ' * pad
+                text += " " * pad  # Добавляем пробелы для выравнивания
 
             if total_len > 31:
-                text += ' ' * 2
+                text += " " * 2  # Добавляем двойные пробелы, если общая длина больше 31
 
-            text += str(v)
-            text += '\n'
+            text += str(v)  # Добавляем значение в текст
+            text += "\n"  # Добавляем символ новой строки
 
-        text += ''
-        # parts = [your_string[i:i+n] for i in range(0, len(your_string), n)]
+        # Разбиваем текст на части, если он слишком большой
         index = 0
         size = 4000
         while len(text) > 0:
-            part = text[index:index + size]
-            index = part.rfind('\n')
+            part = text[index : index + size]  # Вырезаем часть текста заданного размера
+            index = part.rfind("\n")  # Находим последний символ новой строки в части
             if index == -1:
-                index = len(text)
-            part = text[0:index]
-            messages.append('```\n' + part + '\n```')
-            text = text[index:].strip()
-        return messages
+                index = len(
+                    text
+                )  # Если символ новой строки не найден, используем конец текста
+            part = text[0:index]  # Выбираем часть текста до символа новой строки
+            messages.append(
+                "```\n" + part + "\n```"
+            )  # Добавляем часть текста в список сообщений
+            text = text[
+                index:
+            ].strip()  # Удаляем обработанную часть из текста и убираем пробелы
+
+    return messages  # Возвращаем список сообщений
 
 
 def format_message_list4(obj):
-    # print(obj)
-    text = ''
-    messages = []
-    if len(obj) > 0:
-        for i in obj:
-            for k, v in i.items():
-                key = str(k)
-                val = str(v)
-                total_len = (len(key) + len(val))
-                pad = 30 - total_len % 30
+    text = ""  # Создаем пустую строку для хранения текста сообщений.
+    messages = []  # Создаем пустой список для хранения отформатированных сообщений.
 
-                text += key
+    if len(obj) > 0:  # Проверяем, есть ли объекты в списке.
+        for i in obj:  # Проходим по каждому объекту в списке.
+            for k, v in i.items():  # Проходим по каждой паре ключ-значение в объекте.
+                key = str(k)  # Преобразуем ключ в строку.
+                val = str(v)  # Преобразуем значение в строку.
+                total_len = len(key) + len(
+                    val
+                )  # Вычисляем общую длину ключа и значения.
+                pad = (
+                    30 - total_len % 30
+                )  # Вычисляем количество пробелов, чтобы выровнять текст.
 
-                if pad > 0:
-                    text += ' ' * pad
+                text += key  # Добавляем ключ к тексту.
 
-                if total_len > 30:
-                    text += ' ' * 2
+                if pad > 0:  # Если нужно добавить пробелы для выравнивания,
+                    text += " " * pad  # добавляем их.
 
-                text += str(v)
-                text += '\n'
-            text += '\n'
-            text += '******************************'
-            text += '\n'
+                if total_len > 30:  # Если общая длина превышает 30 символов,
+                    text += " " * 2  # добавляем 2 дополнительных пробела.
 
-        text += ''
-        index = 0
-        size = 4000
-        while len(text) > 0:
-            part = text[index:index + size]
-            index = part.rfind('\n')
-            if index == -1:
-                index = len(text)
-            part = text[0:index]
-            messages.append('```\n' + part + '\n```')
-            text = text[index:].strip()
-        return messages
+                text += str(v)  # Добавляем значение к тексту.
+                text += "\n"  # Добавляем перевод строки между ключами и значениями.
+            text += "\n"  # Добавляем пустую строку после каждого объекта.
+            text += "******************************"  # Добавляем разделительную строку.
+            text += "\n"
+
+        text += ""  # Пустая строка (это выглядит как ошибка, потому что она ничего не делает).
+        index = 0  # Начальный индекс для разделения текста на части.
+        size = 4000  # Максимальная длина каждой части сообщения.
+        while len(text) > 0:  # Пока есть текст для обработки:
+            part = text[
+                index : index + size
+            ]  # Выбираем часть текста длиной не более 4000 символов.
+            index = part.rfind(
+                "\n"
+            )  # Находим последний символ перевода строки в части.
+            if index == -1:  # Если символ перевода строки не найден,
+                index = len(text)  # используем всю часть текста.
+            part = text[
+                0:index
+            ]  # Выбираем часть текста до найденного символа перевода строки.
+            messages.append(
+                "```\n" + part + "\n```"
+            )  # Добавляем часть текста в список сообщений,
+            text = text[index:].strip()  # и удаляем ее из исходного текста.
+
+        return messages  # Возвращаем список отформатированных сообщений.

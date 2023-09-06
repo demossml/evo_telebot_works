@@ -124,11 +124,14 @@ class Counting_MoneyInput:
 
 
 def get_inputs(session: Session):
+    # Если входные параметры сессии существуют
     if session.params["inputs"]["0"]:
+        # Если тип отчета - "shift_opening_report"
         if session.params["inputs"]["0"]["report"] == "shift_opening_report":
             if "shop" in session.params["inputs"]["0"]:
                 if "counting" in session.params["inputs"]["0"]:
                     if session.params["inputs"]["0"]["counting"] == "converge":
+                        # Если подсчет равен "converge", возвращаем пустой словарь
                         return {}
                     else:
                         return {

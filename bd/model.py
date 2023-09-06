@@ -9,6 +9,8 @@ from telebot import types
 
 # Модели
 
+
+# Определение data-класса "Message" для хранения сообщений
 @dataclass
 class Message:
     user_id: int
@@ -33,6 +35,7 @@ def get_session_params():
     return {}
 
 
+# Описание класса Session, представляющего сессии пользователей
 class Session(DynamicDocument):
     # ID пользователя из telegram
     # поле обязательно для заполнения
@@ -62,6 +65,7 @@ class Shop(DynamicDocument):
     """
     Содержит данные магазинов
     """
+
     pass
 
 
@@ -75,17 +79,20 @@ class Users(DynamicDocument):
 
 
 class Documents(DynamicDocument):
-    """ Содержит данные документов """
+    """Содержит данные документов"""
+
     pass
 
 
 class Products(DynamicDocument):
-    """ Содержит данные продуктов """
+    """Содержит данные продуктов"""
+
     pass
 
 
 class Employees(DynamicDocument):
-    """ Содержит данные сотрудников """
+    """Содержит данные сотрудников"""
+
     pass
 
 
@@ -98,7 +105,8 @@ class ZReopt(DynamicDocument):
 
 
 class Shift_Opening_Report(DynamicDocument):
-    """ Содержит данные открытия магазинов """
+    """Содержит данные открытия магазинов"""
+
     pass
 
 
@@ -115,14 +123,18 @@ class GetTime(DynamicDocument):
 
 
 class PromoUuid(DynamicDocument):
-    """ Содержит данные промо  продуктов """
+    """Содержит данные промо  продуктов"""
+
     pass
 
+
 class GroupUuidAks(DynamicDocument):
-    '''
+    """
     Содержит данные груп аксесуаров
-    '''
+    """
+
     pass
+
 
 class AfsRequest(DynamicDocument):
     # ID магазина
@@ -147,27 +159,47 @@ class AfsRequest(DynamicDocument):
 
 # Вспомогательные функции
 
+
+# Функция для создания объекта "Message" на основе параметров
 def create_massage(params):
+    # Создание объекта "Message" на основе параметров сообщения
     if isinstance(params, types.Message):
-        return Message(user_id=params.from_user.id, chat_id=params.chat.id, text=params.text, is_callback=False,
-                       location=params.location, photo=params.photo, message_id=params.message_id,
-                       document=params.document)
+        return Message(
+            user_id=params.from_user.id,
+            chat_id=params.chat.id,
+            text=params.text,
+            is_callback=False,
+            location=params.location,
+            photo=params.photo,
+            message_id=params.message_id,
+            document=params.document,
+        )
     else:
-        return Message(user_id=params.from_user.id, chat_id=params.message.chat.id, text=params.data, is_callback=True,
-                       location=None, photo=None, message_id=params.message.message_id, document=None)
+        return Message(
+            user_id=params.from_user.id,
+            chat_id=params.message.chat.id,
+            text=params.data,
+            is_callback=True,
+            location=None,
+            photo=None,
+            message_id=params.message.message_id,
+            document=None,
+        )
 
 
+# Функция для получения сессии пользователя
 def get_session(user_id):
     try:
         session = Session.objects(user_id=user_id)[0]
     except:
-        session = Session(user_id=user_id, state='INIT', params={})
+        session = Session(user_id=user_id, state="INIT", params={})
 
     session.save()
 
     return session
 
 
+# Функция для поиска информации о сотруднике по ID пользователя
 def find_employee(user_id):
     ids = [1254862309, 5640546945]
     if user_id in ids:
@@ -183,4 +215,4 @@ def find_employee(user_id):
 #         username=environ['MONGO_INITDB_ROOT_USERNAME'],
 #         password=environ['MONGO_INITDB_ROOT_PASSWORD'],
 #         host="mongodb")
-connect('tc')
+connect("tc")

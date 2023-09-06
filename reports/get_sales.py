@@ -3,7 +3,6 @@ from .util import get_intervals, get_period, get_shops_user_id, get_shops
 from pprint import pprint
 from collections import OrderedDict
 
-# from profilehooks import profile
 from .inputs import (
     ReportSalesInput,
     ShopAllInput,
@@ -19,7 +18,6 @@ desc = "ОТЧЕТЫ по ПРОДАЖАМ"
 mime = "text"
 
 
-# @Profile(stdout=False, filename="baseline.prof")
 def get_inputs(session: Session):
     period = ["day", "week", "fortnight", "month"]
     if session.params["inputs"]["0"]:
@@ -76,18 +74,22 @@ def get_inputs(session: Session):
 
 
 def generate(session: Session):
+    # Получение параметров из сессии
     params = session.params["inputs"]["0"]
-    period = get_period(session)
 
+    period = get_period(session)
     since = period["since"]
     until = period["until"]
 
+    # Получение информации о магазинах
     shops = get_shops(session)
     shop_id = shops["shop_id"]
     shop_name = shops["shop_name"]
 
+    # Типы транзакций
     x_type = ["SELL", "PAYBACK"]
 
+    # Получение списка продуктов в зависимости от параметра 'group'
     if "group" in params:
         if params["group"] == "all":
             products = Products.objects(
@@ -102,6 +104,7 @@ def generate(session: Session):
         products_uuid = [element.uuid for element in products]
 
     if params["report"] == "get_sales_by_day_of_the_week":
+        # Инициализация словарей для сумм продаж и типов оплаты
         payment_type = {
             "CARD": "Банковской картой",
             "ADVANCE": "Предоплатой (зачетом аванса)",
@@ -111,22 +114,14 @@ def generate(session: Session):
             "ELECTRON": "Безналичными средствами",
             "UNKNOWN": "Неизвестно. По-умолчанию",
         }
-        payment_type_sum_sell_total = {
-            "CARD": 0,
-            "ADVANCE": 0,
-            "CASH": 0,
-            "COUNTEROFFER": 0,
-            "CREDIT": 0,
-            "ELECTRON": 0,
-            "UNKNOWN": 0,
-        }
+        payment_type_sum_sell_total = {ptype: 0 for ptype in payment_type}
         sum_sell_total = 0
         result = []
         intervals = get_intervals(since, until, "days", 1)
         for since_, until_ in intervals:
             for shop in shop_id:
                 _dict = {}
-
+                # Получаем документы с открытой сессией
                 documents_open_session = Documents.objects(
                     __raw__={
                         "closeDate": {"$gte": since, "$lt": until},
@@ -144,6 +139,7 @@ def generate(session: Session):
                     name_ = ""
 
                 shop_ = Shop.objects(uuid__exact=shop).only("name").first()
+                # Получаем документы по продажам
                 documents = Documents.objects(
                     __raw__={
                         "closeDate": {"$gte": since_, "$lt": until_},
@@ -191,12 +187,14 @@ def generate(session: Session):
                     _dict["Сумма:"] = "{} {}".format(0, "₽")
 
                 result.append(_dict)
+
+        # Добавляем итоговую информацию в результат
         dict_total = {
             "Итого:".upper(): "",
             "Начало пириода:": since[0:10],
             "Окончание пириода:": until[0:10],
         }
-
+        # Добавляем информацию по типам оплаты в результат, если есть продажи
         for k, v in payment_type_sum_sell_total.items():
             if v > 0:
                 dict_total[payment_type[k]] = "{} {}".format(v, "₽")
@@ -204,7 +202,9 @@ def generate(session: Session):
         result.append(dict_total)
         return result
 
+    # Проверяем условие "report" для определения выполняемой задачи
     if params["report"] == "get_sales_by_shop_product_group_rub":
+        # Фильтруем документы в базе данных MongoDB
         documents = Documents.objects(
             __raw__={
                 "closeDate": {"$gte": since, "$lt": until},
@@ -213,31 +213,47 @@ def generate(session: Session):
                 "transactions.commodityUuid": {"$in": products_uuid},
             }
         )
-        _dict = {}
 
+        # Создаем словарь для хранения данных о продажах
+        sales_data = {}
+
+        # Обработка документов
         for doc in documents:
             for trans in doc["transactions"]:
                 if trans["x_type"] == "REGISTER_POSITION":
                     if trans["commodityUuid"] in products_uuid:
-                        if trans["commodityName"] in _dict:
-                            _dict[trans["commodityName"]] += trans["sum"]
-                        else:
-                            _dict[trans["commodityName"]] = trans["sum"]
+                        commodity_name = trans["commodityName"]
+                        sale_sum = trans["sum"]
 
+                        # Добавляем данные в словарь сумм продаж по товару
+                        if commodity_name in sales_data:
+                            sales_data[commodity_name] += sale_sum
+                        else:
+                            sales_data[commodity_name] = sale_sum
+
+        # Получаем информацию о магазине
         shop = Shop.objects(uuid__exact=shop_id[0]).only("name").first()
-        _dict = dict(OrderedDict(sorted(_dict.items(), key=lambda t: -t[1])))
-        total = 0
-        _dict_total = {}
-        for k, v in _dict.items():
-            _dict_total[k] = "{} {}".format(v, "₽")
-            total += int(v)
-        _dict_total["Итого:"] = "{} {}".format(total, "₽")
-        _dict_total["Магазин:"] = shop_name
-        _dict_total["Начало пириода:"] = since[0:10]
-        _dict_total["Окончание пириода:"] = until[0:10]
-        return [_dict_total]
 
+        # Сортируем словарь с данными о продажах
+        sorted_sales_data = dict(
+            OrderedDict(sorted(sales_data.items(), key=lambda t: -t[1]))
+        )
+
+        # Вычисляем общую сумму продаж
+        total_sales = sum(sorted_sales_data.values())
+
+        # Создаем словарь с общей информацией
+        total_info = {}
+        for k, v in sorted_sales_data.items():
+            total_info[k] = f"{v} ₽"
+        total_info["Итого:"] = f"{total_sales} ₽"
+        total_info["Магазин:"] = shop.name
+        total_info["Начало периода:"] = since[0:10]
+        total_info["Окончание периода:"] = until[0:10]
+
+        return [total_info]
     if params["report"] == "get_sales_by_shop_product_group_unit":
+        # Фильтруем документы из базы данных
         documents = Documents.objects(
             __raw__={
                 "closeDate": {"$gte": since, "$lt": until},
@@ -246,29 +262,50 @@ def generate(session: Session):
                 "transactions.commodityUuid": {"$in": products_uuid},
             }
         )
-        # pprint(documents)
-        _dict = {}
 
+        # Создаем пустой словарь для хранения результатов
+        sales_by_product = {}
+
+        # Обходим документы
         for doc in documents:
             for trans in doc["transactions"]:
-                # pprint(trans)
-                if trans["x_type"] == "REGISTER_POSITION":
-                    if trans["commodityUuid"] in products_uuid:
-                        if trans["commodityName"] in _dict:
-                            _dict[trans["commodityName"]] += trans["quantity"]
-                        else:
-                            _dict[trans["commodityName"]] = trans["quantity"]
+                # Проверяем тип транзакции
+                if (
+                    trans["x_type"] == "REGISTER_POSITION"
+                    and trans["commodityUuid"] in products_uuid
+                ):
+                    commodity_name = trans["commodityName"]
+                    quantity = trans["quantity"]
+                    # Если товар уже есть в словаре, увеличиваем его количество, иначе добавляем
+                    if commodity_name in sales_by_product:
+                        sales_by_product[commodity_name] += quantity
+                    else:
+                        sales_by_product[commodity_name] = quantity
 
-        _dict = dict(OrderedDict(sorted(_dict.items(), key=lambda t: -t[1])))
+        # Сортируем словарь по убыванию количества продаж
+        sorted_sales = dict(
+            OrderedDict(sorted(sales_by_product.items(), key=lambda t: -t[1]))
+        )
 
-        total = 0
-        _dict_total = {}
-        for k, v in _dict.items():
-            _dict_total[k] = "{} {}".format(v, "шт.")
-            total += int(v)
-        _dict_total["Итого:"] = "{} {}".format(total, "шт.")
-        _dict_total["Магазин:"] = shop_name
-        _dict_total["Начало пириода:"] = since[0:10]
-        _dict_total["Окончание пириода:"] = until[0:10]
+        # Вычисляем общее количество продаж
+        total_quantity = sum(sorted_sales.values())
 
-        return [_dict_total]
+        # Создаем словарь для вывода результатов отчета
+        report_data = {}
+
+        # Добавляем данные о продажах в словарь результатов
+        for product_name, quantity in sorted_sales.items():
+            report_data.update({product_name: f"{quantity} шт."})
+
+        # Добавляем общее количество продаж в результаты
+        report_data.update({"Итого:": f"{total_quantity} шт."})
+
+        report_data.update(
+            {
+                "Магазин:": shop_name,
+                "Начало периода:": since[0:10],
+                "Окончание периода:": until[0:10],
+            }
+        )
+
+        return [report_data]

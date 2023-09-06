@@ -19,6 +19,7 @@ from .util import (
 )
 from .inputs import (
     ShopInput,
+    ShopAllInput,
     PeriodDateInput,
     OpenDatePastInput,
     CloseDatePastInput,
@@ -169,7 +170,7 @@ def get_inputs(session: Session):
                     }
             else:
                 return {
-                    "shop": ShopInput,
+                    "shop": ShopAllInput,
                     "period": PeriodDateInput,
                 }
 
