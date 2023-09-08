@@ -417,11 +417,12 @@ def get_period_day(session: Session):
         return {
             "since": period_to_date(session.params["inputs"]["0"]["period"]),
             "until": get(period_to_date(session.params["inputs"]["0"]["period"]))
-            .replace(hour=23, minute=00)
+            .replace(hour=23, minute=59)
             .isoformat(),
         }
 
     else:
+        pprint(session.params["inputs"]["0"]["openDate"])
         # Если период не "day", то возвращаем весь день (от 00:01 до 23:59) указанной даты
         return {
             "since": get(session.params["inputs"]["0"]["openDate"])

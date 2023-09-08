@@ -10,6 +10,7 @@ from .util import (
     get_products,
     get_shops_uuid_user_id,
     get_products_shops,
+    get_shops
 )
 
 
@@ -139,7 +140,7 @@ class ReportDataAnalysisInput:
     def get_options(self, session: Session):
         output = [
             {"id": "analysis_sales_shops", "name": "ПРОДАЖИ ПО МАГАЗИНАМ 📈📊"},
-            {"id": "analysis_outcome_shops", "name": "ВАЗВРАТЫ ПО МАГАЗИНАМ 📉📊"},
+            {"id": "analysis_outcome_shops", "name": "ВАЗВРАТЫ ПО МАГАЗИНАМ 📉��📊"},
         ]
         return output
 
@@ -641,7 +642,7 @@ class ProductsSaleInput:
     def get_options(self, session: Session) -> [{str, str}]:
         output = []
 
-        shops = get_shops_user_id(session)
+        shops = get_shops(session)
         shop_id = shops["shop_id"]
 
         parentUuid = session.params["inputs"]["0"]["group"]
