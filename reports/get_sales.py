@@ -2,6 +2,9 @@ from bd.model import Shop, Products, Documents, Session, Employees
 from .util import get_intervals, get_period, get_shops_user_id, get_shops
 from pprint import pprint
 from collections import OrderedDict
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+
 
 from .inputs import (
     ReportSalesInput,
@@ -286,6 +289,21 @@ def generate(session: Session):
         sorted_sales = dict(
             OrderedDict(sorted(sales_by_product.items(), key=lambda t: -t[1]))
         )
+        pprint(sales_by_product)
+        # Извлекаем названия продуктов и количество
+        product_names = list(sales_by_product.keys())
+        quantities = list(sales_by_product.values())
+
+        # Создаем круговую диаграмму
+        plt.figure(figsize=(10, 10))
+        plt.pie(quantities, labels=product_names, autopct="%1.1f%%", startangle=140)
+        plt.axis("equal")  # Задаем равное соотношение сторон для круга
+
+        # Сохраняем диаграмму в файл
+        plt.savefig("круговая_диаграмма.png")
+
+        # Показываем диаграмму
+        plt.show()
 
         # Вычисляем общее количество продаж
         total_quantity = sum(sorted_sales.values())

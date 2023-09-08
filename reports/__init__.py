@@ -10,6 +10,8 @@ from reports import get_accept
 from reports import get_leftovers
 from reports import V1
 from reports import salary
+from reports import data_analysis
+
 
 from bd.model import Session
 
@@ -18,47 +20,47 @@ user_id_di3 = [1254862309, 5640546945]
 
 def get_reports(session: Session):
     # print(session.employee.role)
-    if 'role' in session.employee:
+    if "role" in session.employee:
         if session.employee.role == "CASHIER":
             return {
-                'get_cash_report': get_cash_report,
-                'get_commodity_reports': get_commodity_reports,
-                'get_sales': get_sales,
-                'shift_opening': shift_opening,
-                'get_electro_sales': get_electro_sales,
-                'get_electro_sales_plan': get_electro_sales_plan
+                "get_cash_report": get_cash_report,
+                "get_commodity_reports": get_commodity_reports,
+                "get_sales": get_sales,
+                "shift_opening": shift_opening,
+                "get_electro_sales": get_electro_sales,
+                "get_electro_sales_plan": get_electro_sales_plan,
             }
         if session.employee.role == "ADMIN":
             return {
-                'get_cash_report': get_cash_report,
-                'get_commodity_reports': get_commodity_reports,
-                'get_sales': get_sales,
-                'shift_opening': shift_opening,
-                'get_electro_sales': get_electro_sales,
-                'get_electro_sales_plan': get_electro_sales_plan,
-                'salary': salary
-
+                "get_cash_report": get_cash_report,
+                "get_commodity_reports": get_commodity_reports,
+                "get_sales": get_sales,
+                "shift_opening": shift_opening,
+                "get_electro_sales": get_electro_sales,
+                "get_electro_sales_plan": get_electro_sales_plan,
+                "salary": salary,
+                "data_analysis": data_analysis,
             }
     if session.user_id in user_id_di3:
         return {
-            'get_accept': get_accept,
-            'get_leftovers': get_leftovers,
-            'V1': V1,
+            "get_accept": get_accept,
+            "get_leftovers": get_leftovers,
+            "V1": V1,
         }
 
 
 # Регистрирует отчеты
 reports = {
-    'settings': settings,
-    'get_cash_report': get_cash_report,
-    'get_commodity_reports': get_commodity_reports,
-    'get_sales': get_sales,
-    'shift_opening': shift_opening,
-    'get_electro_sales': get_electro_sales,
-    'get_electro_sales_plan': get_electro_sales_plan,
-    'get_accept': get_accept,
-    'get_leftovers': get_leftovers,
-    'V1': V1,
-    'salary': salary
-
+    "settings": settings,
+    "get_cash_report": get_cash_report,
+    "get_commodity_reports": get_commodity_reports,
+    "get_sales": get_sales,
+    "shift_opening": shift_opening,
+    "get_electro_sales": get_electro_sales,
+    "get_electro_sales_plan": get_electro_sales_plan,
+    "get_accept": get_accept,
+    "get_leftovers": get_leftovers,
+    "V1": V1,
+    "salary": salary,
+    "data_analysis": data_analysis,
 }

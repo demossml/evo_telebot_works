@@ -3,6 +3,8 @@ from enum import Enum
 import telebot
 from telebot import types
 from arrow import utcnow
+from io import BytesIO
+
 
 # Импорт моделей и функций из других модулей
 from bd.model import Message, Session, GetTime, Employees, Shop
@@ -252,7 +254,21 @@ async def handle_ready_state(bot, message, session, next):
                 await bot.send_message(message.chat_id, m, parse_mode="MarkdownV2")
                 for m in messages
             ]
+    if report.mime == "image_bytes":
+        # Получение изображения
+        image_bytes = result[1]
 
+        # Отправка изображения как фото
+        await bot.send_photo(
+            message.chat_id,
+            photo=image_bytes,
+        )
+        # Отправляем сообщения
+        messages = format_message_list4(result[0])
+        [
+            await bot.send_message(message.chat_id, m, parse_mode="MarkdownV2")
+            for m in messages
+        ]
     else:
         # Если нет файлов изображений, только отправляем сообщения
         messages = format_message_list4(result)

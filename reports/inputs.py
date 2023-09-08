@@ -132,7 +132,20 @@ class ReportSalesInput:
         return output
 
 
+class ReportDataAnalysisInput:
+    desc = "Выберите отчет"
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        output = [
+            {"id": "analysis_sales_shops", "name": "ПРОДАЖИ ПО МАГАЗИНАМ 📈📊"},
+            {"id": "analysis_outcome_shops", "name": "ВАЗВРАТЫ ПО МАГАЗИНАМ 📉📊"},
+        ]
+        return output
+
+
 class ReportsZInput:
+
     """
     Кассовые отчеты
     """

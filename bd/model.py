@@ -60,6 +60,8 @@ class Session(DynamicDocument):
 
     message: Message = None
 
+    photo = BinaryField()  # Бинарное поле для хранения фото в виде байтов
+
 
 class Shop(DynamicDocument):
     """

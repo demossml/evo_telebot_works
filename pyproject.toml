@@ -27,6 +27,7 @@ geopy = "^2.3.0"
 asyncio = "^3.4.3"
 aiohttp = "^3.8.5"
 profilehooks = "^1.12.0"
+matplotlib = "^3.7.2"
 
 [tool.poetry.dev-dependencies]
 
