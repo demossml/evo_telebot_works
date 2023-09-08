@@ -91,10 +91,11 @@ def generate(session: Session):
                         "shop_id": new_shop_id,
                         "x_type": "CLOSE_SESSION",
                     }
-                ).first()
+                )
                 # Если есть информация о закрытии дня
-                if documents_close_session:
-                    sum_sales += float(documents_close_session.closeResultSum)
+                if len(documents_close_session) > 0:
+                    for document_close_session in documents_close_session:
+                        sum_sales += float(document_close_session["closeResultSum"])
 
                 else:
                     #  Получаем документы о продажах
@@ -195,32 +196,18 @@ def generate(session: Session):
                 new_shops_id = [shop_id]
             for new_shop_id in new_shops_id:
                 # Получаем документы о  закрытии дня
-                documents_close_session = Documents.objects(
+                documents_payback = Documents.objects(
                     __raw__={
                         "closeDate": {"$gte": since, "$lt": until},
                         "shop_id": new_shop_id,
-                        "x_type": "CLOSE_SESSION",
+                        "x_type": "PAYBACK",
                     }
-                ).first()
+                )
                 # Если есть информация о закрытии дня
-                if documents_close_session:
-                    sum_sales += float(documents_close_session.closeResultSum)
+                if len(documents_payback) > 0:
+                    for document_payback in documents_payback:
+                        sum_sales += float(document_payback["closeResultSum"])
 
-                else:
-                    #  Получаем документы о продажах
-                    documents_sales = Documents.objects(
-                        __raw__={
-                            "closeDate": {"$gte": since, "$lt": until},
-                            "shop_id": new_shop_id,
-                            "x_type": "SELL",
-                        }
-                    )
-
-                    # Итерируемся по продажам
-                    for doc in documents_sales:
-                        sum_sales += float(doc["closeResultSum"])
-
-                    # Добавляем данные о продажах в словарь результатов
             if sum_sales > 0:
                 sales_data.update({shop.name: sum_sales})
 
@@ -254,7 +241,7 @@ def generate(session: Session):
         # Рассчитываем сумму всех продаж
         total_sales = sum(sum_sales_)
 
-        report_data.update({"Итого выручка:": f"{total_sales}₽"})
+        report_data.update({"Итого возвратов:": f"{total_sales}₽"})
 
         # Добавляем названия магазинов поочередно в новые строки и выравниваем их по первому символу в верхний правый угол
         # for i, shop_name in enumerate(sales_list):
