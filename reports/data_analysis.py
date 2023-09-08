@@ -40,6 +40,11 @@ def get_inputs(session: Session):
             return {
                 "period": PeriodDateInput,
             }
+        if session.params["inputs"]["0"]["report"] == "analysis_sales_shops_group":
+            return {
+                "group": GroupInput,
+                "period": PeriodDateInput,
+            }
     else:
         return {"report": ReportDataAnalysisInput}
 
@@ -113,11 +118,11 @@ def generate(session: Session):
 
                     # Добавляем данные о продажах в словарь результатов
             if sum_sales > 0:
-                sales_data.update({shop.name: sum_sales})
+                sales_data.update({f"{shop.name}".upper(): sum_sales})
 
         report_data = {
-            "Начало периода:": since[0:10],
-            "Окончание периода:": until[0:10],
+            "Начало периода:".upper(): since[0:10],
+            "Окончание периода:".upper(): until[0:10],
         }
         for k, v in sales_data.items():
             report_data.update({k: f"{v}₽"})
@@ -145,7 +150,7 @@ def generate(session: Session):
         # Рассчитываем сумму всех продаж
         total_sales = sum(sum_sales_)
 
-        report_data.update({"Итого выручка:": f"{total_sales}₽"})
+        report_data.update({"Итого выручка:".upper(): f"{total_sales}₽"})
 
         # Добавляем названия магазинов поочередно в новые строки и выравниваем их по первому символу в верхний правый угол
         # for i, shop_name in enumerate(sales_list):
@@ -209,11 +214,11 @@ def generate(session: Session):
                         sum_sales += float(document_payback["closeResultSum"])
 
             if sum_sales > 0:
-                sales_data.update({shop.name: sum_sales})
+                sales_data.update({f"{shop.name}".upper(): sum_sales})
 
         report_data = {
-            "Начало периода:": since[0:10],
-            "Окончание периода:": until[0:10],
+            "Начало периода:".upper(): since[0:10],
+            "Окончание периода:".upper(): until[0:10],
         }
         for k, v in sales_data.items():
             report_data.update({k: f"{v}₽"})
@@ -241,7 +246,110 @@ def generate(session: Session):
         # Рассчитываем сумму всех продаж
         total_sales = sum(sum_sales_)
 
-        report_data.update({"Итого возвратов:": f"{total_sales}₽"})
+        report_data.update({"Итого возвратов:".upper(): f"{total_sales}₽"})
+
+        # Добавляем названия магазинов поочередно в новые строки и выравниваем их по первому символу в верхний правый угол
+        # for i, shop_name in enumerate(sales_list):
+        #     plt.text(
+        #         0.8,
+        #         1.0 - i * 0.04,
+        #         shop_name,
+        #         transform=plt.gca().transAxes,
+        #         fontsize=12,
+        #         va="center",
+        #     )
+
+        # Создаем объект BytesIO для сохранения изображения в память
+        image_buffer = BytesIO()
+
+        # Сохраняем диаграмму в объект BytesIO
+        plt.savefig(image_buffer, format="png")
+
+        # Очищаем буфер изображения и перемещаем указатель в начало
+        image_buffer.seek(0)
+
+        # Закрываем текущий график, чтобы он не отображался
+        plt.close()
+        return [report_data], image_buffer
+    if params["report"] == "analysis_sales_shops_group":
+        period = get_period(session)
+        since = period["since"]
+        until = period["until"]
+
+        parentUuid = session.params["inputs"]["0"]["group"]
+        group = Products.objects(group=True, uuid=parentUuid).only("name").first()
+        products_uuid = [
+            i.uuid for i in Products.objects(group=False, parentUuid=parentUuid)
+        ]
+
+        # Получение информации о магазинах
+        shops = get_shops(session)
+        shops_id = shops["shop_id"]
+
+        # Типы транзакций
+        x_type = ["SELL", "PAYBACK"]
+
+        # Создаем словарь для хранения данных о продажах
+        sales_data = {}
+
+        # Итерируемся по uuid магазинов
+        for shop_id in shops_id:
+            sum_sales = 0
+            # Получаем названия магазина shop.name
+            shop = Shop.objects(uuid=shop_id).only("name").first()
+
+            # Фильтруем документы в базе данных MongoDB
+            documents_sales = Documents.objects(
+                __raw__={
+                    "closeDate": {"$gte": since, "$lt": until},
+                    "shop_id": shop_id,
+                    "x_type": {"$in": x_type},
+                    "transactions.commodityUuid": {"$in": products_uuid},
+                }
+            )
+
+            # Обработка документов
+            for doc in documents_sales:
+                for trans in doc["transactions"]:
+                    if trans["x_type"] == "REGISTER_POSITION":
+                        if trans["commodityUuid"] in products_uuid:
+                            sum_sales += trans["sum"]
+
+            if sum_sales > 0:
+                sales_data.update({f"{shop.name}".upper(): sum_sales})
+
+        report_data = {
+            "ГРУППА:": group.name,
+            "Начало периода:".upper(): since[0:10],
+            "Окончание периода:".upper(): until[0:10],
+        }
+        for k, v in sales_data.items():
+            report_data.update({k: f"{v}₽"})
+
+        # sales_list = []
+        # for k, v in sales_data.items():
+        #     sales_list.append(f"{k} {v}₽")
+        # Извлекаем названия магазина и суммы продаж
+        shop_names = list(sales_data.keys())
+        sum_sales_ = list(sales_data.values())
+
+        # Создаем круговую диаграмму
+        plt.figure(figsize=(10, 10))
+        # Устанавливаем размер шрифта для процентных значений на диаграмме
+        plt.rcParams["font.size"] = 14  # Здесь задайте желаемый размер шрифта
+        plt.pie(
+            sum_sales_,
+            labels=shop_names,
+            autopct="%1.1f%%",
+            startangle=140,
+            textprops={"fontweight": "bold"},
+        )
+        plt.axis("equal")  # Задаем равное соотношение сторон для круга
+
+        # Рассчитываем сумму всех продаж
+        total_sales = sum(sum_sales_)
+
+        report_data.update({"Итого сумма продаж:".upper(): f"{total_sales}₽"})
 
         # Добавляем названия магазинов поочередно в новые строки и выравниваем их по первому символу в верхний правый угол
         # for i, shop_name in enumerate(sales_list):

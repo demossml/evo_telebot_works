@@ -140,7 +140,8 @@ class ReportDataAnalysisInput:
     def get_options(self, session: Session):
         output = [
             {"id": "analysis_sales_shops", "name": "ПРОДАЖИ ПО МАГАЗИНАМ 📈📊"},
-            {"id": "analysis_outcome_shops", "name": "ВАЗВРАТЫ ПО МАГАЗИНАМ 📉��📊"},
+            {"id": "analysis_outcome_shops", "name": "ВАЗВРАТЫ ПО МАГАЗИНАМ 📉�📊"},
+            {"id": "analysis_sales_shops_group", "name": "ПРОДАЖИ ПО ГРУППЕ 📉�📊"},
         ]
         return output
 
