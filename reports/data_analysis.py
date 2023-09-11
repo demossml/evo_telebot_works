@@ -1,9 +1,20 @@
 from bd.model import Shop, Products, Documents, Session, Employees
-from .util import get_intervals, get_period, get_shops_user_id, get_shops
+from .util import (
+    get_intervals,
+    get_period,
+    get_period_,
+    get_period_day,
+    get_shops_user_id,
+    get_shops,
+)
 from pprint import pprint
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from arrow import get, utcnow
+import plotly.graph_objs as go
+import plotly.io as pio
+import matplotlib.pyplot as plt
 from io import BytesIO
 
 
@@ -11,9 +22,11 @@ from .inputs import (
     ReportDataAnalysisInput,
     ShopAllInput,
     GroupInput,
+    GroupsInput,
     PeriodDateInput,
     OpenDatePastInput,
     CloseDatePastInput,
+    DocStatusInput,
 )
 
 
@@ -31,7 +44,16 @@ def get_inputs(session: Session):
             if session.params["inputs"]["0"]["period"] not in period:
                 return {"openDate": OpenDatePastInput}
             else:
-                return {"openDate": OpenDatePastInput, "closeDate": CloseDatePastInput}
+                if (
+                    session.params["inputs"]["0"]["report"]
+                    == "analysis_sales_by_day_the_week"
+                ):
+                    return {"openDate": OpenDatePastInput}
+                else:
+                    return {
+                        "openDate": OpenDatePastInput,
+                        "closeDate": CloseDatePastInput,
+                    }
         if session.params["inputs"]["0"]["report"] == "analysis_sales_shops":
             return {
                 "period": PeriodDateInput,
@@ -45,6 +67,17 @@ def get_inputs(session: Session):
                 "group": GroupInput,
                 "period": PeriodDateInput,
             }
+        if session.params["inputs"]["0"]["report"] == "analysis_sales_shops_groups":
+            return {
+                "parentUuid": GroupsInput,
+                "docStatus": DocStatusInput,
+                "period": PeriodDateInput,
+            }
+        if session.params["inputs"]["0"]["report"] == "analysis_sales_by_day_the_week":
+            return {
+                "shop": ShopAllInput,
+                "period": PeriodDateInput,
+            }
     else:
         return {"report": ReportDataAnalysisInput}
 
@@ -52,6 +85,7 @@ def get_inputs(session: Session):
 def generate(session: Session):
     # Получение параметров из сессии
     params = session.params["inputs"]["0"]
+    room = session["room"]
 
     shops_id_2 = {
         "20200630-3E0D-4061-80C1-F7897E112F00": "20220430-A472-40B8-8077-2EE96318B7E7",
@@ -351,6 +385,98 @@ def generate(session: Session):
 
         report_data.update({"Итого сумма продаж:".upper(): f"{total_sales}₽"})
 
+        image_buffer = BytesIO()
+
+        # Сохраняем диаграмму в объект BytesIO
+        plt.savefig(image_buffer, format="png")
+
+        # Очищаем буфер изображения и перемещаем указатель в начало
+        image_buffer.seek(0)
+
+        # Закрываем текущий график, чтобы он не отображался
+        plt.close()
+        return [report_data], image_buffer
+    if params["report"] == "analysis_sales_shops_groups":
+        period = get_period_(session)
+        pprint(period)
+        since = period["since"]
+        until = period["until"]
+
+        parentUuids = []
+        # содоет ключи в session.params["inputs"]
+        for i in range(int(room) + 1):
+            # если в 'uuid' есть в session.params["inputs"][str(i)]
+            if "parentUuid" in session.params["inputs"][str(i)]:
+                # если 'uuid' нет в словаре с ключем i в списке uuid
+                parentUuids.append(session.params["inputs"][str(i)]["parentUuid"])
+        pprint(parentUuids)
+        # Создаем словарь для хранения данных о продажах
+
+        sales_data = {}
+
+        for parentUuid in parentUuids:
+            group = Products.objects(group=True, uuid=parentUuid).only("name").first()
+            products_uuid = [
+                i.uuid for i in Products.objects(group=False, parentUuidin=parentUuid)
+            ]
+
+            # Типы транзакций
+            x_type = ["SELL", "PAYBACK"]
+
+            sum_sales = 0
+
+            # Фильтруем документы в базе данных MongoDB
+            documents_sales = Documents.objects(
+                __raw__={
+                    "closeDate": {"$gte": since, "$lt": until},
+                    "shop_id": {"$in": shops_id},
+                    "x_type": {"$in": x_type},
+                    "transactions.commodityUuid": {"$in": products_uuid},
+                }
+            )
+
+            # Обработка документов
+            for doc in documents_sales:
+                for trans in doc["transactions"]:
+                    if trans["x_type"] == "REGISTER_POSITION":
+                        if trans["commodityUuid"] in products_uuid:
+                            sum_sales += trans["sum"]
+
+            if sum_sales > 0:
+                sales_data.update({f"{group.name}".upper(): sum_sales})
+
+        report_data = {
+            "Начало периода:".upper(): since[0:10],
+            "Окончание периода:".upper(): until[0:10],
+        }
+        for k, v in sales_data.items():
+            report_data.update({k: f"{v}₽"})
+
+        # sales_list = []
+        # for k, v in sales_data.items():
+        #     sales_list.append(f"{k} {v}₽")
+        # Извлекаем названия магазина и суммы продаж
+        shop_names = list(sales_data.keys())
+        sum_sales_ = list(sales_data.values())
+
+        # Создаем круговую диаграмму
+        plt.figure(figsize=(10, 10))
+        # Устанавливаем размер шрифта для процентных значений на диаграмме
+        plt.rcParams["font.size"] = 14  # Здесь задайте желаемый размер шрифта
+        plt.pie(
+            sum_sales_,
+            labels=shop_names,
+            autopct="%1.1f%%",
+            startangle=140,
+            textprops={"fontweight": "bold"},
+        )
+        plt.axis("equal")  # Задаем равное соотношение сторон для круга
+
+        # Рассчитываем сумму всех продаж
+        total_sales = sum(sum_sales_)
+
+        report_data.update({"Итого сумма продаж:".upper(): f"{total_sales}₽"})
+
         # Добавляем названия магазинов поочередно в новые строки и выравниваем их по первому символу в верхний правый угол
         # for i, shop_name in enumerate(sales_list):
         #     plt.text(
@@ -374,3 +500,121 @@ def generate(session: Session):
         # Закрываем текущий график, чтобы он не отображался
         plt.close()
         return [report_data], image_buffer
+    if params["report"] == "analysis_sales_by_day_the_week":
+        params = session.params["inputs"]["0"]
+
+        # Получение информации о магазинах
+        shops = get_shops(session)
+        shops_id = shops["shop_id"]
+        shops_name = shops["shop_name"]
+
+        period = get_period_day(session)
+        since = period["since"]
+        until = period["until"]
+
+        pprint(period)
+
+        end_date = get(since).shift(days=-7).isoformat()
+
+        # Преобразуем начальную дату в строку в формате ISO с временем 00:00
+        since2 = get(end_date).replace(hour=0, minute=0).isoformat()
+
+        # Преобразуем конечную дату в строку в формате ISO с временем 23:59
+        until2 = get(end_date).replace(hour=23, minute=59).isoformat()
+
+        data_t = [{"since": since, "until": until}, {"since": since2, "until": until2}]
+        pprint(data_t)
+
+        total_sales_data = []
+        for i in data_t:
+            pprint(i["since"])
+            sales_data = {}
+            for since3, until3 in get_intervals(i["since"], i["until"], "minutes", 30):
+                sales_sum = 0
+                documents = Documents.objects(
+                    __raw__={
+                        "closeDate": {"$gte": since3, "$lt": until3},
+                        "shop_id": {"$in": shops_id},
+                        "x_type": "SELL",
+                        # 'transactions.commodityUuid': {'$in': products_uuid}
+                    }
+                )
+                for i2 in documents:
+                    sales_sum = +float(i2["closeResultSum"])
+                if sales_sum > 0:
+                    sales_data.update(
+                        {get(until3).shift(hours=3).isoformat()[11:16]: sales_sum}
+                    )
+            total_sales_data.append(sales_data)
+        # pprint(total_sales_data)
+
+        # Создаем списки для времени и продаж для каждого дня
+        time = list(total_sales_data[0].keys())
+        day1_sales = list(total_sales_data[0].values())
+        day2_sales = list(total_sales_data[1].values())
+
+        # Вычисляем разницу между продажами первого и второго дня
+        sales_difference = [day1 - day2 for day1, day2, in zip(day1_sales, day2_sales)]
+
+        # Создаем графики для каждого дня
+        fig = go.Figure()
+
+        # Добавляем столбцы для первого дня
+        fig.add_trace(
+            go.Bar(
+                x=time,
+                y=day2_sales,
+                name=f"{since3[:10]}",
+                text=day2_sales,  # Сумма продаж на вершинах
+            )
+        )
+
+        # Добавляем столбцы для второго дня с наложением на первый день
+        fig.add_trace(
+            go.Bar(
+                x=time,
+                y=day1_sales,
+                name=f"{since[:10]}",
+                text=day1_sales,  # Сумма продаж на вершинах
+            )
+        )
+
+        # Добавляем аннотации с отрицательной разницей продаж
+        for i, diff in enumerate(sales_difference):
+            if diff < 0:
+                fig.add_annotation(
+                    x=time[i],
+                    y=max(day1_sales[i], day2_sales[i]),
+                    text=f"{diff}",
+                    showarrow=True,
+                    arrowhead=2,
+                    arrowwidth=2,
+                    arrowcolor="yellow",
+                    font=dict(
+                        color="yellow", size=12
+                    ),  # Цвет и размер текста аннотации
+                    align="center",
+                    yanchor="top",
+                )
+
+        fig.update_layout(
+            barmode="overlay",  # Наложение столбцов
+            xaxis_title="Интервал (по 30 минутам)",  # Заголовок оси X
+            yaxis_title="Продажи",  # Заголовок оси Y
+            title=f"Сравнение двух дней продаж по магазину(ы) {shops_name}",  # Заголовок графика
+            plot_bgcolor="black",  # Цвет фона графика
+        )
+
+        # Отобразим график
+        # fig.show()
+
+        # Сохраняем график в формате PNG
+        image_buffer = BytesIO()
+        pio.write_image(fig, image_buffer, format="png")
+
+        # Очищаем буфер изображения и перемещаем указатель в начало
+        image_buffer.seek(0)
+
+        # with open("sales_comparison.jpg", "wb") as f:
+        #     f.write(image_buffer.read())
+        return [{"": ""}], image_buffer

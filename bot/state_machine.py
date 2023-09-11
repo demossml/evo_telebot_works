@@ -257,8 +257,9 @@ async def handle_ready_state(bot, message, session, next):
     if report.mime == "image_bytes":
         # Получение изображения
         image_bytes = result[1]
+        print(image_bytes)
 
-        # Отправка изображения как фото
+        # # Отправка изображения как фото
         await bot.send_photo(
             message.chat_id,
             photo=image_bytes,

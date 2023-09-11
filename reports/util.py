@@ -409,6 +409,46 @@ def get_period(session: Session):
         }
 
 
+def get_period_(session: Session):
+    """
+    Функция get_period_day принимает объект сессии Session и возвращает словарь,
+    содержащий информацию о временном периоде 'since' и 'until'.
+
+    :param session:
+    :return: {'since': str, 'until': str}
+    """
+    room = session["room"]
+    # Список возможных периодов
+    period_in = ["day", "week", "fortnight", "month"]
+    # Проверка, что указанный период находится в списке возможных периодов
+    if session.params["inputs"][room]["period"] not in period_in:
+        # Если период - "day", то 'since' устанавливаем в начало дня, а 'until' в конец дня
+        return {
+            "since": get(session.params["inputs"][room]["openDate"])
+            .replace(day=1)
+            .isoformat(),
+            "until": get(session.params["inputs"][room]["openDate"])
+            .ceil("month")
+            .isoformat(),
+        }
+    # Если выбран период "day", возвращаем начальную дату как период "сегодня", а конечную - текущую дату и время
+    if session.params["inputs"][room]["period"] == "day":
+        return {
+            "since": period_to_date(session.params["inputs"][room]["period"]),
+            "until": utcnow().isoformat(),
+        }
+    # Если выбран другой период, возвращаем начальную и конечную дату с учетом указанных дат
+    else:
+        return {
+            "since": get(session.params["inputs"][room]["openDate"])
+            .replace(hour=3, minute=00)
+            .isoformat(),
+            "until": get(session.params["inputs"][room]["closeDate"])
+            .replace(hour=23, minute=00)
+            .isoformat(),
+        }
+
+
 def get_period_day(session: Session):
     """
     :param session:
@@ -425,7 +465,6 @@ def get_period_day(session: Session):
         }
 
     else:
-        pprint(session.params["inputs"]["0"]["openDate"])
         # Если период не "day", то возвращаем весь день (от 00:01 до 23:59) указанной даты
         return {
             "since": get(session.params["inputs"]["0"]["openDate"])

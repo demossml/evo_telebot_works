@@ -10,7 +10,7 @@ from .util import (
     get_products,
     get_shops_uuid_user_id,
     get_products_shops,
-    get_shops
+    get_shops,
 )
 
 
@@ -139,9 +139,14 @@ class ReportDataAnalysisInput:
 
     def get_options(self, session: Session):
         output = [
-            {"id": "analysis_sales_shops", "name": "ПРОДАЖИ ПО МАГАЗИНАМ 📈📊"},
+            {"id": "analysis_sales_shops", "name": "ПРОД. ПО МАГАЗИНАМ 📈📊"},
+            {
+                "id": "analysis_sales_by_day_the_week",
+                "name": "СРОВ. ПРОД. ПО ДЕНЯМ НЕДЕЛИ ",
+            },
             {"id": "analysis_outcome_shops", "name": "ВАЗВРАТЫ ПО МАГАЗИНАМ 📉�📊"},
             {"id": "analysis_sales_shops_group", "name": "ПРОДАЖИ ПО ГРУППЕ 📉�📊"},
+            {"id": "analysis_sales_shops_groups", "name": "ПРОДАЖИ ПО ГРУППАМ 📉�📊"},
         ]
         return output
 
