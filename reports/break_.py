@@ -29,12 +29,15 @@ def generate(session: Session):
     since = utcnow().replace(hour=3, minute=00).isoformat()
     until = utcnow().replace(hour=20, minute=59).isoformat()
 
-    employee = Employees.objects(lastName=str(session.user_id)).only("uuid").first()
+    employee = [
+        i.uuid
+        for i in Employees.objects(lastName=str(session.user_id)).only("uuid").first()
+    ]
 
     documents_open_session = Documents.objects(
         __raw__={
             "closeDate": {"$gte": since, "$lt": until},
-            "openUserUuid": employee.uuid,
+            "openUserUuid": {"$in": employee},
             "x_type": "OPEN_SESSION",
         }
     ).first()
