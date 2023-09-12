@@ -441,12 +441,20 @@ def generate(session: Session):
         break_data = []
         if len(documents_break_report) > 0:
             for doc in documents_break_report:
-                break_data.append(
-                    {
-                        "перерыв начался".upper(): doc["openData"][:16],
-                        "перерыв закончился".upper(): doc["closeDate"][:16],
-                    }
-                )
+                if "closeDate" in doc:
+                    break_data.append(
+                        {
+                            "перерыв начался".upper(): doc["openData"][:16],
+                            "перерыв закончился".upper(): doc["closeDate"][:16],
+                        }
+                    )
+                else:
+                    break_data.append(
+                        {
+                            "перерыв начался".upper(): doc["openData"][:16],
+                        }
+                    )
+
         else:
             break_data.append({since[:10]: "Нет данных".upper()})
 
