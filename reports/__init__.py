@@ -30,6 +30,7 @@ def get_reports(session: Session):
                 "shift_opening": shift_opening,
                 "get_electro_sales": get_electro_sales,
                 "get_electro_sales_plan": get_electro_sales_plan,
+                "break_": break_,
             }
         if session.employee.role == "ADMIN":
             return {

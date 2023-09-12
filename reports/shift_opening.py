@@ -8,7 +8,7 @@ from bd.model import (
     Products,
     GroupUuidAks,
 )
-from .util import generate_plan, get_shops, get_shops_user_id
+from .util import generate_plan, get_shops, get_shops_user_id, get_period_day
 from .inputs import (
     ShopInput,
     OpenDatePast2Input,
@@ -421,23 +421,33 @@ def generate(session: Session):
     if session.params["inputs"]["0"]["report"] == "get_break":
         params = session.params["inputs"]["0"]
 
+        period = get_period_day(session)
+        since = period["since"]
+        until = period["until"]
+
         shops = get_shops(session)
         shop_id = shops["shop_id"]
         shop_name = shops["shop_name"]
         pprint(shop_id)
 
-        documents_opening_report = (
-            Shift_Opening_Report.objects(
-                __raw__={
-                    "openData": {"$gte": since, "$lt": until},
-                    "x_type": "BREAK",
-                    "break": "open",
-                    "shop": {"$in": shop_id},
-                }
-            )
-            .order_by("-locationData")
-            .first()
+        documents_break_report = Shift_Opening_Report.objects(
+            __raw__={
+                "openData": {"$gte": since, "$lt": until},
+                "x_type": "BREAK",
+                "break": "open",
+                "shop": {"$in": shop_id},
+            }
         )
-        if documents_opening_report:
-            for doc in documents_opening_report:
-                pprint(doc)
+        break_data = []
+        if len(documents_break_report) > 0:
+            for doc in documents_break_report:
+                break_data.append(
+                    {
+                        "перерыв начался".upper(): doc["openData"][:16],
+                        "перерыв закончился".upper(): doc["closeDate"][:16],
+                    }
+                )
+        else:
+            break_data.append({since[:10]: "Нет данных".upper()})
+
+        return break_data
