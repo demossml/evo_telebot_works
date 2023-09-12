@@ -420,6 +420,7 @@ def generate(session: Session):
 
     if session.params["inputs"]["0"]["report"] == "get_break":
         params = session.params["inputs"]["0"]
+        pprint(params)
 
         period = get_period_day(session)
         since = period["since"]
@@ -435,7 +436,7 @@ def generate(session: Session):
                 "openData": {"$gte": since, "$lt": until},
                 "x_type": "BREAK",
                 "break": "open",
-                "shop": {"$in": shop_id},
+                "shop_id": {"$in": shop_id},
             }
         )
         break_data = []
@@ -458,4 +459,4 @@ def generate(session: Session):
         else:
             break_data.append({since[:10]: "Нет данных".upper()})
 
-        return break_data
+        return [], break_data
