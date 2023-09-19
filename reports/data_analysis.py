@@ -14,6 +14,7 @@ from matplotlib.animation import FuncAnimation
 from arrow import get, utcnow
 import plotly.graph_objs as go
 import plotly.io as pio
+import plotly.express as px
 import matplotlib.pyplot as plt
 from io import BytesIO
 
@@ -161,53 +162,67 @@ def generate(session: Session):
         for k, v in sales_data.items():
             report_data.update({k: f"{v}₽"})
 
-        # sales_list = []
-        # for k, v in sales_data.items():
-        #     sales_list.append(f"{k} {v}₽")
         # Извлекаем названия магазина и суммы продаж
         shop_names = list(sales_data.keys())
         sum_sales_ = list(sales_data.values())
-
-        # Создаем круговую диаграмму
-        plt.figure(figsize=(10, 10))
-        # Устанавливаем размер шрифта для процентных значений на диаграмме
-        plt.rcParams["font.size"] = 14  # Здесь задайте желаемый размер шрифта
-        plt.pie(
-            sum_sales_,
-            labels=shop_names,
-            autopct="%1.1f%%",
-            startangle=140,
-            textprops={"fontweight": "bold"},
+        # Создаем фигуру для круговой диаграммы
+        fig = px.pie(
+            names=shop_names,
+            values=sum_sales_,
+            title="Доля выручки по магазинам",
+            labels={"names": "Магазины", "values": "Выручка"},
+            # Цвет фона графика
         )
-        plt.axis("equal")  # Задаем равное соотношение сторон для круга
 
-        # Рассчитываем сумму всех продаж
-        total_sales = sum(sum_sales_)
+        # Настройки внешнего вида графика
+        fig.update_layout(
+            title="Продажи по магазинам",
+            font=dict(size=18, family="Arial, sans-serif", color="black"),
+            # plot_bgcolor="black",  # Цвет фона графика
+        )
 
-        report_data.update({"Итого выручка:".upper(): f"{total_sales}₽"})
-
-        # Добавляем названия магазинов поочередно в новые строки и выравниваем их по первому символу в верхний правый угол
-        # for i, shop_name in enumerate(sales_list):
-        #     plt.text(
-        #         0.8,
-        #         1.0 - i * 0.04,
-        #         shop_name,
-        #         transform=plt.gca().transAxes,
-        #         fontsize=12,
-        #         va="center",
-        #     )
-
-        # Создаем объект BytesIO для сохранения изображения в память
+        # Сохраняем диаграмму в формате PNG в объект BytesIO
         image_buffer = BytesIO()
 
-        # Сохраняем диаграмму в объект BytesIO
-        plt.savefig(image_buffer, format="png")
+        fig.write_image(image_buffer, format="png", width=700, height=700)
 
         # Очищаем буфер изображения и перемещаем указатель в начало
         image_buffer.seek(0)
 
+        # Рассчитываем сумму всех продаж
+        total_sales = sum(sum_sales_)
+
+        # Обновляем данные отчета
+        report_data.update({"Итого выручка:".upper(): f"{total_sales}₽"})
+        # # Создаем круговую диаграмму
+        # plt.figure(figsize=(10, 10))
+        # # Устанавливаем размер шрифта для процентных значений на диаграмме
+        # plt.rcParams["font.size"] = 14  # Здесь задайте желаемый размер шрифта
+        # plt.pie(
+        #     sum_sales_,
+        #     labels=shop_names,
+        #     autopct="%1.1f%%",
+        #     startangle=140,
+        #     textprops={"fontweight": "bold"},
+        # )
+        # plt.axis("equal")  # Задаем равное соотношение сторон для круга
+
+        # # Рассчитываем сумму всех продаж
+        # total_sales = sum(sum_sales_)
+
+        # report_data.update({"Итого выручка:".upper(): f"{total_sales}₽"})
+
+        # # Создаем объект BytesIO для сохранения изображения в память
+        # image_buffer = BytesIO()
+
+        # # Сохраняем диаграмму в объект BytesIO
+        # plt.savefig(image_buffer, format="png")
+
+        # Очищаем буфер изображения и перемещаем указатель в начало
+        # image_buffer.seek(0)
+
         # Закрываем текущий график, чтобы он не отображался
-        plt.close()
+        # plt.close()
         return [report_data], image_buffer
     if params["report"] == "analysis_outcome_shops":
         period = get_period(session)
@@ -477,18 +492,6 @@ def generate(session: Session):
 
         report_data.update({"Итого сумма продаж:".upper(): f"{total_sales}₽"})
 
-        # Добавляем названия магазинов поочередно в новые строки и выравниваем их по первому символу в верхний правый угол
-        # for i, shop_name in enumerate(sales_list):
-        #     plt.text(
-        #         0.8,
-        #         1.0 - i * 0.04,
-        #         shop_name,
-        #         transform=plt.gca().transAxes,
-        #         fontsize=12,
-        #         va="center",
-        #     )
-
-        # Создаем объект BytesIO для сохранения изображения в память
         image_buffer = BytesIO()
 
         # Сохраняем диаграмму в объект BytesIO

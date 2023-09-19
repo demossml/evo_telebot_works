@@ -30,6 +30,7 @@ profilehooks = "^1.12.0"
 matplotlib = "^3.7.2"
 plotly = "^5.16.1"
 kaleido = "0.2.1"
+pandas = "^2.1.0"
 
 [tool.poetry.dev-dependencies]
 

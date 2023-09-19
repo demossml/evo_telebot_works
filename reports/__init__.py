@@ -12,6 +12,7 @@ from reports import V1
 from reports import salary
 from reports import data_analysis
 from reports import break_
+from reports import sales_today
 
 
 from bd.model import Session
@@ -34,15 +35,16 @@ def get_reports(session: Session):
             }
         if session.employee.role == "ADMIN":
             return {
+                "salary": salary,
+                "break_": break_,
+                "data_analysis": data_analysis,
                 "get_cash_report": get_cash_report,
                 "get_commodity_reports": get_commodity_reports,
                 "get_sales": get_sales,
                 "shift_opening": shift_opening,
                 "get_electro_sales": get_electro_sales,
                 "get_electro_sales_plan": get_electro_sales_plan,
-                "salary": salary,
-                "data_analysis": data_analysis,
-                "break_": break_,
+                "sales_today": sales_today,
             }
     if session.user_id in user_id_di3:
         return {
@@ -67,4 +69,5 @@ reports = {
     "salary": salary,
     "data_analysis": data_analysis,
     "break_": break_,
+    "sales_today": sales_today,
 }
