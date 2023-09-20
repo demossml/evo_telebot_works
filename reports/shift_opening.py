@@ -218,6 +218,7 @@ def generate(session: Session):
         session.params["inputs"]["0"]["locationData"] = session.params["inputs"]["0"][
             "location"
         ]["data"]
+        session.params["inputs"]["0"]["x_type"] = "OPEN"
         params = session.params["inputs"]["0"]
 
         since = utcnow().replace(hour=3, minute=00).isoformat()
@@ -420,7 +421,6 @@ def generate(session: Session):
 
     if session.params["inputs"]["0"]["report"] == "get_break":
         params = session.params["inputs"]["0"]
-        pprint(params)
 
         period = get_period_day(session)
         since = period["since"]
@@ -429,24 +429,34 @@ def generate(session: Session):
         shops = get_shops(session)
         shop_id = shops["shop_id"]
         shop_name = shops["shop_name"]
-        pprint(shop_id)
 
         documents_break_report = Shift_Opening_Report.objects(
             __raw__={
                 "openData": {"$gte": since, "$lt": until},
                 "x_type": "BREAK",
-                "break": "open",
+                # "break": "open",
                 "shop_id": {"$in": shop_id},
             }
         )
         break_data = []
+        total_delta = 0
         if len(documents_break_report) > 0:
             for doc in documents_break_report:
+                employees = (
+                    Employees.objects(lastName=str(doc["user_id"])).only("name").first()
+                )
                 if "closeDate" in doc:
+                    delta = (
+                        (get(doc["closeDate"]) - get(doc["openData"])).seconds
+                        // 60
+                        % 60
+                    )
+                    total_delta += delta
                     break_data.append(
                         {
                             "перерыв начался".upper(): doc["openData"][:16],
                             "перерыв закончился".upper(): doc["closeDate"][:16],
+                            "Время перерыва".upper(): f"{delta} минут",
                         }
                     )
                 else:
@@ -456,6 +466,13 @@ def generate(session: Session):
                         }
                     )
 
+            break_data.append(
+                {
+                    "Магазин:": shop_name,
+                    "Продавец:": employees.name,
+                    "Итого время перерыва".upper(): f"{total_delta} минут",
+                }
+            )
         else:
             break_data.append({since[:10]: "Нет данных".upper()})
 

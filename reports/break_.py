@@ -52,6 +52,11 @@ def generate(session: Session):
         .first()
     )
     if documents_break:
+        delta = (
+            (get(break_data["closeDate"]) - get(break_data["openData"])).seconds
+            // 60
+            % 60
+        )
         break_data = {
             "user_id": session.user_id,
             "closeDate": params["location"]["data"],
@@ -60,8 +65,15 @@ def generate(session: Session):
             "x_type": "BREAK",
             "shop_id": documents_open_session.shop_id,
             "close_location": params["location"],
+            "delta": delta,
         }
-        result.append({"перерыв закончился".upper(): break_data["closeDate"][:16]})
+
+        result.append(
+            {
+                "перерыв закончился".upper(): break_data["closeDate"][:16],
+                "Время перерыва".upper(): f"{delta} минут",
+            }
+        )
     else:
         break_data = {
             "user_id": session.user_id,
