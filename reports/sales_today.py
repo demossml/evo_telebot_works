@@ -8,7 +8,7 @@ import plotly.express as px
 from io import BytesIO
 
 
-name = "💥💲 продажи сегодня➡️".upper()
+name = "🧾 🛒 продажи сегодня➡️".upper()
 desc = ""
 mime = "image_bytes"
 

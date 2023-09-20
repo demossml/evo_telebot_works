@@ -13,7 +13,7 @@ from reports import salary
 from reports import data_analysis
 from reports import break_
 from reports import sales_today
-
+from reports import break_today
 
 from bd.model import Session
 
@@ -45,6 +45,7 @@ def get_reports(session: Session):
                 "get_electro_sales": get_electro_sales,
                 "get_electro_sales_plan": get_electro_sales_plan,
                 "sales_today": sales_today,
+                "break_today": break_today,
             }
     if session.user_id in user_id_di3:
         return {
@@ -70,4 +71,5 @@ reports = {
     "data_analysis": data_analysis,
     "break_": break_,
     "sales_today": sales_today,
+    "break_today": break_today,
 }

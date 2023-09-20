@@ -316,7 +316,7 @@ def generate(session: Session):
         shops = get_shops(session)
         shop_id = shops["shop_id"]
         shop_name = shops["shop_name"]
-        pprint(shop_id)
+
         _dict = {}
         _dict2 = {}
         documents = (

@@ -5,7 +5,7 @@
 # - period, название периода из списка (день, неделя,  две недели, месяц)
 
 from bd.model import Session, Shop, Products, Documents, Employees, Message, Plan
-from arrow import utcnow
+from arrow import utcnow, get
 from pprint import pprint
 from .util import get_shops, get_shops_in, generate_plan
 import telebot
@@ -30,6 +30,9 @@ def generate(session: Session):
     ]
     since_2 = utcnow().replace(hour=3, minute=00).isoformat()
     until_2 = utcnow().isoformat()
+
+    # since_3 = get()
+    # until_3 = get()
 
     _in = [
         "20190411-5A3A-40AC-80B3-8B405633C8BA",
@@ -135,7 +138,7 @@ def generate(session: Session):
 
     # Настройки внешнего вида графика
     fig.update_layout(
-        title="Продажи по магазинам",
+        title="Продажи  по Электронкам по магазинам",
         font=dict(size=18, family="Arial, sans-serif", color="black"),
         # plot_bgcolor="black",  # Цвет фона графика
     )
