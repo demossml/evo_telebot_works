@@ -96,7 +96,7 @@ def generate(session: Session):
     # Сохраняем диаграмму в формате PNG в объект BytesIO
     image_buffer = BytesIO()
 
-    fig.write_image(image_buffer, format="png", width=700, height=700)
+    fig.write_image(image_buffer, format="png", width=900, height=900)
 
     # Очищаем буфер изображения и перемещаем указатель в начало
     image_buffer.seek(0)

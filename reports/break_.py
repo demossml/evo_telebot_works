@@ -53,7 +53,7 @@ def generate(session: Session):
     )
     if documents_break:
         delta = (
-            (get(break_data["closeDate"]) - get(break_data["openData"])).seconds
+            (get(params["location"]["data"]) - get(documents_break.openData)).seconds
             // 60
             % 60
         )

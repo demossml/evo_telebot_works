@@ -194,35 +194,7 @@ def generate(session: Session):
 
         # Обновляем данные отчета
         report_data.update({"Итого выручка:".upper(): f"{total_sales}₽"})
-        # # Создаем круговую диаграмму
-        # plt.figure(figsize=(10, 10))
-        # # Устанавливаем размер шрифта для процентных значений на диаграмме
-        # plt.rcParams["font.size"] = 14  # Здесь задайте желаемый размер шрифта
-        # plt.pie(
-        #     sum_sales_,
-        #     labels=shop_names,
-        #     autopct="%1.1f%%",
-        #     startangle=140,
-        #     textprops={"fontweight": "bold"},
-        # )
-        # plt.axis("equal")  # Задаем равное соотношение сторон для круга
 
-        # # Рассчитываем сумму всех продаж
-        # total_sales = sum(sum_sales_)
-
-        # report_data.update({"Итого выручка:".upper(): f"{total_sales}₽"})
-
-        # # Создаем объект BytesIO для сохранения изображения в память
-        # image_buffer = BytesIO()
-
-        # # Сохраняем диаграмму в объект BytesIO
-        # plt.savefig(image_buffer, format="png")
-
-        # Очищаем буфер изображения и перемещаем указатель в начало
-        # image_buffer.seek(0)
-
-        # Закрываем текущий график, чтобы он не отображался
-        # plt.close()
         return [report_data], image_buffer
     if params["report"] == "analysis_outcome_shops":
         period = get_period(session)
