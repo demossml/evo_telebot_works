@@ -31,21 +31,25 @@ def generate(session: Session):
 
     employee = [i.uuid for i in Employees.objects(lastName=str(session.user_id))]
 
-    documents_open_session = Documents.objects(
-        __raw__={
-            "closeDate": {"$gte": since, "$lt": until},
-            "openUserUuid": {"$in": employee},
-            "x_type": "OPEN_SESSION",
-        }
-    ).first()
-
+    documents_open = (
+        Shift_Opening_Report.objects(
+            __raw__={
+                "locationData": {"$gte": since, "$lt": until},
+                "x_type": "OPEN",
+                "user_id": session.user_id,
+            }
+        )
+        .order_by("-openData")
+        .first()
+    )
+    pprint(documents_open)
     documents_break = (
         Shift_Opening_Report.objects(
             __raw__={
                 "openData": {"$gte": since, "$lt": until},
                 "x_type": "BREAK",
                 "break": "open",
-                "shop_id": documents_open_session.shop_id,
+                "shop_id": documents_open.shop,
             }
         )
         .order_by("-openData")
@@ -57,13 +61,17 @@ def generate(session: Session):
             // 60
             % 60
         )
+        if delta > 0:
+            result_delta = f"{delta} минут."
+        else:
+            result_delta = "Меньше минуты".upper()
         break_data = {
             "user_id": session.user_id,
             "closeDate": params["location"]["data"],
             "openData": documents_break.openData,
             "break": "closed",
             "x_type": "BREAK",
-            "shop_id": documents_open_session.shop_id,
+            "shop_id": documents_open.shop,
             "close_location": params["location"],
             "delta": delta,
         }
@@ -71,7 +79,7 @@ def generate(session: Session):
         result.append(
             {
                 "перерыв закончился".upper(): break_data["closeDate"][:16],
-                "Время перерыва".upper(): f"{delta} минут",
+                "Время перерыва:".upper(): result_delta,
             }
         )
     else:
@@ -80,7 +88,7 @@ def generate(session: Session):
             "openData": params["location"]["data"],
             "x_type": "BREAK",
             "break": "open",
-            "shop_id": documents_open_session.shop_id,
+            "shop_id": documents_open.shop,
             "open_location": params["location"],
         }
         result.append({"перерыв начался".upper(): break_data["openData"][:16]})
