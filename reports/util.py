@@ -130,6 +130,47 @@ def get_shops(session: Session) -> dict:
         }
 
 
+def get_shops_last_room(session: Session) -> dict:
+    """
+    :param session:
+    :return: {
+                'shop_id': ['shop_id', ...],
+                'shop_name': 'name'
+            }
+    """
+    # Получение параметров из сессии
+
+    room = session["room"]
+    params = session.params["inputs"][room]
+
+    # Создание списка для хранения уникальных идентификаторов магазинов (uuid)
+    uuid = []
+    # Поиск сотрудников с заданной фамилией (session.user_id) и итерация по их магазинам
+    for item in Employees.objects(lastName=str(session.user_id)):
+        for store in item.stores:
+            if store not in uuid:
+                uuid.append(store)
+    # Проверка наличия параметра "shop" в запросе
+    if "shop" in params:
+        if params["shop"] == "all":
+            # Возвращаем информацию о всех магазинах
+            return {
+                "shop_id": [item["uuid"] for item in Shop.objects(uuid__in=uuid)],
+                "shop_name": "Все".upper(),
+            }
+        else:
+            # Возвращаем информацию о конкретном магазине, указанном в параметре "shop"
+            shop = Shop.objects(uuid__exact=params["shop"]).only("name").first()
+            return {"shop_id": [params["shop"]], "shop_name": shop.name}
+
+    else:
+        # Если параметр "shop" отсутствует, возвращаем информацию о всех магазинах
+        return {
+            "shop_id": [item["uuid"] for item in Shop.objects(uuid__in=uuid)],
+            "shop_name": "Все".upper(),
+        }
+
+
 def get_shops_user_id(session: Session) -> object:
     """
     Получить магазины, связанные с пользователем Telegram бота.
@@ -418,6 +459,8 @@ def get_period_(session: Session):
     :return: {'since': str, 'until': str}
     """
     room = session["room"]
+    # pprint(room)
+    # pprint(session.params["inputs"][room]["period"])
     # Список возможных периодов
     period_in = ["day", "week", "fortnight", "month"]
     # Проверка, что указанный период находится в списке возможных периодов

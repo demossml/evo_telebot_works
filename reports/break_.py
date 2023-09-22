@@ -2,7 +2,6 @@ from arrow import utcnow, get
 from bd.model import (
     Session,
     Shift_Opening_Report,
-    Documents,
     Employees,
 )
 from .util import generate_plan, get_shops, get_shops_user_id
@@ -10,27 +9,33 @@ from .inputs import ShopInput, OpenDatePast2Input, AfsInput
 
 from pprint import pprint
 
+# Определение переменных с именем, описанием и MIME-типом
 name = "🕒️🚬🌯перерыв ➡️".upper()
 desc = "Собирает данные о перерывах"
 mime = "text"
 
 
+# Функция для получения входных данных сеанса
 def get_inputs(session: Session):
     return {
         "location": AfsInput,
     }
 
 
+# Функция для генерации данных
 def generate(session: Session):
     result = []
 
-    params = session.params["inputs"]["0"]
+    params = session.params["inputs"]["0"]  # Извлечение параметров из сеанса
 
-    since = utcnow().replace(hour=3, minute=00).isoformat()
-    until = utcnow().replace(hour=20, minute=59).isoformat()
+    since = (
+        utcnow().replace(hour=3, minute=00).isoformat()
+    )  # Установка времени начала суток (3:00 UTC)
+    until = (
+        utcnow().replace(hour=20, minute=59).isoformat()
+    )  # Установка времени конца суток (20:59 UTC)
 
-    employee = [i.uuid for i in Employees.objects(lastName=str(session.user_id))]
-
+    # Поиск первого документа открытия смены для текущего пользователя
     documents_open = (
         Shift_Opening_Report.objects(
             __raw__={
@@ -42,7 +47,8 @@ def generate(session: Session):
         .order_by("-openData")
         .first()
     )
-    pprint(documents_open)
+
+    # Поиск первого документа перерыва для текущего пользователя и магазина, где открыта смена
     documents_break = (
         Shift_Opening_Report.objects(
             __raw__={
@@ -55,6 +61,8 @@ def generate(session: Session):
         .order_by("-openData")
         .first()
     )
+
+    # Обработка данных о перерыве, если такие данные найдены
     if documents_break:
         delta = (
             (get(params["location"]["data"]) - get(documents_break.openData)).seconds
@@ -76,6 +84,7 @@ def generate(session: Session):
             "delta": delta,
         }
 
+        # Добавление результатов в список result
         result.append(
             {
                 "перерыв закончился".upper(): break_data["closeDate"][:16],
@@ -83,6 +92,7 @@ def generate(session: Session):
             }
         )
     else:
+        # Обработка данных, если перерыв еще не начат
         break_data = {
             "user_id": session.user_id,
             "openData": params["location"]["data"],
@@ -91,8 +101,10 @@ def generate(session: Session):
             "shop_id": documents_open.shop,
             "open_location": params["location"],
         }
+        # Добавление результатов в список result
         result.append({"перерыв начался".upper(): break_data["openData"][:16]})
 
+    # Обновление данных о перерыве в базе данных
     Shift_Opening_Report.objects(
         user_id=session.user_id,
         openData=break_data["openData"],
