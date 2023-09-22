@@ -361,7 +361,7 @@ def generate(session: Session):
         # Сохраняем диаграмму в формате PNG в объект BytesIO
         image_buffer = BytesIO()
 
-        fig.write_image(image_buffer, format="png", width=700, height=700)
+        fig.write_image(image_buffer, format="png", width=800, height=800)
 
         # Очищаем буфер изображения и перемещаем указатель в начало
         image_buffer.seek(0)
@@ -462,7 +462,7 @@ def generate(session: Session):
         # Сохраняем диаграмму в формате PNG в объект BytesIO
         image_buffer = BytesIO()
 
-        fig.write_image(image_buffer, format="png", width=700, height=700)
+        fig.write_image(image_buffer, format="png", width=800, height=800)
 
         # Очищаем буфер изображения и перемещаем указатель в начало
         image_buffer.seek(0)
@@ -514,7 +514,7 @@ def generate(session: Session):
                     }
                 )
                 for i2 in documents:
-                    sales_sum = +float(i2["closeResultSum"])
+                    sales_sum = +int(float(i2["closeResultSum"]))
                 if sales_sum > 0:
                     sales_data.update(
                         {get(until3).shift(hours=3).isoformat()[11:16]: sales_sum}
@@ -555,28 +555,27 @@ def generate(session: Session):
 
         # Добавляем аннотации с отрицательной разницей продаж
         for i, diff in enumerate(sales_difference):
-            if diff < 0:
-                fig.add_annotation(
-                    x=time[i],
-                    y=max(day1_sales[i], day2_sales[i]),
-                    text=f"{diff}",
-                    showarrow=True,
-                    arrowhead=2,
-                    arrowwidth=2,
-                    arrowcolor="yellow",
-                    font=dict(
-                        color="yellow", size=12
-                    ),  # Цвет и размер текста аннотации
-                    align="center",
-                    yanchor="top",
-                )
+            # if diff < 0:
+            fig.add_annotation(
+                x=time[i],
+                y=max(day1_sales[i], day2_sales[i]),
+                text=f"{diff}",
+                showarrow=True,
+                arrowhead=1,
+                arrowwidth=2,
+                ay=-50,  # Длина стрелки (смещение по вертикали)
+                arrowcolor="yellow",
+                font=dict(color="black", size=12),  # Цвет и размер текста аннотации
+                align="center",
+                yanchor="top",
+            )
 
         fig.update_layout(
             barmode="overlay",  # Наложение столбцов
             xaxis_title="Интервал (по 30 минутам)",  # Заголовок оси X
-            yaxis_title="Продажи",  # Заголовок оси Y
+            yaxis_title="Продажи ₽",  # Заголовок оси Y
             title=f"Сравнение двух дней продаж по магазину(ы) {shops_name}",  # Заголовок графика
-            plot_bgcolor="black",  # Цвет фона графика
+            plot_bgcolor="lightgray",  # Цвет фона графика
         )
 
         # Отобразим график
@@ -584,7 +583,7 @@ def generate(session: Session):
 
         # Сохраняем график в формате PNG
         image_buffer = BytesIO()
-        pio.write_image(fig, image_buffer, format="png")
+        pio.write_image(fig, image_buffer, format="png", width=1200, height=900)
 
         # Очищаем буфер изображения и перемещаем указатель в начало
         image_buffer.seek(0)
