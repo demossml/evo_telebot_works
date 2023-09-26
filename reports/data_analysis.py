@@ -630,7 +630,7 @@ def generate(session: Session):
         fig.add_traces(fig2.data)
 
         # Отображаем график
-        fig.show()
+        # fig.show()
 
         # Сохраняем график в формате PNG
         image_buffer = BytesIO()
