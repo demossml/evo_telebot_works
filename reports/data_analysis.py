@@ -1,4 +1,4 @@
-from bd.model import Shop, Products, Documents, Session, Employees
+from bd.model import Shop, Products, Documents, Session, Employees, Shift_Opening_Report
 from .util import (
     get_intervals,
     get_period,
@@ -486,7 +486,24 @@ def generate(session: Session):
         since = period["since"]
         until = period["until"]
 
-        pprint(period)
+        documents_break_report = Shift_Opening_Report.objects(
+            __raw__={
+                "openData": {"$gte": since, "$lt": until},
+                "x_type": "BREAK",
+                # "break": "open",
+                "shop_id": {"$in": shops_id},
+            }
+        )
+
+        beginning_of_period = []
+        end_of_period = []
+        if len(documents_break_report) > 0:
+            for doc_break in documents_break_report:
+                beginning_of_period.append(doc_break["openData"][11:16])
+                if "closeDate" in doc_break:
+                    end_of_period.append(doc_break["closeDate"][11:16])
+        pprint(beginning_of_period)
+        pprint(end_of_period)
 
         end_date = get(since).shift(days=-7).isoformat()
 
@@ -540,6 +557,7 @@ def generate(session: Session):
                 y=day2_sales,
                 name=f"{since3[:10]}",
                 text=day2_sales,  # Сумма продаж на вершинах
+                opacity=0.7,  # Прозрачность полосы
             )
         )
 
@@ -550,6 +568,7 @@ def generate(session: Session):
                 y=day1_sales,
                 name=f"{since[:10]}",
                 text=day1_sales,  # Сумма продаж на вершинах
+                opacity=0.7,  # Прозрачность полосы
             )
         )
 
@@ -570,6 +589,8 @@ def generate(session: Session):
                 yanchor="top",
             )
 
+        # Добавляем красные полосы (маркеры) на график по оси X
+
         fig.update_layout(
             barmode="overlay",  # Наложение столбцов
             xaxis_title="Интервал (по 30 минутам)",  # Заголовок оси X
@@ -578,8 +599,38 @@ def generate(session: Session):
             plot_bgcolor="lightgray",  # Цвет фона графика
         )
 
-        # Отобразим график
-        # fig.show()
+        # Создаем график для второй оси X
+        fig2 = go.Figure()
+
+        # Добавляем красные полосы (маркеры) на график по второй оси X
+        for begin, end in zip(beginning_of_period, end_of_period):
+            fig2.add_trace(
+                go.Scatter(
+                    x=[begin, end],
+                    y=[0, 0],
+                    mode="markers",
+                    marker=dict(color="red", size=10),
+                    showlegend=False,  # Не отображать в легенде
+                )
+            )
+
+        # Настройка макета для второй оси X
+        fig2.update_layout(
+            xaxis=dict(
+                domain=[0, 1],  # Позиция второй оси X (полностью под основной осью X)
+                # showticklabels=False,  # Не показывать метки на второй оси X
+                # showgrid=False,  # Не показывать сетку на второй оси X
+            ),
+            #     yaxis=dict(
+            #         showticklabels=False,  # Не показывать метки на оси Y второй оси X
+            #     ),
+        )
+
+        # Объединяем основной график и график второй оси X
+        fig.add_traces(fig2.data)
+
+        # Отображаем график
+        fig.show()
 
         # Сохраняем график в формате PNG
         image_buffer = BytesIO()

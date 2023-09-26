@@ -247,7 +247,8 @@ def get_shops_in(session: Session, _in=[], id_=[]):
                     uuid.append(e)
             if session.user_id == 490899906:
                 for el in _in:
-                    uuid.append(el)
+                    if el not in uuid:
+                        uuid.append(el)
     # pprint(uuid)
     return Shop.objects(uuid__in=uuid)
 
