@@ -720,8 +720,8 @@ def generate_plan():
     for k, v in _dict.items():
         params = {"closeDate": utcnow().isoformat(), "shop_id": k}
 
-        if v < 2500:
-            params["sum"] = int(2500)
+        if v < 3000:
+            params["sum"] = int(3000)
         else:
             params["sum"] = v
         # print(params)
