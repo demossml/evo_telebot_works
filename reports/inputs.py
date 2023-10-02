@@ -145,6 +145,10 @@ class ReportDataAnalysisInput:
                 "id": "analysis_sales_by_day_the_week",
                 "name": "СРОВ. ПРОД. ₽ ПО ДЕНЯМ НЕДЕЛИ ",
             },
+            {
+                "id": "analysis_sales_by_day",
+                "name": "ПРОД. ЗА ДЕНЬ НЕДЕЛИ",
+            },
             {"id": "analysis_outcome_shops", "name": "ВАЗВРАТЫ ПО МАГАЗИНАМ 📉�📊"},
             {"id": "analysis_sales_shops_group", "name": "ПРОДАЖИ ПО ГРУППЕ 📉�📊"},
             {"id": "analysis_sales_shops_groups", "name": "ПРОДАЖИ ПО ГРУППАМ 📉�📊"},

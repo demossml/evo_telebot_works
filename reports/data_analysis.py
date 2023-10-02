@@ -51,11 +51,14 @@ def get_inputs(session: Session):
                     == "analysis_sales_by_day_the_week"
                 ):
                     return {"openDate": OpenDatePastInput}
+                if session.params["inputs"]["0"]["report"] == "analysis_sales_by_day":
+                    return {"openDate": OpenDatePastInput}
                 else:
                     return {
                         "openDate": OpenDatePastInput,
                         "closeDate": CloseDatePastInput,
                     }
+
         if session.params["inputs"]["0"]["report"] == "analysis_sales_shops":
             return {
                 "period": PeriodDateInput,
@@ -81,6 +84,11 @@ def get_inputs(session: Session):
                     "shop": ShopAllInput,
                 }
         if session.params["inputs"]["0"]["report"] == "analysis_sales_by_day_the_week":
+            return {
+                "shop": ShopAllInput,
+                "period": PeriodDateInput,
+            }
+        if session.params["inputs"]["0"]["report"] == "analysis_sales_by_day":
             return {
                 "shop": ShopAllInput,
                 "period": PeriodDateInput,
@@ -482,6 +490,13 @@ def generate(session: Session):
         shops_id = shops["shop_id"]
         shops_name = shops["shop_name"]
 
+        for shop_id in shops_id:
+            # Получаем названия магазина shop.name
+            if shop_id in shops_id_2:
+                new_shops_id = [shop_id, shops_id_2[shop_id]]
+            else:
+                new_shops_id = [shop_id]
+
         period = get_period_day(session)
         since = period["since"]
         until = period["until"]
@@ -491,7 +506,7 @@ def generate(session: Session):
                 "openData": {"$gte": since, "$lt": until},
                 "x_type": "BREAK",
                 # "break": "open",
-                "shop_id": {"$in": shops_id},
+                "shop_id": {"$in": new_shops_id},
             }
         )
 
@@ -520,7 +535,7 @@ def generate(session: Session):
         for i in data_t:
             pprint(i["since"])
             sales_data = {}
-            for since3, until3 in get_intervals(i["since"], i["until"], "minutes", 30):
+            for since3, until3 in get_intervals(i["since"], i["until"], "minutes", 10):
                 sales_sum = 0
                 documents = Documents.objects(
                     __raw__={
@@ -627,10 +642,139 @@ def generate(session: Session):
         )
 
         # Объединяем основной график и график второй оси X
-        fig.add_traces(fig2.data)
+        # fig.add_traces(fig2.data)
 
         # Отображаем график
-        # fig.show()
+        fig.show()
+
+        # Сохраняем график в формате PNG
+        image_buffer = BytesIO()
+        pio.write_image(fig, image_buffer, format="png", width=1200, height=900)
+
+        # Очищаем буфер изображения и перемещаем указатель в начало
+        image_buffer.seek(0)
+
+        # with open("sales_comparison.jpg", "wb") as f:
+        #     f.write(image_buffer.read())
+        return [{"": ""}], image_buffer
+    if params["report"] == "analysis_sales_by_day":
+        params = session.params["inputs"]["0"]
+
+        # Получение информации о магазинах
+        shops = get_shops(session)
+        shops_id = shops["shop_id"]
+        shops_name = shops["shop_name"]
+
+        for shop_id in shops_id:
+            # Получаем названия магазина shop.name
+            if shop_id in shops_id_2:
+                new_shops_id = [shop_id, shops_id_2[shop_id]]
+            else:
+                new_shops_id = [shop_id]
+
+        period = get_period_day(session)
+        since = period["since"]
+        until = period["until"]
+
+        end_date = get(since).shift(days=-7).isoformat()
+
+        # Преобразуем начальную дату в строку в формате ISO с временем 00:00
+        since2 = get(end_date).replace(hour=0, minute=0).isoformat()
+
+        # Преобразуем конечную дату в строку в формате ISO с временем 23:59
+        until2 = get(end_date).replace(hour=23, minute=59).isoformat()
+
+        data_t = [{"since": since, "until": until}, {"since": since2, "until": until2}]
+        pprint(data_t)
+
+        total_sales_data = []
+        for i in data_t:
+            pprint(i["since"])
+            sales_data = {}
+            for since3, until3 in get_intervals(i["since"], i["until"], "minutes", 10):
+                sales_sum = 0
+                documents = Documents.objects(
+                    __raw__={
+                        "closeDate": {"$gte": since3, "$lt": until3},
+                        "shop_id": {"$in": new_shops_id},
+                        "x_type": "SELL",
+                        # 'transactions.commodityUuid': {'$in': products_uuid}
+                    }
+                )
+                pprint(len(documents))
+                # for i2 in documents:
+                #     pprint(len(i2))
+                #     sales_sum = +1
+                #     pprint(sales_sum)
+                if len(documents) > 0:
+                    sales_data.update(
+                        {get(until3).shift(hours=3).isoformat()[11:16]: len(documents)}
+                    )
+            total_sales_data.append(sales_data)
+        pprint(total_sales_data)
+
+        # Создаем списки для времени и продаж для каждого дня
+        time = list(total_sales_data[0].keys())
+        day1_sales = list(total_sales_data[0].values())
+        day2_sales = list(total_sales_data[1].values())
+
+        # Вычисляем разницу между продажами первого и второго дня
+        sales_difference = [day1 - day2 for day1, day2, in zip(day1_sales, day2_sales)]
+
+        # Создаем графики для каждого дня
+        fig = go.Figure()
+
+        # Добавляем столбцы для первого дня
+        fig.add_trace(
+            go.Bar(
+                x=time,
+                y=day2_sales,
+                name=f"{since3[:10]}",
+                text=day2_sales,  # Сумма продаж на вершинах
+                opacity=0.7,  # Прозрачность полосы
+            )
+        )
+
+        # Добавляем столбцы для второго дня с наложением на первый день
+        fig.add_trace(
+            go.Bar(
+                x=time,
+                y=day1_sales,
+                name=f"{since[:10]}",
+                text=day1_sales,  # Сумма продаж на вершинах
+                opacity=0.7,  # Прозрачность полосы
+            )
+        )
+
+        # Добавляем аннотации с отрицательной разницей продаж
+        for i, diff in enumerate(sales_difference):
+            # if diff < 0:
+            fig.add_annotation(
+                x=time[i],
+                y=max(day1_sales[i], day2_sales[i]),
+                text=f"{diff}",
+                showarrow=True,
+                arrowhead=1,
+                arrowwidth=2,
+                ay=-50,  # Длина стрелки (смещение по вертикали)
+                arrowcolor="yellow",
+                font=dict(color="black", size=12),  # Цвет и размер текста аннотации
+                align="center",
+                yanchor="top",
+            )
+
+        # Добавляем красные полосы (маркеры) на график по оси X
+
+        fig.update_layout(
+            barmode="overlay",  # Наложение столбцов
+            xaxis_title="Интервал (по 30 минутам)",  # Заголовок оси X
+            yaxis_title="Продажи ₽",  # Заголовок оси Y
+            title=f"Сравнение двух дней продаж по магазину(ы) {shops_name}",  # Заголовок графика
+            plot_bgcolor="lightgray",  # Цвет фона графика
+        )
+
+        # Отображаем график
+        fig.show()
 
         # Сохраняем график в формате PNG
         image_buffer = BytesIO()
