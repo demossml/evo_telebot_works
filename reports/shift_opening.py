@@ -81,6 +81,12 @@ class PhotoTerritory2Input:
     type = "PHOTO"
 
 
+class PhotoMRCInput:
+    name = "Магазин"
+    desc = "Отправте фото МРЦ 📷".upper()
+    type = "PHOTO"
+
+
 class CashRegisterPhotoInput:
     name = "Магазин"
     desc = "Отправте фото кассы 📷".upper()
@@ -129,6 +135,14 @@ class Counting_MoneyInput:
     type = "MESSAGE"
 
 
+shop_data = [
+    "20190411-5A3A-40AC-80B3-8B405633C8BA",
+    "20191117-BF71-40FE-8016-1E7E4A3A4780",
+    "20231001-6611-407F-8068-AC44283C9196",
+    "20190327-A48C-407F-801F-DA33CB4FBBE9",
+]
+
+
 def get_inputs(session: Session):
     # Если входные параметры сессии существуют
     if session.params["inputs"]["0"]:
@@ -156,6 +170,19 @@ def get_inputs(session: Session):
                             "showcase_photo1": showcasePhoto1Input,
                             "showcase_photo2": showcasePhoto2Input,
                             "showcase_photo3": showcasePhoto3Input,
+                            "photo_territory_1": PhotoTerritory1Input,
+                            "photo_territory_2": PhotoTerritory2Input,
+                            "counting": CountingMoneyInput,
+                        }
+                    if session.params["inputs"]["0"]["shop"] in shop_data:
+                        return {
+                            "location": AfsInput,
+                            "cash_register_photo": CashRegisterPhotoInput,
+                            "сabinets_photo": СabinetsPhotoInput,
+                            "showcase_photo1": showcasePhoto1Input,
+                            "showcase_photo2": showcasePhoto2Input,
+                            "showcase_photo3": showcasePhoto3Input,
+                            "mrc_photo": PhotoMRCInput,
                             "photo_territory_1": PhotoTerritory1Input,
                             "photo_territory_2": PhotoTerritory2Input,
                             "counting": CountingMoneyInput,
