@@ -6,6 +6,11 @@ from arrow import utcnow
 from dataclasses import dataclass
 from telebot import types
 
+from dotenv import load_dotenv
+
+load_dotenv()
+from os import getenv
+
 
 # Модели
 
@@ -213,8 +218,9 @@ def find_employee(user_id):
 # Инициирует подключение к базе данных mongodb
 # http://docs.mongoengine.org/guide/connecting.html
 #
-# connect('tc',
-#         username=environ['MONGO_INITDB_ROOT_USERNAME'],
-#         password=environ['MONGO_INITDB_ROOT_PASSWORD'],
-#         host="mongodb")
-connect("tc")
+connect(
+    getenv("MONGODB_DATABASE"),
+    username=getenv("MONGO_INITDB_ROOT_USERNAME"),
+    password=getenv("MONGO_INITDB_ROOT_PASSWORD"),
+    host=getenv("MONGODB_HOSTNAME"),
+)

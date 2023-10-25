@@ -5,7 +5,10 @@ services:
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGO_INITDB_ROOT_PASSWORD:
+      MONGODB_DATABASE: tc_3
+      MONGODB_HOSTNAME: mongodb
+      TELEGRAM_TOKEN: '5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84'
     ports:
       - 127.0.0.1:27020:27020
     volumes:
@@ -17,12 +20,15 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGODB_DATABASE: tc_3
+      MONGODB_HOSTNAME: mongodb
+      TELEGRAM_TOKEN: '5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84'
+
     volumes:
       - ./app:/home/nonroot/app
-#    volumes:
-#      - ./:/app
-    command:
-      sh -c "poetry run python3 bot/__init__.py"
+    #    volumes:
+    #      - ./:/app
+    command: sh -c "poetry run python3 bot/__init__.py"
 
     depends_on:
       - mongodb
@@ -33,12 +39,14 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGODB_DATABASE: tc_3
+      MONGODB_HOSTNAME: mongodb
+      TELEGRAM_TOKEN: '5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84'
     volumes:
       - ./app:/home/nonroot/app
     #    volumes:
     #      - ./:/app
-    command:
-      sh -c "poetry run python3 evotor/sync.py"
+    command: sh -c "poetry run python3 evotor/sync.py"
 
 #    depends_on:
 #      - mongodb    -
