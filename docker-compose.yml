@@ -46,7 +46,6 @@ services:
       MONGODB_DATABASE: tc
       MONGODB_HOSTNAME: mongodb
       TELEGRAM_TOKEN: "5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84"
-
     volumes:
       - ./app:/home/nonroot/app # Монтирование кода синхронизации в контейнер
     #    volumes:
