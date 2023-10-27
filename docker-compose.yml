@@ -9,7 +9,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: rootpassword # Пароль пользователя по умолчанию
       MONGODB_DATABASE: tc
       MONGODB_HOSTNAME: mongodb
-      TELEGRAM_TOKEN: "5758434493:AAFNF4dj8w45SXReZRVxWzj5PH7L6vfnSqI"
+      TELEGRAM_TOKEN: "5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84"
 
     ports:
       - 127.0.0.1:28000:27020 # Проброс порта: локальный порт:27020 -> порт в контейнере:27020
@@ -25,7 +25,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
       MONGODB_DATABASE: tc
       MONGODB_HOSTNAME: mongodb
-      TELEGRAM_TOKEN: "5758434493:AAFNF4dj8w45SXReZRVxWzj5PH7L6vfnSqI"
+      TELEGRAM_TOKEN: "5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84"
 
     volumes:
       - ./app:/home/nonroot/app # Монтирование кода приложения в контейнер
@@ -45,7 +45,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
       MONGODB_DATABASE: tc
       MONGODB_HOSTNAME: mongodb
-      TELEGRAM_TOKEN: "5758434493:AAFNF4dj8w45SXReZRVxWzj5PH7L6vfnSqI"
+      TELEGRAM_TOKEN: "5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84"
 
     volumes:
       - ./app:/home/nonroot/app # Монтирование кода синхронизации в контейнер
