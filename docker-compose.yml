@@ -1,55 +1,60 @@
 version: "3.7"
 services:
   mongodb:
-    image: mongo:latest
-    restart: always
+    # Сервис MongoDB
+    image: mongo:latest # Используем образ MongoDB
+    restart: always # Всегда перезапускать контейнер в случае ошибки
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD:
-      MONGODB_DATABASE: tc_3
+      MONGO_INITDB_ROOT_USERNAME: root # Имя пользователя по умолчанию
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword # Пароль пользователя по умолчанию
+      MONGODB_DATABASE: tc
       MONGODB_HOSTNAME: mongodb
-      TELEGRAM_TOKEN: '5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84'
+      TELEGRAM_TOKEN: "5758434493:AAFNF4dj8w45SXReZRVxWzj5PH7L6vfnSqI"
+
     ports:
-      - 127.0.0.1:27020:27020
+      - 127.0.0.1:28000:27020 # Проброс порта: локальный порт:27020 -> порт в контейнере:27020
     volumes:
-      - mongodb_data:/data/db
-  evo_telebot_tc:
+      - mongodb_data:/data/db # Монтируем том для хранения данных MongoDB
+  evo_telebot:
+    # Сервис evo_telebot
     platform: linux/amd64
-    build: .
+    build: . # Сборка контейнера из текущего каталога
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
-      MONGODB_DATABASE: tc_3
+      MONGODB_DATABASE: tc
       MONGODB_HOSTNAME: mongodb
-      TELEGRAM_TOKEN: '5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84'
+      TELEGRAM_TOKEN: "5758434493:AAFNF4dj8w45SXReZRVxWzj5PH7L6vfnSqI"
 
     volumes:
-      - ./app:/home/nonroot/app
+      - ./app:/home/nonroot/app # Монтирование кода приложения в контейнер
     #    volumes:
     #      - ./:/app
-    command: sh -c "poetry run python3 bot/__init__.py"
+    command: sh -c "poetry run python3 bot/__init__.py" # Команда для запуска бота
 
     depends_on:
-      - mongodb
+      - mongodb # Зависимость: ждем, пока MongoDB будет доступна
   evo_telebot_sync:
+    # Сервис evo_telebot_sync
     platform: linux/amd64
     build: .
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
-      MONGODB_DATABASE: tc_3
+      MONGODB_DATABASE: tc
       MONGODB_HOSTNAME: mongodb
-      TELEGRAM_TOKEN: '5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84'
+      TELEGRAM_TOKEN: "5758434493:AAFNF4dj8w45SXReZRVxWzj5PH7L6vfnSqI"
+
     volumes:
-      - ./app:/home/nonroot/app
+      - ./app:/home/nonroot/app # Монтирование кода синхронизации в контейнер
     #    volumes:
     #      - ./:/app
-    command: sh -c "poetry run python3 evotor/sync.py"
+    command: sh -c "poetry run python3 evotor/sync.py" # Команда для запуска синхронизации
 
 #    depends_on:
 #      - mongodb    -
 
 volumes:
-  mongodb_data:
+  mongodb_data: # Том для MongoDB, используется для сохранения данных

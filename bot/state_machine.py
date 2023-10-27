@@ -210,14 +210,16 @@ async def handle_reply_state(bot, message, session, next):
         # print(1)
         file_info = await bot.get_file(message.document.file_id)
         downloaded_file = await bot.download_file(file_info.file_path)
+        # print(downloaded_file)
 
-        src = message.document.file_name
-        with open(src, "wb") as new_file:
-            new_file.write(downloaded_file)
-        print(message.document.file_name)
-        session.params["inputs"][str(room)][input_name] = str(
-            message.document.file_name
-        )
+        # src = message.document.file_name
+        # with open(src, "wb") as new_file:
+        #     new_file.write(downloaded_file)
+        # print(message.document.file_name)
+        session.params["inputs"][str(room)][input_name] = downloaded_file
+        # str(
+        #     message.document.file_name
+        # )
 
     # Переход в состояние INPUT (Обработка ввода данных)
     session.state = State.INPUT
