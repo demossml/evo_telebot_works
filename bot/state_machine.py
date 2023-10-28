@@ -172,10 +172,12 @@ async def handle_reply_state(bot, message, session, next):
     session.update(params=session.params)
     # Обработка локации
     if message.location:
-        session.params["inputs"][str(room)][input_name] = utcnow().now().isoformat()
+        session.params["inputs"][str(room)][input_name] = (
+            utcnow().now().to("Etc/GMT-3").isoformat()
+        )
         session.params["inputs"][str(room)][input_name] = {}
         session.params["inputs"][str(room)][input_name]["data"] = (
-            utcnow().now().isoformat()
+            utcnow().now().to("Etc/GMT-3").isoformat()
         )
         session.params["inputs"][str(room)][input_name][
             "lat"
@@ -193,7 +195,7 @@ async def handle_reply_state(bot, message, session, next):
                     {
                         "shopUuid": doc[0],
                         "employees": i["name"],
-                        "openingData": utcnow().now().isoformat(),
+                        "openingData": utcnow().now().to("Etc/GMT-3").isoformat(),
                     }
                 )
             # print(_dict2)
