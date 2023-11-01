@@ -15,6 +15,8 @@ from reports import break_
 from reports import sales_today
 from reports import break_today
 from reports import file_json_download
+from reports import v2
+from reports import V3_1
 
 from bd.model import Session
 
@@ -53,7 +55,9 @@ def get_reports(session: Session):
             "get_accept": get_accept,
             "get_leftovers": get_leftovers,
             "V1": V1,
-            "file_json_download": file_json_download,
+            "v2": v2,
+            "V3_1": V3_1,
+            # "file_json_download": file_json_download,
         }
 
 
@@ -75,4 +79,6 @@ reports = {
     "sales_today": sales_today,
     "break_today": break_today,
     "file_json_download": file_json_download,
+    "v2": v2,
+    "V3_1": V3_1,
 }
