@@ -32,6 +32,7 @@ from .inputs import (
     ReportsSurplusInput,
 )
 from pprint import pprint
+import time
 
 name = "🧾Кассовые отчеты ➡️".upper()
 desc = ""
@@ -312,16 +313,23 @@ def generate(session: Session):
                     "shop_id": session.params["inputs"]["0"]["shop"],
                 }
             ).first()
+            plan = {}
             if plan_today:
+                pprint("plan yes")
                 plan = plan_today
             else:
+                pprint("plan no")
                 generate_plan()
+                # time.sleep(10)
+
                 plan = Plan.objects(
                     __raw__={
                         "closeDate": {"$gte": since, "$lt": until},
-                        "shop_id": session.params["inputs"]["0"],
+                        "shop_id": session.params["inputs"]["0"]["shop"],
                     }
                 ).first()
+                pprint(plan)
+
             if int(session.params["inputs"]["0"]["executionPlan"]) >= plan.sum:
                 planSalary = 250
             else:
