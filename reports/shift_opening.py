@@ -421,28 +421,28 @@ def generate(session: Session):
         for shop in shops:
             pprint(shop["name"])
 
-            if shop["uuid"] in _in:
-                pprint(shop["uuid"])
-                documents = GetTime.objects(
-                    __raw__={"openingData": {"$gte": since}, "shopUuid": shop["uuid"]}
-                ).first()
-                pprint(documents)
+            # if shop["uuid"] in _in:
+            pprint(shop["uuid"])
+            documents = GetTime.objects(
+                __raw__={"openingData": {"$gte": since}, "shopUuid": shop["uuid"]}
+            ).first()
+            pprint(documents)
 
-                if documents:
-                    # pprint(doc['openingData'])
-                    user_id = str(documents.user_id)
-                    # pprint(user_id)
-                    employees = (
-                        Employees.objects(lastName=str(user_id)).only("name").first()
+            if documents:
+                # pprint(doc['openingData'])
+                user_id = str(documents.user_id)
+                # pprint(user_id)
+                employees = (
+                    Employees.objects(lastName=str(user_id)).only("name").first()
+                )
+                pprint(employees.name)
+                if documents["openingData"]:
+                    result["{}".format(shop["name"])] = "{} {}".format(
+                        employees.name, documents["openingData"][11:16]
                     )
-                    pprint(employees.name)
-                    if documents["openingData"]:
-                        result["{}".format(shop["name"])] = "{} {}".format(
-                            employees.name, documents["openingData"][11:16]
-                        )
-                else:
-                    result.update({shop["name"]: "ЕЩЕ НЕ ОТКРЫТА!!!".upper()})
-            pprint(result)
+            else:
+                result.update({shop["name"]: "ЕЩЕ НЕ ОТКРЫТА!!!".upper()})
+        pprint(result)
 
         return {}, [result]
 

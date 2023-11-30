@@ -314,6 +314,7 @@ def generate(session: Session):
                 }
             ).first()
             plan = {}
+
             if plan_today:
                 pprint("plan yes")
                 plan = plan_today
