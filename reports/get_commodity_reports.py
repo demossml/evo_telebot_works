@@ -359,6 +359,8 @@ def generate(session: Session):
             # Преобразуем даты в нужный формат
             since = get(params["openDate"]).replace(hour=3, minute=00).isoformat()
             until = get(params["closeDate"]).replace(hour=23, minute=00).isoformat()
+            since1 = utcnow().replace(hour=3, minute=00).isoformat()
+            until1 = utcnow().replace(hour=23, minute=00).isoformat()
 
             # Задаем набор магазинов для двух разных групп
             shops_uuid_2 = [
@@ -416,12 +418,12 @@ def generate(session: Session):
             ]
 
             # Для каждой группы товаров собираем статистику
-            for group_name in counterparty_:
+            for i in counterparty_:
                 # Запрос для поиска групп в модели Products с определенными условиями
                 group = Products.objects(
-                    shop_id__exact=shop_id, group__exact=True, name__exact=group_name
+                    shop_id__exact=shop_id, group__exact=True, name__exact=i
                 )
-                # Извлечение имени и UUID группы (предполагается, что есть только один результат)
+                groupName_ = [element.name for element in group][0]
                 groupUuid = [element.uuid for element in group]
 
                 products = Products.objects(
@@ -439,34 +441,107 @@ def generate(session: Session):
                     }
                 )
 
+                documents1 = Documents.objects(
+                    __raw__={
+                        "closeDate": {"$gte": since1, "$lt": until1},
+                        "shop_id": shop_id,
+                        "x_type": "SELL",
+                        "transactions.commodityUuid": {"$in": products_uuid},
+                    }
+                )
+
                 _dict = gather_statistics(documents, products_uuid)
+                # Собираем статистику по продажам
+                # for doc in documents:
+                #     # pprint(doc.shop_id)
+                #     for trans in doc["transactions"]:
+                #         # pprint(trans)
+                #         if trans["x_type"] == "REGISTER_POSITION":
+                #             if trans["commodityUuid"] in products_uuid:
+                #                 if trans["commodityUuid"] in _dict:
+                #                     _dict[trans["commodityUuid"]] += trans["quantity"]
 
-                # order_data - словарь для сбора данных о заказах
-                order_data = {"Заказ:".upper(): group_name}
-                for uuid, quantity_sale in _dict.items():
-                    # Получаем остаток товаров на складе
-                    commodity_balances = get_commodity_balances_all(shop_id, uuid)
-                    # Получаем название продукта
-                    product_name = (
-                        Products.objects(__raw__={"shop_id": shop_id, "uuid": uuid})
-                        .only("name")
-                        .first()
-                    )
+                #                 else:
+                #                     _dict[trans["commodityUuid"]] = trans["quantity"]
+                _dict1 = gather_statistics(documents1, products_uuid)
+                # Собираем статистику по продажам за указанный период
+                # for doc in documents1:
+                #     for trans in doc["transactions"]:
+                #         # pprint(trans)
+                #         if trans["x_type"] == "REGISTER_POSITION":
+                #             if trans["commodityUuid"] in products_uuid:
+                #                 if trans["commodityUuid"] in _dict1:
+                #                     _dict1[trans["commodityUuid"]] += trans["quantity"]
+                #                 else:
+                #                     _dict1[trans["commodityUuid"]] = trans["quantity"]
+                # # pprint(_dict1)
+                # sold_p = {"продано".upper(): "{} - {}".format(since[8:10], until[8:10])}
 
-                    # Рассчитываем количество товаров для заказа
-                    order = int(quantity_sale) - int(commodity_balances)
+                # for doc in documents:
+                #     for trans in doc["transactions"]:
+                #         # pprint(trans)
+                #         if trans["x_type"] == "REGISTER_POSITION":
+                #             if trans["commodityUuid"] in products_uuid:
+                #                 product_name_sold = [
+                #                     element.name
+                #                     for element in Products.objects(
+                #                         uuid__exact=trans["commodityUuid"]
+                #                     )
+                #                 ][0]
+                #                 if product_name_sold in sold_p:
+                #                     sold_p[product_name_sold] += trans["quantity"]
+                #                 else:
+                #                     sold_p[product_name_sold] = trans["quantity"]
 
-                    # Если заказ положительный, добавляем информацию о продукте в результат
-                    if order > 0:
-                        order_data.update(
-                            {
-                                product_name.name: f"{quantity_sale}/{commodity_balances}/{order}"
-                            }
-                        )
+                # sold_today = {"продано".upper(): "сегодня".upper()}
 
-                result.append(order_data)
+                # for doc in documents1:
+                #     for trans in doc["transactions"]:
+                #         # pprint(trans)
+                #         if trans["x_type"] == "REGISTER_POSITION":
+                #             if trans["commodityUuid"] in products_uuid:
+                #                 group_name = [
+                #                     element.name
+                #                     for element in Products.objects(
+                #                         uuid__exact=trans["commodityUuid"]
+                #                     )
+                #                 ][0]
+                #                 if group_name in sold_today:
+                #                     sold_today[group_name] += trans["quantity"]
+                #                 else:
+                #                     sold_today[group_name] = trans["quantity"]
 
-            # Возвращаем сформированный результат
+                # commodity_balances = get_commodity_balances_all(session)
+                # pprint(commodity_balances)
+
+                _dict3 = {"Заказ:".upper(): groupName_}
+                if len(_dict) > 0:
+                    for product in products:
+                        if product["uuid"] in _dict1:
+                            sales_d = _dict1[product["uuid"]]
+                        else:
+                            sales_d = 0
+
+                        product_quantity = product["quantity"] - sales_d
+
+                        if product["uuid"] in _dict:
+                            product_quantity_seller = _dict[product["uuid"]]
+                        else:
+                            product_quantity_seller = 0
+
+                        order = int(product_quantity_seller) - int(product_quantity)
+
+                        if order < 0:
+                            order = 0
+                        else:
+                            order = order
+
+                        if order > 0:
+                            _dict3[product["name"]] = "{}/{}/{}".format(
+                                product_quantity_seller, product_quantity, order
+                            )
+
+                result.append(_dict3)
             return result
 
         if session.params["inputs"]["0"]["report"] == "get_accept":
