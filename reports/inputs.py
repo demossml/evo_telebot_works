@@ -376,6 +376,41 @@ class ReportSurchargeInput:
         return output
 
 
+class ReportsSettingsInput:
+    """
+    Меню настроек бота
+    """
+
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        output = [
+            {"id": "clear_db", "name": "Очистить базу данных ➡️".upper()},
+        ]
+        return output
+
+
+class ReportsClearDbInput:
+    """
+    Меню очистки базы данных
+    """
+
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        output = [
+            {"id": "clear_db_employees", "name": "👫 Очистить (Сотрудники) ➡️".upper()},
+            {"id": "clear_db_shops", "name": "🏪 Очистить (Магазины) ➡️".upper()},
+            {"id": "clear_db_documents", "name": "📑 Очистить (Документы) ➡️".upper()},
+            {"id": "clear_db_products", "name": "🛒 Очистить (Продукты) ➡️".upper()},
+        ]
+        return output
+
+
 class ShopAllInput:
     """
     Магазины и все магазины

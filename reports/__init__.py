@@ -38,6 +38,7 @@ def get_reports(session: Session):
             }
         if session.employee.role == "ADMIN":
             return {
+                "settings": settings,
                 "salary": salary,
                 "break_": break_,
                 "data_analysis": data_analysis,

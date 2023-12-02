@@ -1,42 +1,36 @@
-from bd.model import Session, Documents, Users
-from evotor.evotor import Evotor
-from .inputs import TokenEvotorInput
+from bd.model import Session, Documents, Users, Employees, Shop, Products
+from .inputs import ReportsSettingsInput, ReportsClearDbInput
 
 name = "🛠 Настройки ➡️".upper()
 desc = ""
-mime = 'text'
+mime = "text"
 
 
 def get_inputs(session: Session):
-    # user = Users.objects(user_id=session.user_id)
-    return {
-        "token": TokenEvotorInput,
+    # Если входные параметры сессии существуют
+    if session.params["inputs"]["0"]:
+        # Если тип отчета - "shift_opening_report"
+        if session.params["inputs"]["0"]["report"] == "clear_db":
+            return {"clear": ReportsClearDbInput}
 
-    }
+    else:
+        return {
+            "report": ReportsSettingsInput,
+        }
 
 
 def generate(session: Session):
-    ev = Evotor(session.params["inputs"]['0']["token"])
-    response = ev.get_response()
-    if response:
-        params = {
-            'token': session.params["inputs"]['0']["token"],
-            'user_id': session.user_id
-        }
+    params = {}
+    collection = {
+        "clear_db_employees": Employees,
+        "clear_db_shops": Shop,
+        "clear_db_documents": Documents,
+        "clear_db_products": Products,
+    }
+    clear_collection_name = session.params["inputs"]["0"]["clear"]
 
-        Users.objects(user_id=session.user_id).update(**params, upsert=True)
-        return [
-            {
-                'Токен': 'Зарегистрирован',
-                'Сенхронизция закончится через': '1 час'
-            }
-        ]
-    else:
-        return [
-            {
-                'Токен': 'Неверен'
-            }
-        ]
+    clear_collection = collection[clear_collection_name]
 
+    clear_collection.drop_collection()
 
-
+    return [{"Коллекция": "Очищена"}]

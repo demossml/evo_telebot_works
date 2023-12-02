@@ -555,7 +555,7 @@ def get_period_order(session: Session):
 
 def get_commodity_balances(session: Session) -> dict:
     # Создаем пустой словарь для хранения балансов товаров
-    _dict = {}
+    commodity_balances = {}
     # Получаем параметры из сессии
     params = session.params["inputs"]["0"]
     # Список типов транзакций
@@ -606,21 +606,60 @@ def get_commodity_balances(session: Session) -> dict:
                         if trans["commodityUuid"] == uuid:
                             if documents.x_type == "SELL":
                                 # Обновляем баланс товара при продаже
-                                _dict[trans["commodityUuid"]] = (
+                                commodity_balances[trans["commodityUuid"]] = (
                                     trans["balanceQuantity"] - trans["quantity"]
                                 )
 
                             if documents.x_type == "PAYBACK":
                                 # Обновляем баланс товара при возврате
-                                _dict[trans["commodityUuid"]] = (
+                                commodity_balances[trans["commodityUuid"]] = (
                                     trans["balanceQuantity"] + trans["quantity"]
                                 )
 
                             if documents.x_type == "ACCEPT":
                                 # Обновляем баланс товара при приемке
-                                _dict[trans["commodityUuid"]] = trans["balanceQuantity"]
+                                commodity_balances[trans["commodityUuid"]] = trans[
+                                    "balanceQuantity"
+                                ]
     # Возвращаем словарь с балансами товаров
-    return _dict
+    return commodity_balances
+
+
+def get_commodity_balances_all(shop_id, uuid) -> dict:
+    # Создаем пустой словарь для хранения балансов товаров
+
+    quantity = 0
+    x_type = ["SELL", "PAYBACK", "ACCEPT"]
+
+    documents = (
+        Documents.objects(
+            __raw__={
+                "shop_id": shop_id,
+                "x_type": {"$in": x_type},
+                "transactions.commodityUuid": uuid,
+            }
+        )
+        .order_by("-closeDate")
+        .first()
+    )
+
+    if documents:
+        for trans in documents["transactions"]:
+            if trans["x_type"] == "REGISTER_POSITION":
+                if trans["commodityUuid"] == uuid:
+                    if documents.x_type == "SELL":
+                        # Обновляем баланс товара при продаже
+                        quantity = trans["balanceQuantity"] - trans["quantity"]
+
+                    if documents.x_type == "PAYBACK":
+                        # Обновляем баланс товара при возврате
+                        quantity = trans["balanceQuantity"] + trans["quantity"]
+
+                    if documents.x_type == "ACCEPT":
+                        # Обновляем баланс товара при приемке
+                        quantity = trans["balanceQuantity"]
+    # Возвращаем словарь с балансами товаров
+    return quantity
 
 
 def generate_plan():
@@ -1200,3 +1239,27 @@ def diagram(data: dict) -> BytesIO:
 
     # Возвращаем объект BytesIO с изображением
     return image_buffer
+
+
+# Функция для сбора статистики по продажам
+def gather_statistics(documents, products_uuid):
+    """
+    Собирает статистику по продажам для каждого товара в заданных документах.
+
+    Parameters:
+    - documents: Список документов продажи
+    - products_uuid: Список UUID товаров
+
+    Returns:
+    - data_sale: Словарь с количеством проданных товаров для каждого UUID товара
+    """
+    data_sale = {}
+    for doc in documents:
+        for trans in doc["transactions"]:
+            if trans["x_type"] == "REGISTER_POSITION":
+                if trans["commodityUuid"] in products_uuid:
+                    if trans["commodityUuid"] in data_sale:
+                        data_sale[trans["commodityUuid"]] += trans["quantity"]
+                    else:
+                        data_sale[trans["commodityUuid"]] = trans["quantity"]
+    return data_sale
