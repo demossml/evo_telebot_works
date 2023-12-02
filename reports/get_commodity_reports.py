@@ -359,8 +359,6 @@ def generate(session: Session):
             # Преобразуем даты в нужный формат
             since = get(params["openDate"]).replace(hour=3, minute=00).isoformat()
             until = get(params["closeDate"]).replace(hour=23, minute=00).isoformat()
-            since1 = utcnow().replace(hour=3, minute=00).isoformat()
-            until1 = utcnow().replace(hour=23, minute=00).isoformat()
 
             # Задаем набор магазинов для двух разных групп
             shops_uuid_2 = [
@@ -441,31 +439,24 @@ def generate(session: Session):
                     }
                 )
 
-                documents1 = Documents.objects(
-                    __raw__={
-                        "closeDate": {"$gte": since1, "$lt": until1},
-                        "shop_id": shop_id,
-                        "x_type": "SELL",
-                        "transactions.commodityUuid": {"$in": products_uuid},
-                    }
-                )
-
                 _dict = gather_statistics(documents, products_uuid)
 
-                _dict1 = gather_statistics(documents1, products_uuid)
-
-                # pprint(commodity_balances){
+                # order_data - словарь для сбора данных о заказах
                 order_data = {"Заказ:".upper(): group_name}
                 for uuid, quantity_sale in _dict.items():
+                    # Получаем остаток товаров на складе
                     commodity_balances = get_commodity_balances_all(shop_id, uuid)
+                    # Получаем название продукта
                     product_name = (
                         Products.objects(__raw__={"shop_id": shop_id, "uuid": uuid})
                         .only("name")
                         .first()
                     )
 
+                    # Рассчитываем количество товаров для заказа
                     order = int(quantity_sale) - int(commodity_balances)
 
+                    # Если заказ положительный, добавляем информацию о продукте в результат
                     if order > 0:
                         order_data.update(
                             {
@@ -473,36 +464,9 @@ def generate(session: Session):
                             }
                         )
 
-                # pprint(order_data)
-
-                # _dict3 = {"Заказ:".upper(): group_name}
-                # if len(_dict) > 0:
-                #     for product in products:
-                #         if product["uuid"] in _dict1:
-                #             sales_d = _dict1[product["uuid"]]
-                #         else:
-                #             sales_d = 0
-
-                #         product_quantity = product["quantity"] - sales_d
-
-                #         if product["uuid"] in _dict:
-                #             product_quantity_seller = _dict[product["uuid"]]
-                #         else:
-                #             product_quantity_seller = 0
-
-                #         order = int(product_quantity_seller) - int(product_quantity)
-
-                #         if order < 0:
-                #             order = 0
-                #         else:
-                #             order = order
-
-                #         if order > 0:
-                #             _dict3[product["name"]] = "{}/{}/{}".format(
-                #                 product_quantity_seller, product_quantity, order
-                #             )
-
                 result.append(order_data)
+
+            # Возвращаем сформированный результат
             return result
 
         if session.params["inputs"]["0"]["report"] == "get_accept":
