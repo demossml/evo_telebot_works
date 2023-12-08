@@ -103,10 +103,13 @@ class TransferInput:
 
 
 def get_inputs(session: Session):
-    match session.params.get("inputs", {}).get("0", {}).get("report"):
-        case "marriage":
-            match session.params["inputs"]["0"].get("report_marriage"):
-                case "marriage_registration":
+    if session.params["inputs"]["0"]:
+        if session.params["inputs"]["0"]["report"] == "marriage":
+            if "report_marriage" in session.params["inputs"]["0"]:
+                if (
+                    session.params["inputs"]["0"]["report_marriage"]
+                    == "marriage_registration"
+                ):
                     return {
                         "shop": ShopInput,
                         "product": ProductElectroInput,
@@ -114,25 +117,25 @@ def get_inputs(session: Session):
                         "photo": PhotoProductInput,
                         "defect": DefectInput,
                     }
-                case "get_marriage":
-                    match session.params["inputs"]["0"].get("period"):
-                        case "day":
+                if session.params["inputs"]["0"]["report_marriage"] == "get_marriage":
+                    if "period" in session.params["inputs"]["0"]:
+                        if session.params["inputs"]["0"]["period"] == "day":
                             return {}
-                        case _:
+                        else:
                             return {
                                 "openDate": OpenDatePast2Input,
                                 "closeDate": CloseDatePastInput,
                             }
-                    # else:
-                    #     return {"shop": ShopInput, "period": PeriodDateInput}
-                case _:
-                    return {"report_marriage": ReportsMarriageInput}
-        case "get_commodity_balances":
+                    return {"shop": ShopInput, "period": PeriodDateInput}
+            else:
+                return {"report_marriage": ReportsMarriageInput}
+
+        if session.params["inputs"]["0"]["report"] == "get_commodity_balances":
             return {
                 "shop": ShopInput,
                 "group": GroupInput,
             }
-        case "order_constructor":
+        if session.params["inputs"]["0"]["report"] == "order_constructor":
             return {
                 "shop": ShopInput,
                 "counterparty": СounterpartyInput,
@@ -140,20 +143,21 @@ def get_inputs(session: Session):
                 "openDate": OpenDatePast2Input,
                 "closeDate": CloseDatePastInput,
             }
-        case "get_accept":
-            match session.params["inputs"]["0"].get("period"):
-                case "day":
+        if session.params["inputs"]["0"]["report"] == "get_accept":
+            if "period" in session.params["inputs"]["0"]:
+                if session.params["inputs"]["0"]["period"] == "day":
                     return {"shop": ShopInput, "number": DocumentsAcceptInput}
-                case _:
+
+                else:
                     return {
                         "shop": ShopInput,
                         "openDate": OpenDatePast2Input,
                         "closeDate": CloseDatePastInput,
                         "number": DocumentsAcceptInput,
                     }
-            # else:
-            # return {"report_a_w": ReportsAcceptInput, "period": PeriodDateInput}
-        case "get_product_not_for_sale":
+            else:
+                return {"report_a_w": ReportsAcceptInput, "period": PeriodDateInput}
+        if session.params["inputs"]["0"]["report"] == "get_product_not_for_sale":
             return {
                 "shop": ShopAllInput,
                 "group": GroupInput,
@@ -161,8 +165,9 @@ def get_inputs(session: Session):
                 "openDate": OpenDatePast2Input,
                 "closeDate": CloseDatePastInput,
             }
-        case _:
-            return {"report": ReportCommodityInput}
+
+    else:
+        return {"report": ReportCommodityInput}
 
 
 def generate(session: Session):
@@ -506,9 +511,8 @@ def generate(session: Session):
                 #                 else:
                 #                     sold_today[group_name] = trans["quantity"]
 
-                # commodity_balances = get_commodity_balances_all(session)
+                commodity_balances = get_commodity_balances_all(session)
                 # pprint(commodity_balances)
-
                 _dict3 = {"Заказ:".upper(): groupName_}
                 if len(_dict) > 0:
                     for product in products:
