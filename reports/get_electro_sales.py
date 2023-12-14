@@ -21,18 +21,16 @@ def get_inputs(session: Session):
 
 def generate(session: Session):
     shops = get_shops_user_id(session)
-    shops_id = [v.uuid for v in shops]
-    pprint(shops_id)
+    # shops_id = [v.uuid for v in shops]
+    # pprint(shops_id)
     group_id = [
-        "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
         "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
-        "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
-        "2b8eb6b4-92ea-11ee-ab93-2cf05d04be1d",
-        "8a8fcb5f-9582-11ee-ab93-2cf05d04be1d",
-        "97d6fa81-84b1-11ea-b9bb-70c94e4ebe6a",
-        "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
         "568905bd-9460-11ee-9ef4-be8fe126e7b9",
-        "20220201-19C9-40B0-8082-DF8A9067705D",
+        "2b8eb6b4-92ea-11ee-ab93-2cf05d04be1d",
+        "568905be-9460-11ee-9ef4-be8fe126e7b9",
+        "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
+        "8a8fcb5f-9582-11ee-ab93-2cf05d04be1d",
+        "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
     ]
 
     since = utcnow().replace(hour=3, minute=00).isoformat()
@@ -47,7 +45,8 @@ def generate(session: Session):
     _dict = {}
     for shop in shops:
         result_shop = {}
-        shop_name = [i.name for i in Shop.objects(uuid=shop["uuid"])][0]
+        shop_ = Shop.objects(uuid=shop["uuid"]).only("name").first()
+        shop_name = shop_.name
         result_shop.update({"ТТ": shop_name})
         documents = Documents.objects(
             __raw__={
