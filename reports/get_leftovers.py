@@ -17,7 +17,7 @@ class ReportsInput:
         output = [
             #
             {"id": "get_leftovers_by_pieces", "name": "✅ В ШТ"},
-            # {"id": "get_leftovers_by_pieces_", "name": "✅ В ШТ."},
+            # {"id": "get_leftovers_by_pieces_", "name": "✅ В "},
             {"id": "get_leftovers_by_rb", "name": "✅ В r.."},
             {"id": "get_report", "name": "✅ Заказы".upper()},
         ]
@@ -113,7 +113,7 @@ def generate(session: Session):
         "20220601-4E97-40A5-801B-1A29127AFA8B",
         "20220430-A472-40B8-8077-2EE96318B7E7",
     ]
-    # i = 'PAYBACK', 'ACCEPT'
+
     x_type = ["SELL", "PAYBACK", "ACCEPT"]
     if params["report"] == "get_leftovers_by_pieces":
         result = {}
@@ -139,8 +139,6 @@ def generate(session: Session):
                     .first()
                 )
 
-                # pprint(documents)
-                # pprint('e')
                 if documents is not None:
                     for trans in documents["transactions"]:
                         if trans["x_type"] == "REGISTER_POSITION":

@@ -1,10 +1,7 @@
 from evotor import Evotor
 from config import (
-    EVOTOR_TOKEN_5,
     EVOTOR_TOKEN_2,
-    EVOTOR_TOKEN_3,
     EVOTOR_TOKEN_4,
-    EVOTOR_TOKEN_8,
 )
 from util import get_intervals, prune
 from bd.model import Shop, Products, Documents, Employees, Users
@@ -121,11 +118,8 @@ def sync_total(evotor):
 
 # Функция для синхронизации всей информации для всех магазинов
 def sync_all():
-    sync_total(Evotor(EVOTOR_TOKEN_8))
     sync_total(Evotor(EVOTOR_TOKEN_2))
-    sync_total(Evotor(EVOTOR_TOKEN_3))
     sync_total(Evotor(EVOTOR_TOKEN_4))
-    sync_total(Evotor(EVOTOR_TOKEN_5))
 
 
 # Вызов функции для начальной синхронизации
