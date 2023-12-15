@@ -36,14 +36,19 @@ def generate(session: Session):
     since = utcnow().replace(hour=3, minute=00).isoformat()
     until = utcnow().isoformat()
 
-    products = Products.objects(
-        __raw__={"parentUuid": {"$in": group_id}, "shop_id": {"$in": shops_id}}
-    ).only("uuid")
+    # products = Products.objects(
+    #     __raw__={"parentUuid": {"$in": group_id}, "shop_id": {"$in": shops_id}}
+    # ).only("uuid")
 
-    products_uuid = [element.uuid for element in products]
+    # products_uuid = [element.uuid for element in products]
     result = []
     _dict = {}
     for shop in shops:
+        products = Products.objects(
+            __raw__={"parentUuid": {"$in": group_id}, "shop_id": shop["uuid"]}
+        ).only("uuid")
+
+        products_uuid = [element.uuid for element in products]
         result_shop = {}
         shop_ = Shop.objects(uuid=shop["uuid"]).only("name").first()
         shop_name = shop_.name
