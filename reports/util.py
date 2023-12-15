@@ -736,11 +736,16 @@ def generate_plan():
 
             sum_sell = 0
             # Вычисляем и добавляем результат в словарь
-            for doc in documents:
-                for trans in doc["transactions"]:
-                    if trans["x_type"] == "REGISTER_POSITION":
-                        if trans["commodityUuid"] in products_uuid:
-                            sum_sell += trans["sum"]
+            if len(documents) > 0:
+                sum_sell = 0
+                for doc in documents:
+                    for trans in doc["transactions"]:
+                        if trans["x_type"] == "REGISTER_POSITION":
+                            if trans["commodityUuid"] in products_uuid:
+                                sum_sell += trans["sum"]
+            else:
+                sum_sell = 0
+            pprint(sum_sell)
             # Устанавливаем значение _day
             if shop["uuid"] in uuid:
                 _day = 4

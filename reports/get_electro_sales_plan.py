@@ -34,6 +34,14 @@ def generate(session: Session):
         "568905bd-9460-11ee-9ef4-be8fe126e7b9",
         "568905be-9460-11ee-9ef4-be8fe126e7b9",
     ]
+    _in = [
+        "20190327-A48C-407F-801F-DA33CB4FBBE9",
+        "20220202-B042-4021-803D-09E15DADE8A4",
+        "20231001-6611-407F-8068-AC44283C9196",
+        "20190411-5A3A-40AC-80B3-8B405633C8BA",
+        "20220201-19C9-40B0-8082-DF8A9067705D",
+        "20191117-BF71-40FE-8016-1E7E4A3A4780",
+    ]
 
     # Определение временного периода для анализа
     since_2 = utcnow().replace(hour=3, minute=00).isoformat()
@@ -42,13 +50,14 @@ def generate(session: Session):
     # Заранее определенные идентификаторы магазинов
 
     # Получение информации о магазинах на основе заранее определенных идентификаторов
-    shops_uuid = [i.uuid for i in get_shops_in(session)]
+    shops_uuid = [i.uuid for i in get_shops_in(session, _in)]
+    # pprint(shops_uuid)
 
     _dict_2 = {}
     # Словарь для хранения данных о продажах по магазинам
     sales_data = {}
 
-    for shop in get_shops_in(session):
+    for shop in get_shops_in(session, _in):
         since = utcnow().replace(hour=3, minute=00).isoformat()
         until = utcnow().replace(hour=20, minute=59).isoformat()
 
@@ -59,6 +68,7 @@ def generate(session: Session):
                 "shop_id": shop["uuid"],
             }
         )
+        pprint(plan_)
         if len(plan_) > 0:
             # pprint(1)
             plan = Plan.objects(
