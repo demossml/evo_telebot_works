@@ -407,6 +407,10 @@ class ReportsClearDbInput:
             {"id": "clear_db_shops", "name": "🏪 Очистить (Магазины) ➡️".upper()},
             {"id": "clear_db_documents", "name": "📑 Очистить (Документы) ➡️".upper()},
             {"id": "clear_db_products", "name": "🛒 Очистить (Продукты) ➡️".upper()},
+            {"id": "clear_db_z_report", "name": "🛒 Очистить (z) ➡️".upper()},
+            {"id": "clear_db_sesion", "name": "🛒 Очистить (Session) ➡️".upper()},
+            {"id": "clear_db_get_time", "name": "🛒 Очистить (GetTime) ➡️".upper()},
+            {"id": "clear_db_surplus", "name": "🛒 Очистить (Surplus) ➡️".upper()},
         ]
         return output
 

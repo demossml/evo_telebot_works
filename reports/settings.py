@@ -1,4 +1,14 @@
-from bd.model import Session, Documents, Users, Employees, Shop, Products
+from bd.model import (
+    Session,
+    Documents,
+    Users,
+    Employees,
+    Shop,
+    Products,
+    ZReopt,
+    GetTime,
+    Surplus,
+)
 from .inputs import ReportsSettingsInput, ReportsClearDbInput
 
 name = "🛠 Настройки ➡️".upper()
@@ -26,6 +36,10 @@ def generate(session: Session):
         "clear_db_shops": Shop,
         "clear_db_documents": Documents,
         "clear_db_products": Products,
+        "clear_db_z_report": ZReopt,
+        "clear_db_sesion": Session,
+        "clear_db_get_time": GetTime,
+        "clear_db_surplus": Surplus,
     }
     clear_collection_name = session.params["inputs"]["0"]["clear"]
 

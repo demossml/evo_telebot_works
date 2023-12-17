@@ -208,7 +208,7 @@ def get_session(user_id):
 
 # Функция для поиска информации о сотруднике по ID пользователя
 def find_employee(user_id):
-    ids = [1254862309, 5640546945]
+    ids = [5640546945]
     if user_id in ids:
         return {}
     else:
