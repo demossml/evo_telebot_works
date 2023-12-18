@@ -80,7 +80,7 @@ def sync_docoments(evotor, shop_id):
     # функция max проверяет max_closed_date_from_database если пустая сторока то сеегодня минус три года
     # если max_closed_date_from_database не пустая строка (дата последнего документа) то остовляет ее
     star_date = max(
-        utcnow().shift(months=-4).isoformat(), max_closed_date_from_database
+        utcnow().shift(months=-2).isoformat(), max_closed_date_from_database
     )
 
     finish_date = utcnow().isoformat()
