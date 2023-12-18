@@ -80,12 +80,12 @@ def sync_docoments(evotor, shop_id):
     # функция max проверяет max_closed_date_from_database если пустая сторока то сеегодня минус три года
     # если max_closed_date_from_database не пустая строка (дата последнего документа) то остовляет ее
     star_date = max(
-        utcnow().shift(months=-2).isoformat(), max_closed_date_from_database
+        utcnow().shift(months=-4).isoformat(), max_closed_date_from_database
     )
 
     finish_date = utcnow().isoformat()
     # Разбивает период на интервалы и получает документы за каждый интервал
-    for left, right in get_intervals(star_date, finish_date, "days", 90):
+    for left, right in get_intervals(star_date, finish_date, "days", 30):
         documents = evotor.get_doc(shop_id, gtCloseDate=left, ltCloseDate=right)
         if len(documents) > 4:
             for item in prune(documents):
