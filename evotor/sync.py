@@ -1,8 +1,5 @@
 from evotor import Evotor
-from config import (
-    EVOTOR_TOKEN_2,
-    EVOTOR_TOKEN_4,
-)
+from config import EVOTOR_TOKEN_2, EVOTOR_TOKEN_4, EVOTOR_TOKEN_5
 from util import get_intervals, prune
 from bd.model import Shop, Products, Documents, Employees, Users
 from pprint import pprint
@@ -120,6 +117,7 @@ def sync_total(evotor):
 def sync_all():
     sync_total(Evotor(EVOTOR_TOKEN_2))
     sync_total(Evotor(EVOTOR_TOKEN_4))
+    sync_total(Evotor(EVOTOR_TOKEN_5))
 
 
 # Вызов функции для начальной синхрони
