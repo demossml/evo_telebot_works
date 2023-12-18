@@ -85,7 +85,7 @@ def sync_docoments(evotor, shop_id):
 
     finish_date = utcnow().isoformat()
     # Разбивает период на интервалы и получает документы за каждый интервал
-    for left, right in get_intervals(star_date, finish_date, "days", 30):
+    for left, right in get_intervals(star_date, finish_date, "days", 90):
         documents = evotor.get_doc(shop_id, gtCloseDate=left, ltCloseDate=right)
         if len(documents) > 4:
             for item in prune(documents):
