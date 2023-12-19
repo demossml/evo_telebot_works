@@ -112,7 +112,7 @@ def get_inputs(session: Session):
                             return {}
                         else:
                             return {
-                                "openDate": OpenDatePastInput,
+                                "openDate": OpenDatePast2Input,
                                 "closeDate": CloseDatePastInput,
                             }
                     else:
@@ -275,30 +275,37 @@ def generate(session: Session):
             shop_id = shops["shop_id"]
             shop_name = shops["shop_name"]
 
+            pprint(f"{since}/{until}/{shop_name}")
             documents = Surplus.objects(
                 __raw__={
                     "closeDate": {"$gte": since, "$lt": until},
                     "shop_id": {"$in": shop_id},
                 }
             )
-            result = []
-            sum_surplus = 0
-            for item in documents:
-                dict_ = {
-                    "1 TT:": shop_name,
-                    "2 Излишек": "{} {}".format(item["surplus"], "₽"),
-                    "3 ПРОДАВЕЦ": [
-                        i["name"]
-                        for i in Employees.objects(lastName=str(item["user_id"]))
-                    ][0],
-                    "4 Дата": item["closeDate"][0:16],
-                    "5 Номер чека:": item["cash_receipt"],
-                }
-                sum_surplus += int(item["surplus"])
-                result.append(dict_)
-            result.append({"Итого:": sum_surplus})
+            len_data = len(documents)
+            pprint(f"{since}/{until}/{shop_name}/{len_data}")
 
-            return {}, result
+            result = []
+            if len(documents) > 0:
+                sum_surplus = 0
+                for item in documents:
+                    dict_ = {
+                        "1 TT:": shop_name,
+                        "2 Излишек": "{} {}".format(item["surplus"], "₽"),
+                        "3 ПРОДАВЕЦ": [
+                            i["name"]
+                            for i in Employees.objects(lastName=str(item["user_id"]))
+                        ][0],
+                        "4 Дата": item["closeDate"][0:16],
+                        "5 Номер чека:": item["cash_receipt"],
+                    }
+                    sum_surplus += int(item["surplus"])
+                    result.append(dict_)
+                result.append({"Итого:": sum_surplus})
+
+                return {}, result
+            else:
+                return {}, [{shop_name: f"НЕТ ДАННЫХ {since[:10]}/{until[:10]}"}]
     if "report_z" in session.params["inputs"]["0"]:
         if session.params["inputs"]["0"]["report_z"] == "z_report":
             session.params["inputs"]["0"]["distribution_list"] = "yes"

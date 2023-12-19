@@ -849,7 +849,9 @@ class OpenDatePast2Input:
 
     def get_options(self, session: Session) -> [{str, str}]:
         output = []
-        since = period_to_date(session["params"]["inputs"]["0"]["period"])
+        since = period_first_day_of_the_month(
+            session["params"]["inputs"]["0"]["period"]
+        )
         until = utcnow().isoformat()
         intervals = get_intervals(since, until, "days", 1)
         for left, right in intervals:
