@@ -308,6 +308,73 @@ def period_to_date(period: str) -> utcnow:
     raise Exception("Period is not supported")
 
 
+def period_first_day_of_the_month(period: str) -> utcnow:
+    """
+    :param period: строка, представляющая период времени ("day", "week", "fortnight", "month", "two months", "6 months", "12 months", "24 months", "48 months")
+    :return: строка с датой и временем в ISO формате, отстоящая на указанный период времени назад от текущего времени в UTC с временем 03:00.
+    """
+    # Проверяем значение параметра "period" и выполняем соответствующее смещение времени
+    if period == "day":
+        return utcnow().to("local").replace(hour=3, minute=00).isoformat()
+    if period == "week":
+        return (
+            utcnow().to("local").shift(days=-7).replace(hour=3, minute=00).isoformat()
+        )
+    if period == "fortnight":
+        return (
+            utcnow().to("local").shift(days=-14).replace(hour=3, minute=00).isoformat()
+        )
+    if period == "month":
+        return (
+            utcnow()
+            .to("local")
+            .shift(months=-1)
+            .replace(day=1, hour=3, minute=00)
+            .isoformat()
+        )
+    if period == "two months":
+        return (
+            utcnow()
+            .to("local")
+            .shift(months=-2)
+            .replace(day=1, hour=3, minute=00)
+            .isoformat()
+        )
+    if period == "6 months":
+        return (
+            utcnow()
+            .to("local")
+            .shift(months=-6)
+            .replace(day=1, hour=3, minute=00)
+            .isoformat()
+        )
+    if period == "12 months":
+        return (
+            utcnow()
+            .to("local")
+            .shift(months=-12)
+            .replace(hour=3, minute=00)
+            .isoformat()
+        )
+    if period == "24 months":
+        return (
+            utcnow()
+            .to("local")
+            .shift(months=-24)
+            .replace(hour=3, minute=00)
+            .isoformat()
+        )
+    if period == "48 months":
+        return (
+            utcnow()
+            .to("local")
+            .shift(months=-48)
+            .replace(hour=3, minute=00)
+            .isoformat()
+        )
+    raise Exception("Period is not supported")
+
+
 def period_to_date_2(period: str) -> utcnow:
     """
     :param period: day, week,  fortnight, month, two months,

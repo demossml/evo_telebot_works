@@ -16,6 +16,7 @@ from .util import (
     get_period,
     generate_plan,
     get_total_salary,
+    period_first_day_of_the_month,
 )
 from .inputs import (
     ShopInput,
@@ -92,6 +93,7 @@ class CashReceiptInput:
 
 
 def get_inputs(session: Session):
+    period = ["day", "week", "fortnight", "month"]
     if session.params["inputs"]["0"]:
         if session.params["inputs"]["0"]["report"] == "surplus":
             if "report_surplus" in session.params["inputs"]["0"]:
@@ -158,7 +160,7 @@ def get_inputs(session: Session):
                 return {"report_z": ReportsZReport2Input}
 
         if session.params["inputs"]["0"]["report"] == "report_cash_outcome":
-            period = ["day", "week", "fortnight", "month"]
+            # period = ["day", "week", "fortnight", "month"]
             if "period" in session.params["inputs"]["0"]:
                 if session.params["inputs"]["0"]["period"] == "day":
                     return {}
@@ -176,7 +178,7 @@ def get_inputs(session: Session):
                 }
 
         if session.params["inputs"]["0"]["report"] == "report_cash_income":
-            period = ["day", "week", "fortnight", "month"]
+            # period = ["day", "week", "fortnight", "month"]
             if "period" in session.params["inputs"]["0"]:
                 if session.params["inputs"]["0"]["period"] == "day":
                     return {}

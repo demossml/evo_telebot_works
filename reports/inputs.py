@@ -11,6 +11,7 @@ from .util import (
     get_shops_uuid_user_id,
     get_products_shops,
     get_shops,
+    period_first_day_of_the_month,
 )
 
 
@@ -822,7 +823,9 @@ class OpenDatePastInput:
 
     def get_options(self, session: Session) -> [{str, str}]:
         output = []
-        since = period_to_date(session["params"]["inputs"]["0"]["period"])
+        since = period_first_day_of_the_month(
+            session["params"]["inputs"]["0"]["period"]
+        )
         until = utcnow().isoformat()
         period = ["day", "week", "fortnight", "month"]
         if session["params"]["inputs"]["0"]["period"] in period:
