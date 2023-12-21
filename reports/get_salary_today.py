@@ -100,7 +100,7 @@ def generate(session: Session):
             .first()
         )
         if last_time:
-            time = get(last_time.closeDate).shift(hours=3)[11:19]
+            time = get(last_time.closeDate).shift(hours=3).isoformat()[11:19]
             pprint(time)
         else:
             time = 0
