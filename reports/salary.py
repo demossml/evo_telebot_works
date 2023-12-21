@@ -63,7 +63,9 @@ class EmployeesSurchargeInput:
 
 
 def get_inputs(session: Session):
+    # Периоды для запроса зарплатных данных
     period = ["day", "week", "fortnight", "month"]
+    # Проверяем, есть ли данные о входах в сессии
     if session.params["inputs"]["0"]:
         # Настроить критерии расчета зарплат
         if session.params["inputs"]["0"]["reports"] == "setting":
@@ -257,16 +259,24 @@ def generate(session: Session):
     # Назначить группы аксессуаров
     if "report" in params:
         if params["report"] == "assigning_group_uuid_accessory":
+            # Получение идентификаторов магазинов пользователя
             shops_id = get_shops_uuid_user_id(session)
+            # Список для хранения родительских UUID
             parentUuids = []
+
             # содоет ключи в session.params["inputs"]
             for i in range(int(room) + 1):
-                # если в 'uuid' есть в session.params["inputs"][str(i)]
+                # Проверяем, есть ли "parentUuid" в параметрах комнаты i
                 if "parentUuid" in session.params["inputs"][str(i)]:
-                    # если 'uuid' нет в словаре с ключем i в списке uuid
+                    # Добавляем "parentUuid" в список
                     parentUuids.append(session.params["inputs"][str(i)]["parentUuid"])
+
+            # Получаем текущую дату и время в формате ISO
             close_date = utcnow().isoformat()[:10]
+
+            # Итерируемся по идентификаторам магазинов
             for shop_id in shops_id:
+                # Создаем словарь с данными для обновления в базе данных
                 dict_ = {
                     "shop_id": shop_id,
                     "closeDate": close_date,
@@ -275,35 +285,47 @@ def generate(session: Session):
                     "x_type": "MOTIVATION_PARENT_UUID",
                 }
 
+                # Обновляем или добавляем запись в базе данных
                 GroupUuidAks.objects(
                     shop_id=shop_id,
                     closeDate=close_date,
                     x_type="MOTIVATION_PARENT_UUID",
                 ).update(**dict_, upsert=True)
 
+            # Получаем названия магазинов по их идентификаторам
             shops = Shop.objects(uuid__in=shops_id).only("name")
+
             shop_name = ""
+
+            # Собираем названия магазинов в строку
             for shop in shops:
                 shop_name += "{}, ".format(shop.name)
+
+            # Формируем результат в виде списка словарей
             result = [
                 {"ДАТА:": close_date},
                 {"ГРУППЫ:": "ЗП АКС"},
                 {"МАГАЗИН(Ы):".upper(): shop_name},
             ]
+
             number_ = 1
+
+            # Нумеруем и добавляем информацию о продуктах для каждого родительского UUID
             for uuid in parentUuids:
                 products = Products.objects(group=True, uuid=uuid).first()
                 result.append({"{}:".format(number_): products.name})
                 number_ += 1
 
-                # pprint(item)
+            # Возвращаем результат
             return result
         # Запрос назначенных групп аксессуаров
         if params["report"] == "get_group_uuid_accessory":
+            # Получаем информацию о магазинах
             shops = get_shops(session)
             shop_id_ = shops["shop_id"]
             shop_name = shops["shop_name"]
 
+            # Получаем последние документы по групповым UUID с типом "MOTIVATION_PARENT_UUID"
             documents = (
                 GroupUuidAks.objects(
                     shop_id=shop_id_[0], x_type="MOTIVATION_PARENT_UUID"
@@ -311,6 +333,8 @@ def generate(session: Session):
                 .order_by("-closeDate")
                 .first()
             )
+
+            # Получаем продукты, относящиеся к parentUuid
             products = Products.objects(group=True, uuid__in=documents.parentUuids)
 
             result = [{"МАГАЗИН": shop_name}]
@@ -322,11 +346,15 @@ def generate(session: Session):
                     uuid.append(prod["uuid"])
                     number_ += 1
             return result
+
         # Назначить товар доб. мотивации
         if params["report"] == "product_ext_motivation":
+            # Получаем UUID магазинов
             shops_id = get_shops_uuid_user_id(session)
+
             motivationUuids = {}
-            # содоет ключи в session.params["inputs"]
+
+            # Создаем словарь с мотивацией для каждого UUID из параметров
             for i in range(int(room) + 1):
                 # если в 'uuid' есть в session.params["inputs"][str(i)]
                 if "uuid" in session.params["inputs"][str(i)]:
@@ -339,7 +367,11 @@ def generate(session: Session):
                         }
                     )
             print(motivationUuids)
+
+            # Устанавливаем текущую дату в формате ISO
             close_date = utcnow().isoformat()[:10]
+
+            # Обновляем или создаем документы GroupUuidAks для каждого магазина
             for shop_id in shops_id:
                 dict_ = {
                     "closeDate": close_date,
@@ -352,6 +384,7 @@ def generate(session: Session):
                     shop_id=shop_id, closeDate=close_date, x_type="MOTIVATION_UUID"
                 ).update(**dict_, upsert=True)
 
+            # Получаем имена магазинов
             shops = Shop.objects(uuid__in=shops_id).only("name")
             shop_name = ""
             for shop in shops:
@@ -361,6 +394,8 @@ def generate(session: Session):
                 {"Товар доб. мотивации".upper(): ""},
                 {"МАГАЗИН(Ы):".upper(): shop_name},
             ]
+
+            # Формируем результат в виде списка словарей с информацией о товарах и мотивации
             for uuid, motivation in motivationUuids.items():
                 products = Products.objects(group=False, uuid=uuid).first()
                 result.append({"{}:".format(products.name): "{}₱".format(motivation)})
@@ -369,25 +404,33 @@ def generate(session: Session):
             return result
         # Запрос назначенных товаров доб. мотивации
         if params["report"] == "get_product_ext_motivation":
+            # Получение информации о магазине
             shops = get_shops(session)
             shop_id_ = shops["shop_id"]
             shop_name = shops["shop_name"]
 
+            # Получение документов с типом "MOTIVATION_UUID" для последней закрывшейся даты
             documents = (
                 GroupUuidAks.objects(shop_id=shop_id_[0], x_type="MOTIVATION_UUID")
                 .order_by("-closeDate")
                 .first()
             )
+
+            # Получение продуктов на основе UUID из документов
             products = Products.objects(group=False, uuid__in=documents.uuid)
-            result = []
 
             result = [{"Товар доб. мотивации".upper(): ""}, {"МАГАЗИН": shop_name}]
+
+            # Формирование результата с информацией о каждом товаре и его мотивации
             for uuid, motivation in documents.uuid.items():
                 products = Products.objects(group=False, uuid=uuid).first()
                 result.append({"{}:".format(products.name): "{}₱".format(motivation)})
+
             return result
+
         # Назначить оклады на ТТ
         if params["report"] == "assigning_salary_":
+            # Получение текущей даты
             close_date = utcnow().isoformat()[:10]
             shop_result = {}
             # содоет ключи в session.params["inputs"]
@@ -420,9 +463,11 @@ def generate(session: Session):
             return result
         # Запрос назначенных окладов
         if params["report"] == "get_salary":
+            # Получение информации о магазине
             shops = get_shops(session)
             shop_id_ = shops["shop_id"]
             shop_name = shops["shop_name"]
+
             documents = (
                 GroupUuidAks.objects(shop_id=shop_id_[0], x_type="SALARY")
                 .order_by("-closeDate")

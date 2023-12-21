@@ -1077,9 +1077,13 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
         ).first()
     # Группы товаров для анализа
     group_id = [
-        "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
         "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
-        "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
+        "568905bd-9460-11ee-9ef4-be8fe126e7b9",
+        "2b8eb6b4-92ea-11ee-ab93-2cf05d04be1d",
+        "568905be-9460-11ee-9ef4-be8fe126e7b9",
+        "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
+        "8a8fcb5f-9582-11ee-ab93-2cf05d04be1d",
+        "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
     ]
     # Поиск товаров в указанных группах
     products = Products.objects(
