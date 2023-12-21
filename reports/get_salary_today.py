@@ -106,11 +106,9 @@ def generate(session: Session):
                         if trans["commodityName"] in _dict:
                             _dict[trans["commodityName"]] += trans["sum"]
                             sum_sales += trans["sum"]
-                            last_time = doc["closeDate"]
                         else:
                             _dict[trans["commodityName"]] = trans["sum"]
                             sum_sales += trans["sum"]
-                            last_time = doc["closeDate"]
 
         _dict = dict(OrderedDict(sorted(_dict.items(), key=lambda t: -t[1])))
         _dict_total = {}
