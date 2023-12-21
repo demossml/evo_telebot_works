@@ -86,19 +86,24 @@ def generate(session: Session):
         )
         _dict = {}
         sum_sales = 0
-        # last_time = (
-        #     Documents.objects(
-        #         __raw__={
-        #             "closeDate": {"$gte": since, "$lt": until},
-        #             "shop_id": documents_open_session.shop_id,
-        #             "x_type": "SELL",
-        #             "transactions.commodityUuid": {"$in": products_uuid},
-        #         }
-        #     )
-        #     .order_by("-closeDate")
-        #     .only("closeDate")
-        #     .first()
-        # )
+        last_time = (
+            Documents.objects(
+                __raw__={
+                    "closeDate": {"$gte": since, "$lt": until},
+                    "shop_id": documents_open_session.shop_id,
+                    "x_type": "SELL",
+                    "transactions.commodityUuid": {"$in": products_uuid},
+                }
+            )
+            .order_by("-closeDate")
+            .only("closeDate")
+            .first()
+        )
+        if last_time:
+            pprint(last_time.closeDate[12:19])
+            time = last_time.closeDate[12:19]
+        else:
+            time = 0
         for doc in documents_sale:
             for trans in doc["transactions"]:
                 if trans["x_type"] == "REGISTER_POSITION":
@@ -144,10 +149,11 @@ def generate(session: Session):
                 "Продавец:".upper(): name.name.upper(),
                 "Магазин:".upper(): shop.name.upper(),
                 "Дата:".upper(): until[:10],
-                # "Время выгрузки": last_time.closeDate[12:19],
+                "Время выгрузки": time,
                 "Итго зарплата".upper(): "{}₱".format(total_salary["total_salary"]),
             }
         )
+        return result
     result.append(
         {"Дата:".upper(): until[:10], name.name.upper(): "Сегодня не работает".upper()}
     )
