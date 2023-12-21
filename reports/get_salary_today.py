@@ -100,8 +100,8 @@ def generate(session: Session):
             .first()
         )
         if last_time:
-            pprint(last_time.closeDate[12:19])
-            time = last_time.closeDate[12:19]
+            time = get(last_time.closeDate).shift(hours=3)[11:19]
+            pprint(time)
         else:
             time = 0
         for doc in documents_sale:
