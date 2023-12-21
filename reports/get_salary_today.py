@@ -62,9 +62,9 @@ def generate(session: Session):
             .order_by("-closeDate")
             .first()
         )
-        # pprint(documents_aks)
-        # pprint(documents_open_session.shop_id)
-        # pprint(documents_aks.parentUuids)
+        pprint(documents_aks)
+        pprint(documents_open_session.shop_id)
+        pprint(documents_aks.parentUuids)
         group = Products.objects(
             __raw__={
                 "shop_id": documents_open_session.shop_id,
@@ -75,7 +75,7 @@ def generate(session: Session):
 
         products_uuid = [i.uuid for i in group]
 
-        # pprint(products_uuid)
+        pprint(products_uuid)
         documents_sale = Documents.objects(
             __raw__={
                 "closeDate": {"$gte": since, "$lt": until},
@@ -86,19 +86,19 @@ def generate(session: Session):
         )
         _dict = {}
         sum_sales = 0
-        last_time = (
-            Documents.objects(
-                __raw__={
-                    "closeDate": {"$gte": since, "$lt": until},
-                    "shop_id": documents_open_session.shop_id,
-                    "x_type": "SELL",
-                    "transactions.commodityUuid": {"$in": products_uuid},
-                }
-            )
-            .order_by("-closeDate")
-            .only("closeDate")
-            .first()
-        )
+        # last_time = (
+        #     Documents.objects(
+        #         __raw__={
+        #             "closeDate": {"$gte": since, "$lt": until},
+        #             "shop_id": documents_open_session.shop_id,
+        #             "x_type": "SELL",
+        #             "transactions.commodityUuid": {"$in": products_uuid},
+        #         }
+        #     )
+        #     .order_by("-closeDate")
+        #     .only("closeDate")
+        #     .first()
+        # )
         for doc in documents_sale:
             for trans in doc["transactions"]:
                 if trans["x_type"] == "REGISTER_POSITION":
@@ -146,7 +146,7 @@ def generate(session: Session):
                 "Продавец:".upper(): name.name.upper(),
                 "Магазин:".upper(): shop.name.upper(),
                 "Дата:".upper(): until[:10],
-                "Время выгрузки": last_time.closeDate[12:19],
+                # "Время выгрузки": last_time.closeDate[12:19],
                 "Итго зарплата".upper(): "{}₱".format(total_salary["total_salary"]),
             }
         )
