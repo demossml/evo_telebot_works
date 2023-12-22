@@ -115,18 +115,26 @@ def sync_total(evotor):
 
 # Функция для синхронизации всей информации для всех магазинов
 def sync_all():
+    # Засекаем время начала выполнения
+    start_time = time.time()
     sync_total(Evotor(EVOTOR_TOKEN_2))
     sync_total(Evotor(EVOTOR_TOKEN_4))
-    sync_total(Evotor(EVOTOR_TOKEN_5))
+    # sync_total(Evotor(EVOTOR_TOKEN_5))
+
+    # Рассчитываем время выполнения и выводим в консоль
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Время выполнения функции sync_all: {execution_time:.2f} секунд")
+    sync_all()
 
 
-# Вызов функции для начальной синхрони
+# Вызов функции для начальной синхронизации
 sync_all()
 
-# Расписание для периодической синхронизации
-schedule.every(550).seconds.do(sync_all)
+# # Расписание для периодической синхронизации
+# schedule.every(250).seconds.do(sync_all)
 
-# Бесконечный цикл для выполнения задач по расписанию
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+# # Бесконечный цикл для выполнения задач по расписанию
+# while True:
+#     schedule.run_pending()
+#     time.sleep(1)
