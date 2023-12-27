@@ -1,4 +1,13 @@
-from bd.model import Shop, Products, Documents, Employees, Session, Plan, GroupUuidAks
+from bd.model import (
+    Shop,
+    Products,
+    Documents,
+    Employees,
+    Session,
+    Plan,
+    GroupUuidAks,
+    CashRegister,
+)
 from arrow import utcnow, get
 from typing import List, Tuple
 from pprint import pprint
@@ -1339,3 +1348,21 @@ def gather_statistics(documents, products_uuid):
                     else:
                         data_sale[trans["commodityUuid"]] = trans["quantity"]
     return data_sale
+
+
+def cash() -> int:
+    sum_ = 0
+    cash = CashRegister.objects()
+
+    if cash:
+        for doc in cash:
+            pprint(doc["cash"])
+            if doc["x_type"] == "CASH_INCOME":
+                sum_ += int(doc["cash"])
+
+            if doc["x_type"] == "CASH_OUTCOME":
+                sum_ -= int(doc["cash"])
+
+        return sum_
+    else:
+        return sum_

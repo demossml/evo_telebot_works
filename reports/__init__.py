@@ -22,6 +22,7 @@ from reports import (
     сash_Income,
     cash_balance_in_tt,
     cash_balance_in_tt_all,
+    balances,
 )
 
 
@@ -61,6 +62,7 @@ def get_reports(session: Session):
             }
     if session.user_id in ids:
         return {
+            "balances": balances,
             "cash_balance_in_tt": cash_balance_in_tt,
             "cash_balance": cash_balance,
             "cash_flow": cash_flow,
@@ -93,4 +95,5 @@ reports = {
     "сash_Income": сash_Income,
     "cash_balance_in_tt": cash_balance_in_tt,
     "cash_balance_in_tt_all": cash_balance_in_tt_all,
+    "balances": balances,
 }
