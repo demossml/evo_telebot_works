@@ -51,6 +51,7 @@ def get_reports(session: Session):
                 "settings": settings,
                 "salary": salary,
                 "break_": break_,
+                "cash_balance_in_tt_all": cash_balance_in_tt_all,
                 "data_analysis": data_analysis,
                 "get_cash_report": get_cash_report,
                 "get_commodity_reports": get_commodity_reports,
@@ -58,7 +59,7 @@ def get_reports(session: Session):
                 "shift_opening": shift_opening,
                 "get_electro_sales": get_electro_sales,
                 "get_electro_sales_plan": get_electro_sales_plan,
-                "cash_balance_in_tt_all": cash_balance_in_tt_all,
+                "get_salary_today": get_salary_today,
             }
     if session.user_id in ids:
         return {
