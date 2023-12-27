@@ -16,10 +16,19 @@ from reports import (
     break_today,
     file_json_download,
     get_salary_today,
+    cash_balance,
+    cash_flow,
+    cash_outcome,
+    сash_Income,
+    cash_balance_in_tt,
+    cash_balance_in_tt_all,
 )
 
 
 from bd.model import Session
+
+
+ids = [5700958253]
 
 
 def get_reports(session: Session):
@@ -48,10 +57,16 @@ def get_reports(session: Session):
                 "shift_opening": shift_opening,
                 "get_electro_sales": get_electro_sales,
                 "get_electro_sales_plan": get_electro_sales_plan,
-                "sales_today": sales_today,
-                "break_today": break_today,
-                "get_salary_today": get_salary_today,
+                "cash_balance_in_tt_all": cash_balance_in_tt_all,
             }
+    if session.user_id in ids:
+        return {
+            "cash_balance_in_tt": cash_balance_in_tt,
+            "cash_balance": cash_balance,
+            "cash_flow": cash_flow,
+            "cash_outcome": cash_outcome,
+            "сash_Income": сash_Income,
+        }
 
 
 # Регистрирует отчеты
@@ -72,4 +87,10 @@ reports = {
     "break_today": break_today,
     "file_json_download": file_json_download,
     "get_salary_today": get_salary_today,
+    "cash_balance": cash_balance,
+    "cash_flow": cash_flow,
+    "cash_outcome": cash_outcome,
+    "сash_Income": сash_Income,
+    "cash_balance_in_tt": cash_balance_in_tt,
+    "cash_balance_in_tt_all": cash_balance_in_tt_all,
 }

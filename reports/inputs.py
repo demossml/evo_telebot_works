@@ -435,6 +435,30 @@ class ShopAllInput:
         return output
 
 
+class ShopAllInInput:
+    """
+    Магазины и все магазины
+    """
+
+    desc = "Выберите магазин из списка"
+    type = "SELECT"
+
+    def get_options(self, session: Session) -> [{str, str}]:
+        output = [
+            {"id": "all", "name": "{} ➡️".format("Все магазины").upper()},
+            {
+                "id": "20220202-B042-4021-803D-09E15DADE8A4",
+                "name": "{} ➡️".format("Багратиона").upper(),
+            },
+            {
+                "id": "20220201-19C9-40B0-8082-DF8A9067705D",
+                "name": "{} ➡️".format("Скала").upper(),
+            },
+        ]
+
+        return output
+
+
 class ShopInput:
     """
     Магазины

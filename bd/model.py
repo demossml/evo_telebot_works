@@ -143,6 +143,10 @@ class GroupUuidAks(DynamicDocument):
     pass
 
 
+class CashRegister(DynamicDocument):
+    pass
+
+
 class AfsRequest(DynamicDocument):
     # ID магазина
     # поле обязательно для заполнения
@@ -208,7 +212,7 @@ def get_session(user_id):
 
 # Функция для поиска информации о сотруднике по ID пользователя
 def find_employee(user_id):
-    ids = [5640546945]
+    ids = [5700958253]
     if user_id in ids:
         return {}
     else:
