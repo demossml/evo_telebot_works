@@ -119,41 +119,28 @@ class EvoSync:
             self.sync_docoments(shop["uuid"])
 
 
-async def sync_evo_1(evo, event):
+async def sync_evo(event):
     start_time = time.time()
-    print(f"Start функции sync_evo_1: {start_time} секунд")
-
-    evo.sync_total()
+    print(
+        f"Start функции sync_evo: {time.strftime('%H:%M:%S', time.localtime(start_time))} "
+    )
+    evo_1 = EvoSync(EVOTOR_TOKEN_2)
+    evo_1.sync_total()
+    evo_2 = EvoSync(EVOTOR_TOKEN_4)
+    evo_2.sync_total()
 
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"Время выполнения функции sync_evo_1: {execution_time:.2f} секунд")
-    event.set()
-
-
-async def sync_evo_2(evo, event):
-    start_time = time.time()
-    print(f"Start функции sync_evo_2: {start_time} секунд")
-
-    evo.sync_total()
-
-    end_time = time.time()
-    execution_time = end_time - start_time
-    print(f"Время выполнения функции sync_evo_2: {execution_time:.2f} секунд")
+    print(f"Время выполнения функции sync_evo: {execution_time:.2f} секунд")
     event.set()
 
 
 async def main():
-    evo_1 = EvoSync(EVOTOR_TOKEN_2)
-    evo_2 = EvoSync(EVOTOR_TOKEN_4)
+    event = Event()
 
-    event_1 = Event()
-    event_2 = Event()
+    task = asyncio.create_task(sync_evo(event))
 
-    task_1 = asyncio.create_task(sync_evo_1(evo_1, event_1))
-    task_2 = asyncio.create_task(sync_evo_2(evo_2, event_2))
-
-    await asyncio.gather(task_1, task_2)
+    await asyncio.gather(task)
 
 
 if __name__ == "__main__":
