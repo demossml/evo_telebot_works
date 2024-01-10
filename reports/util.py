@@ -701,41 +701,44 @@ def get_commodity_balances(session: Session) -> dict:
     return commodity_balances
 
 
-def get_commodity_balances_all(shop_id, uuid) -> dict:
+def get_commodity_balances_all(shop_id, products_uuid) -> dict:
     # Создаем пустой словарь для хранения балансов товаров
 
-    quantity = 0
     x_type = ["SELL", "PAYBACK", "ACCEPT"]
 
-    documents = (
-        Documents.objects(
-            __raw__={
-                "shop_id": shop_id,
-                "x_type": {"$in": x_type},
-                "transactions.commodityUuid": uuid,
-            }
+    quantity_data = {}
+
+    for uuid in products_uuid:
+        quantity = 0
+        documents = (
+            Documents.objects(
+                __raw__={
+                    "shop_id": shop_id,
+                    "x_type": {"$in": x_type},
+                    "transactions.commodityUuid": uuid,
+                }
+            )
+            .order_by("-closeDate")
+            .first()
         )
-        .order_by("-closeDate")
-        .first()
-    )
+        if documents:
+            for trans in documents["transactions"]:
+                if trans["x_type"] == "REGISTER_POSITION":
+                    if trans["commodityUuid"] == uuid:
+                        if documents.x_type == "SELL":
+                            # Обновляем баланс товара при продаже
+                            quantity = trans["balanceQuantity"] - trans["quantity"]
 
-    if documents:
-        for trans in documents["transactions"]:
-            if trans["x_type"] == "REGISTER_POSITION":
-                if trans["commodityUuid"] == uuid:
-                    if documents.x_type == "SELL":
-                        # Обновляем баланс товара при продаже
-                        quantity = trans["balanceQuantity"] - trans["quantity"]
+                        if documents.x_type == "PAYBACK":
+                            # Обновляем баланс товара при возврате
+                            quantity = trans["balanceQuantity"] + trans["quantity"]
 
-                    if documents.x_type == "PAYBACK":
-                        # Обновляем баланс товара при возврате
-                        quantity = trans["balanceQuantity"] + trans["quantity"]
-
-                    if documents.x_type == "ACCEPT":
-                        # Обновляем баланс товара при приемке
-                        quantity = trans["balanceQuantity"]
-    # Возвращаем словарь с балансами товаров
-    return quantity
+                        if documents.x_type == "ACCEPT":
+                            # Обновляем баланс товара при приемке
+                            quantity = trans["balanceQuantity"]
+        # Возвращаем словарь с балансами товаров
+        quantity_data.update({uuid: quantity})
+    return quantity_data
 
 
 def generate_plan():
@@ -1326,8 +1329,8 @@ def diagram(data: dict) -> BytesIO:
     return image_buffer
 
 
-# Функция для сбора статистики по продажам
-def gather_statistics(documents, products_uuid):
+# Функция для сбора статистики по продажам {uuid: commodity}
+def gather_statistics_uuid(documents, products_uuid):
     """
     Собирает статистику по продажам для каждого товара в заданных документах.
 
@@ -1347,6 +1350,30 @@ def gather_statistics(documents, products_uuid):
                         data_sale[trans["commodityUuid"]] += trans["quantity"]
                     else:
                         data_sale[trans["commodityUuid"]] = trans["quantity"]
+    return data_sale
+
+
+# Функция для сбора статистики по продажам {name: commodity}
+def gather_statistics_name(documents, products_uuid):
+    """
+    Собирает статистику по продажам для каждого товара в заданных документах.
+
+    Parameters:
+    - documents: Список документов продажи
+    - products_uuid: Список UUID товаров
+
+    Returns:
+    - data_sale: Словарь с количеством проданных товаров для каждого UUID товара
+    """
+    data_sale = {}
+    for doc in documents:
+        for trans in doc["transactions"]:
+            if trans["x_type"] == "REGISTER_POSITION":
+                if trans["commodityUuid"] in products_uuid:
+                    if trans["commodityName"] in data_sale:
+                        data_sale[trans["commodityName"]] += trans["quantity"]
+                    else:
+                        data_sale[trans["commodityName"]] = trans["quantity"]
     return data_sale
 
 
