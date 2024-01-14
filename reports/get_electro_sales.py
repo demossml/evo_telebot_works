@@ -5,7 +5,7 @@
 # - period, название периода из списка (день, неделя,  две недели, месяц)
 
 from bd.model import Session, Shop, Products, Documents
-from arrow import utcnow
+from arrow import utcnow, get
 from pprint import pprint
 from .util import get_shops_user_id
 from collections import OrderedDict
@@ -87,10 +87,32 @@ def generate(session: Session):
 
     _dict = dict(OrderedDict(sorted(_dict.items(), key=lambda t: -t[1])))
 
+    last_time = (
+        Documents.objects(
+            __raw__={
+                "closeDate": {"$gte": since, "$lt": until},
+            }
+        )
+        .order_by("-closeDate")
+        .only("closeDate")
+        .first()
+    )
+    if last_time:
+        time = get(last_time.closeDate).shift(hours=3).isoformat()[11:19]
+        pprint(time)
+    else:
+        time = 0
+
     total = 0
     for k, v in _dict.items():
         total += int(v)
     _dict["Итого:"] = total
-    result.append({"⬇️Итого по всем тт".upper(): "⬇️".upper()})
+    result.append(
+        {
+            "🕰️ Время выгрузки ->".upper(): time,
+            "⬇️Итого по всем тт".upper(): "⬇️".upper(),
+        }
+    )
     result.append(_dict)
+
     return result

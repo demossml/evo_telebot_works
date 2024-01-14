@@ -107,5 +107,26 @@ def generate(session: Session):
     # Обновляем данные отчета
     report_data.update({"Итого выручка:".upper(): f"{total_sales}₽"})
 
+    last_time = (
+        Documents.objects(
+            __raw__={
+                "closeDate": {"$gte": since, "$lt": until},
+            }
+        )
+        .order_by("-closeDate")
+        .only("closeDate")
+        .first()
+    )
+    if last_time:
+        time = get(last_time.closeDate).shift(hours=3).isoformat()[11:19]
+    else:
+        time = 0
+
+    report_data.update(
+        {
+            "🕰️ Время выгрузки ->".upper(): time,
+        }
+    )
+
     # plt.close()
     return [report_data], image_buffer

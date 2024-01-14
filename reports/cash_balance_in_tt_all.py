@@ -4,7 +4,7 @@ from pprint import pprint
 from .inputs import (
     ShopAllInput,
 )
-from .util import get_intervals, get_period, get_shops_user_id, get_shops
+from .util import get_shops
 
 
 name = "💰🚬 ₱ в кассах ТТ ➡️".upper()
@@ -82,5 +82,27 @@ def generate(session: Session):
 
     for k, v in report_data.items():
         report_data.update({k: f"{v}₱"})
+
+    last_time = (
+        Documents.objects(
+            __raw__={
+                "closeDate": {"$gte": since, "$lt": until},
+            }
+        )
+        .order_by("-closeDate")
+        .only("closeDate")
+        .first()
+    )
+    if last_time:
+        time = get(last_time.closeDate).shift(hours=3).isoformat()[11:19]
+        pprint(time)
+    else:
+        time = 0
+
+    report_data.update(
+        {
+            "🕰️ Время выгрузки ->".upper(): time,
+        }
+    )
 
     return [report_data]

@@ -161,6 +161,28 @@ def generate(session: Session):
     # Очищаем буфер изображения и перемещаем указатель в начало
     image_buffer.seek(0)
 
+    last_time = (
+        Documents.objects(
+            __raw__={
+                "closeDate": {"$gte": since, "$lt": until},
+            }
+        )
+        .order_by("-closeDate")
+        .only("closeDate")
+        .first()
+    )
+    if last_time:
+        time = get(last_time.closeDate).shift(hours=3).isoformat()[11:19]
+        pprint(time)
+    else:
+        time = 0
+
+    _dict_2.update(
+        {
+            "🕰️ Время выгрузки ->".upper(): time,
+        }
+    )
+
     return [_dict_2], image_buffer
 
     # return [_dict_2]
