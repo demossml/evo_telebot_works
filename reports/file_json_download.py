@@ -19,12 +19,12 @@ class CollectionsInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "shift", "name": "Shift_Opening_Report"},
             {"id": "zReopt", "name": "ZReopt"},
             {"id": "plan", "name": "Plan"},
             {"id": "marriageWarehouse", "name": "MarriageWarehouse"},
-        ]
+        )
 
         return output
 

@@ -1,6 +1,5 @@
 from bd.model import (
     Shop,
-    Products,
     Documents,
     Employees,
     Session,
@@ -10,13 +9,11 @@ from bd.model import (
 )
 from arrow import utcnow, get
 from .util import (
-    get_products,
     get_shops,
     get_period_day,
     get_period,
     generate_plan,
     get_total_salary,
-    period_first_day_of_the_month,
 )
 from .inputs import (
     ShopInput,
@@ -93,7 +90,7 @@ class CashReceiptInput:
 
 
 def get_inputs(session: Session):
-    period = ["day", "week", "fortnight", "month"]
+    period = ("day", "week", "fortnight", "month")
     if session.params["inputs"]["0"]:
         if session.params["inputs"]["0"]["report"] == "surplus":
             if "report_surplus" in session.params["inputs"]["0"]:
@@ -397,7 +394,7 @@ def generate(session: Session):
             return _dict1, [_dict]
         if session.params["inputs"]["0"]["report_z"] == "z_photo":
             params = session.params["inputs"]["0"]
-            pprint(params)
+            # pprint(params)
 
             documents = (
                 ZReopt.objects(
@@ -472,7 +469,7 @@ def generate(session: Session):
             pprint(shops_id)
             register = 1
             for shop_id in shops_id:
-                x_type = ["FPRINT", "CASH_OUTCOME", "CASH_INCOME", "ACCEPT"]
+                x_type = ("FPRINT", "CASH_OUTCOME", "CASH_INCOME", "ACCEPT")
                 documents = Documents.objects(
                     __raw__={
                         "closeDate": {"$gte": since, "$lt": until},
@@ -634,7 +631,7 @@ def generate(session: Session):
 
             register = 1
             for shop_uuid in shop_id:
-                x_type = ["FPRINT", "CASH_OUTCOME", "CASH_INCOME", "ACCEPT"]
+                x_type = ("FPRINT", "CASH_OUTCOME", "CASH_INCOME", "ACCEPT")
                 documents = Documents.objects(
                     __raw__={
                         "closeDate": {"$gte": since, "$lt": until},
@@ -746,12 +743,12 @@ def generate(session: Session):
             register = 1
 
             for shop_uuid in shops_uuid:
-                x_type = ["CASH_OUTCOME"]
+                x_type = "CASH_OUTCOME"
                 documents = Documents.objects(
                     __raw__={
                         "closeDate": {"$gte": since, "$lt": until},
                         "shop_id": shop_uuid,
-                        "x_type": {"$in": x_type},
+                        "x_type": x_type,
                     }
                 )
 
@@ -823,12 +820,12 @@ def generate(session: Session):
             sum_ = 0
 
             for shop_uuid in shop_id:
-                x_type = ["CASH_INCOME"]
+                x_type = "CASH_INCOME"
                 documents = Documents.objects(
                     __raw__={
                         "closeDate": {"$gte": since, "$lt": until},
                         "shop_id": shop_uuid,
-                        "x_type": {"$in": x_type},
+                        "x_type": x_type,
                     }
                 )
 

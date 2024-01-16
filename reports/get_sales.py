@@ -22,7 +22,7 @@ mime = "text"
 
 
 def get_inputs(session: Session):
-    period = ["day", "week", "fortnight", "month"]
+    period = ("day", "week", "fortnight", "month")
     if session.params["inputs"]["0"]:
         if "period" in session.params["inputs"]["0"]:
             if session.params["inputs"]["0"]["period"] == "day":

@@ -21,10 +21,10 @@ def generate(session: Session):
 
     # Получение информации о магазинах
     if params["shop"] == "all":
-        shops_id = [
+        shops_id = (
             "20220202-B042-4021-803D-09E15DADE8A4",
             "20220201-19C9-40B0-8082-DF8A9067705D",
-        ]
+        )
     else:
         shops_id = [params["shop"]]
 

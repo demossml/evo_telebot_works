@@ -19,7 +19,6 @@ from .inputs import (
     PeriodDateInput,
     CloseDatePastInput,
     ShopInput,
-    OpenDateFutureInput,
     OpenDatePast2Input,
     DocumentsAcceptInput,
     ReportsAcceptInput,
@@ -40,7 +39,7 @@ class PackageInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [{"id": "yes", "name": "ДА"}, {"id": "no", "name": "НЕТ"}]
+        output = ({"id": "yes", "name": "ДА"}, {"id": "no", "name": "НЕТ"})
 
         return output
 
@@ -67,7 +66,7 @@ class TransferInput:
 
     def get_options(self, session: Session):
         result = []
-        output = [{"id": "yes", "name": "Да"}, {"id": "no", "name": "Нет"}]
+        output = ({"id": "yes", "name": "Да"}, {"id": "no", "name": "Нет"})
         # shop_uuid = [i['uuid'] for i in get_shops(session)]
         # pprint(shop_uuid)
         # params = session.params["inputs"]['0']
@@ -251,7 +250,7 @@ def generate(session: Session):
 
     else:
         if params["report"] == "get_commodity_balances":
-            x_type = ["SELL", "PAYBACK", "ACCEPT"]
+            x_type = ("SELL", "PAYBACK", "ACCEPT")
             result = []
             shops = get_shops(session)
             shop_id = shops["shop_id"]
@@ -294,7 +293,7 @@ def generate(session: Session):
                         .order_by("-closeDate")
                         .first()
                     )
-                    pprint(documents)
+                    # pprint(documents)
 
                     if documents is not None:
                         _dict = {}
@@ -364,38 +363,38 @@ def generate(session: Session):
             until1 = utcnow().replace(hour=23, minute=00).isoformat()
 
             # Задаем набор магазинов для двух разных групп
-            shops_uuid_2 = [
+            shops_uuid_2 = (
                 "20190411-5A3A-40AC-80B3-8B405633C8BA",
                 "20191117-BF71-40FE-8016-1E7E4A3A4780",
                 "20231001-6611-407F-8068-AC44283C9196",
                 "20190327-A48C-407F-801F-DA33CB4FBBE9",
-            ]
+            )
 
             # Задаем группы товаров для контрагентов
             groupName = {
-                "mega_": [
+                "mega_": (
                     "МЕГАПОЛИС -СИГАРИЛЛЫ",
                     "МЕГАПОЛИС -ЭНЕРГЕТИКИ",
                     "МЕГАПОЛИС-ITJ",
                     "МЕГАПОЛИС-JTI",
                     "МЕГАПОЛИС-АКСЕСУАРЫ",
                     "МЕГАПОЛИС-ФМ",
-                ],
-                "sns_": ["СНС", "СНС- СИГАРИЛЛЫ", "СНС-АКСЕССУАРЫ", "СНС-ЭНЕРГЕТИКИ"],
-                "don_": ["ДОНСКОЙ ТАБАК АКСЕСУАРЫ", "ДОНСКОЙ-ТАБАК"],
-                "fizzy_": ["FIZZY"],
+                ),
+                "sns_": ("СНС", "СНС- СИГАРИЛЛЫ", "СНС-АКСЕССУАРЫ", "СНС-ЭНЕРГЕТИКИ"),
+                "don_": ("ДОНСКОЙ ТАБАК АКСЕСУАРЫ", "ДОНСКОЙ-ТАБАК"),
+                "fizzy_": ("FIZZY"),
             }
 
             groupName2 = {
-                "mega_": [
+                "mega_": (
                     "МЕГАПОЛИС-ITJ",
                     "МЕГАПОЛИС-JTI",
                     "МЕГАПОЛИС-ФМ",
                     "МЕГАПОЛИС АКСЕСУАРЫ",
-                ],
-                "sns_": ["СНС", "СНС АКСЕССУАРЫ"],
-                "don_": ["ДОНСКОЙ-ТАБАК", "ДОНСКОЙ-ТАБАК-АКСЕСУАРЫ"],
-                "fizzy_": ["ЭЛЕКТРО"],
+                ),
+                "sns_": ("СНС", "СНС АКСЕССУАРЫ"),
+                "don_": ("ДОНСКОЙ-ТАБАК", "ДОНСКОЙ-ТАБАК-АКСЕСУАРЫ"),
+                "fizzy_": ("ЭЛЕКТРО"),
             }
 
             # Выбираем группу товаров в зависимости от магазина

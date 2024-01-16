@@ -122,11 +122,11 @@ class CountingMoneyInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "converge", "name": "Сходиться ➡️".upper()},
             {"id": "more", "name": "Больше ➡️".upper()},
             {"id": "less", "name": "Меньше ➡️".upper()},
-        ]
+        )
         return output
 
 
@@ -135,12 +135,12 @@ class Counting_MoneyInput:
     type = "MESSAGE"
 
 
-shop_data = [
+shop_data = (
     "20190411-5A3A-40AC-80B3-8B405633C8BA",
     "20191117-BF71-40FE-8016-1E7E4A3A4780",
     "20231001-6611-407F-8068-AC44283C9196",
     "20190327-A48C-407F-801F-DA33CB4FBBE9",
-]
+)
 
 
 def get_inputs(session: Session):

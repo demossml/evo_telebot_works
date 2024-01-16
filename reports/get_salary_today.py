@@ -1,16 +1,6 @@
 from bd.model import Shop, Products, Documents, Session, Employees, GroupUuidAks
 from .util import (
-    get_shops_uuid_user_id,
-    get_period,
-    get_aks_salary,
-    get_shops,
-    get_intervals,
-    get_mot_salary,
-    get_plan_bonus,
-    get_salary,
-    get_surcharge,
     get_total_salary,
-    get_period_day,
 )
 from pprint import pprint
 from collections import OrderedDict
@@ -39,6 +29,8 @@ def generate(session: Session):
     # pprint(name.name)
     # pprint(user.uuid)
 
+    x_type = ("SELL", "PAYBACK")
+
     documents_open_session = Documents.objects(
         __raw__={
             "closeDate": {"$gte": since, "$lt": until},
@@ -46,7 +38,7 @@ def generate(session: Session):
             "x_type": "OPEN_SESSION",
         }
     ).first()
-    pprint(documents_open_session)
+
     if documents_open_session:
         shop = Shop.objects(uuid=documents_open_session.shop_id).only("name").first()
         # pprint(shop.name)
@@ -62,9 +54,7 @@ def generate(session: Session):
             .order_by("-closeDate")
             .first()
         )
-        pprint(documents_aks)
-        pprint(documents_open_session.shop_id)
-        pprint(documents_aks.parentUuids)
+
         group = Products.objects(
             __raw__={
                 "shop_id": documents_open_session.shop_id,
@@ -75,12 +65,11 @@ def generate(session: Session):
 
         products_uuid = [i.uuid for i in group]
 
-        pprint(products_uuid)
         documents_sale = Documents.objects(
             __raw__={
                 "closeDate": {"$gte": since, "$lt": until},
                 "shop_id": documents_open_session.shop_id,
-                "x_type": "SELL",
+                "x_type": {"$in": x_type},
                 "transactions.commodityUuid": {"$in": products_uuid},
             }
         )
@@ -101,7 +90,7 @@ def generate(session: Session):
         )
         if last_time:
             time = get(last_time.closeDate).shift(hours=3).isoformat()[11:19]
-            pprint(time)
+            # pprint(time)
         else:
             time = 0
         for doc in documents_sale:

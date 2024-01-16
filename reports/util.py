@@ -226,7 +226,7 @@ def get_shops_uuid_user_id(session: Session) -> list:
 # 3. Формирование и возврат списка магазинов
 def get_shops_in(session: Session, _in=[], id_=[]):
     uuid = []
-    uuid_id = [
+    uuid_id = (
         "20220501-11CA-40E0-8031-49EADC90D1C4",
         "20220501-DDCF-409A-8022-486441F27458",
         "20220501-9ADF-402C-8012-FB88547F6222",
@@ -235,7 +235,7 @@ def get_shops_in(session: Session, _in=[], id_=[]):
         "20220501-4D25-40AD-80DA-77FAE02A007E",
         "20220430-A472-40B8-8077-2EE96318B7E7",
         "20220506-AE5B-40BA-805B-D8DDBD408F24",
-    ]
+    )
 
     if len(id_) > 0:
         # pprint(1)
@@ -539,7 +539,7 @@ def get_period_(session: Session):
     # pprint(room)
     # pprint(session.params["inputs"][room]["period"])
     # Список возможных периодов
-    period_in = ["day", "week", "fortnight", "month"]
+    period_in = ("day", "week", "fortnight", "month")
     # Проверка, что указанный период находится в списке возможных периодов
     if session.params["inputs"][room]["period"] not in period_in:
         # Если период - "day", то 'since' устанавливаем в начало дня, а 'until' в конец дня
@@ -635,7 +635,7 @@ def get_commodity_balances(session: Session) -> dict:
     # Получаем параметры из сессии
     params = session.params["inputs"]["0"]
     # Список типов транзакций
-    x_type = ["SELL", "PAYBACK", "ACCEPT"]
+    x_type = ("SELL", "PAYBACK", "ACCEPT")
     # Получаем список магазинов из функции get_shops
     shops = get_shops(session)
     shop_id = shops["shop_id"]
@@ -704,7 +704,7 @@ def get_commodity_balances(session: Session) -> dict:
 def get_commodity_balances_all(shop_id, products_uuid) -> dict:
     # Создаем пустой словарь для хранения балансов товаров
 
-    x_type = ["SELL", "PAYBACK", "ACCEPT"]
+    x_type = ("SELL", "PAYBACK", "ACCEPT")
 
     quantity_data = {}
 
@@ -746,7 +746,7 @@ def generate_plan():
     Эта функция создает и возвращает планы для магазинов на основе определенных условий.
     """
     # Список идентификаторов групп
-    group_id = group_id = [
+    group_id = (
         "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
         "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
         "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
@@ -756,18 +756,18 @@ def generate_plan():
         "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
         "568905bd-9460-11ee-9ef4-be8fe126e7b9",
         "568905be-9460-11ee-9ef4-be8fe126e7b9",
-    ]
+    )
     # Список идентификаторов для фильтрации магазинов
-    _in = [
+    _in = (
         "20190327-A48C-407F-801F-DA33CB4FBBE9",
         "20220202-B042-4021-803D-09E15DADE8A4",
         "20231001-6611-407F-8068-AC44283C9196",
         "20190411-5A3A-40AC-80B3-8B405633C8BA",
         "20220201-19C9-40B0-8082-DF8A9067705D",
         "20191117-BF71-40FE-8016-1E7E4A3A4780",
-    ]
+    )
     # Список идентификаторов магазинов на основе фильтрации
-    uuid = [
+    uuid = (
         "20210712-1362-4012-8026-5A35685630B2",
         "20220222-6C28-4069-8006-082BE12BEB32",
         "20200630-3E0D-4061-80C1-F7897E112F00",
@@ -776,7 +776,7 @@ def generate_plan():
         "20220201-8B00-40C2-8002-EF7E53ED1220",
         "20220201-A55A-40B8-8071-EC8733AFFA8E",
         "20220202-B042-4021-803D-09E15DADE8A4",
-    ]
+    )
     # Получение магазинов с использованием фильтрации
     shops = Shop.objects(__raw__={"uuid": {"$in": _in}})
 
@@ -802,7 +802,7 @@ def generate_plan():
             products_uuid = [element.uuid for element in products]
             # pprint(products_uuid)
             # Определяем типы транзакций
-            x_type = ["SELL", "PAYBACK"]
+            x_type = ("SELL", "PAYBACK")
             # Получаем документы из базы данных на основе фильтров
             documents = Documents.objects(
                 __raw__={
@@ -854,7 +854,7 @@ def generate_plan():
 
 
 def remainder(shops_uuid: list):
-    x_type = ["SELL", "PAYBACK", "ACCEPT"]
+    x_type = ("SELL", "PAYBACK", "ACCEPT")
 
     result = {}
     for sh in shops_uuid:
@@ -1088,7 +1088,7 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
             }
         ).first()
     # Группы товаров для анализа
-    group_id = [
+    group_id = (
         "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
         "568905bd-9460-11ee-9ef4-be8fe126e7b9",
         "2b8eb6b4-92ea-11ee-ab93-2cf05d04be1d",
@@ -1096,7 +1096,7 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
         "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
         "8a8fcb5f-9582-11ee-ab93-2cf05d04be1d",
         "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
-    ]
+    )
     # Поиск товаров в указанных группах
     products = Products.objects(
         __raw__={"shop_id": shop_id, "parentUuid": {"$in": group_id}}
@@ -1104,7 +1104,7 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
     # Список UUID товаров
     products_uuid = [element.uuid for element in products]
     # Типы транзакций, которые учитываем (продажи и возвраты)
-    x_type = ["SELL", "PAYBACK"]
+    x_type = ("SELL", "PAYBACK")
     # Получаем документы с продажами и возвратами товаров из списка products_uuid
     documents_2 = Documents.objects(
         __raw__={
@@ -1393,3 +1393,32 @@ def cash() -> int:
         return sum_
     else:
         return sum_
+
+
+def last_time(shop_id: str) -> dict:
+    result = {}
+
+    # Определение временного периода для анализа
+    since = utcnow().replace(hour=3, minute=00).isoformat()
+    until = utcnow().isoformat()
+
+    shop = Shop.objects(uuid__exact=shop_id).only("name").first()
+    pprint(shop["name"])
+    Documents_last_time = (
+        Documents.objects(
+            __raw__={
+                "closeDate": {"$gte": since, "$lt": until},
+                "shop_id": shop_id,
+            }
+        )
+        .order_by("-closeDate")
+        .only("closeDate")
+        .first()
+    )
+    if Documents_last_time:
+        time = get(Documents_last_time.closeDate).shift(hours=3).isoformat()[11:19]
+    else:
+        time = 0
+
+    pprint(time)
+    return {f"🕰️ выг. {shop.name}": time}

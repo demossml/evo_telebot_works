@@ -13,7 +13,7 @@ class ReportsInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "get_sales_by_shops", "name": "В ₽ ПО ВСЕМ ТТ"},
             {
                 "id": "get_sales_by_shop_product_group_unit",
@@ -35,7 +35,7 @@ class ReportsInput:
                 "id": "get_sales_product_group_unit_by_shop",
                 "name": "В шт по группе товаров по всем ТТ",
             },
-        ]
+        )
 
         return output
 
@@ -46,11 +46,11 @@ class X_typeInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "CASH_INCOME", "name": "Внесение".upper()},
             {"id": "CASH_OUTCOME", "name": "Выплаты ".upper()},
             {"id": "CASH_OUTCOME", "name": "Выплаты ".upper()},
-        ]
+        )
         return output
 
 
@@ -60,7 +60,7 @@ class PeriodOpenDateInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "day", "name": "День ➡️".upper()},
             {"id": "week", "name": "Неделя ➡️".upper()},
             {"id": "fortnight", "name": "Две недели ➡️".upper()},
@@ -71,7 +71,7 @@ class PeriodOpenDateInput:
             {"id": "five months", "name": "Пять месяца ➡️".upper()},
             {"id": "six months", "name": "Шесть месяца ➡️".upper()},
             {"id": "seven months", "name": "Четыре месяца ➡️".upper()},
-        ]
+        )
 
         return output
 
@@ -82,7 +82,7 @@ class baseInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "All", "name": "Всё ➡️".upper()},
             {"id": "Аренда1", "name": "Аренда1 ➡️".upper()},
             {"id": "ЗП", "name": "ЗП ➡️".upper()},
@@ -92,7 +92,7 @@ class baseInput:
             {"id": "Мороженое", "name": "Мороженое ➡️".upper()},
             {"id": "Закупка Товара", "name": "Закупка Товара ➡️".upper()},
             {"id": "Прочие", "name": "Прочие ➡️".upper()},
-        ]
+        )
         return output
 
 
@@ -120,12 +120,12 @@ class PeriodCloseDateInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "day", "name": "День"},
             {"id": "week", "name": "Неделя"},
             {"id": "fortnight", "name": "Две недели"},
             {"id": "month", "name": "Месяц"},
-        ]
+        )
 
         return output
 
@@ -154,7 +154,7 @@ class baseInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "Аренда1", "name": "Аренда1 ➡️".upper()},
             {"id": "ЗП", "name": "ЗП ➡️".upper()},
             {"id": "ЗП Д", "name": "ЗП Д ➡️".upper()},
@@ -162,7 +162,7 @@ class baseInput:
             {"id": "ГСМ", "name": "ГСМ ➡️".upper()},
             {"id": "Закупка Товара", "name": "Закупка Товара ➡️".upper()},
             {"id": "Прочие", "name": "Прочие ➡️".upper()},
-        ]
+        )
 
         return output
 

@@ -2,10 +2,8 @@ from arrow import utcnow, get
 from bd.model import (
     Session,
     Shift_Opening_Report,
-    Employees,
 )
-from .util import generate_plan, get_shops, get_shops_user_id
-from .inputs import ShopInput, OpenDatePast2Input, AfsInput
+from .util import get_shops_user_id
 
 from pprint import pprint
 import plotly.express as px

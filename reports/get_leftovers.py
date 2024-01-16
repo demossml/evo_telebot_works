@@ -14,13 +14,13 @@ class ReportsInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             #
             {"id": "get_leftovers_by_pieces", "name": "✅ В ШТ"},
             # {"id": "get_leftovers_by_pieces_", "name": "✅ В "},
             {"id": "get_leftovers_by_rb", "name": "✅ В r.."},
             {"id": "get_report", "name": "✅ Заказы".upper()},
-        ]
+        )
 
         return output
 
@@ -31,13 +31,13 @@ class PeriodOpenDateInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "day", "name": "День"},
             {"id": "week", "name": "Неделя"},
             {"id": "fortnight", "name": "Две недели"},
             {"id": "month", "name": "Месяц"},
             {"id": "two months", "name": "Два месяца"},
-        ]
+        )
 
         return output
 
@@ -103,7 +103,7 @@ def generate(session: Session):
     print("test")
     params = session.params["inputs"]["0"]
 
-    shops = [
+    shops = (
         "20220501-DDCF-409A-8022-486441F27458",
         # '20200630-3E0D-4061-80C1-F7897E112F00',
         "20220501-9ADF-402C-8012-FB88547F6222",
@@ -112,9 +112,9 @@ def generate(session: Session):
         "20220501-4D25-40AD-80DA-77FAE02A007E",
         "20220601-4E97-40A5-801B-1A29127AFA8B",
         "20220430-A472-40B8-8077-2EE96318B7E7",
-    ]
+    )
 
-    x_type = ["SELL", "PAYBACK", "ACCEPT"]
+    x_type = ("SELL", "PAYBACK", "ACCEPT")
     if params["report"] == "get_leftovers_by_pieces":
         result = {}
         for sh in shops:
@@ -177,7 +177,7 @@ def generate(session: Session):
             products = Products.objects(__raw__={"shop_id": sh, "group": False})
             # pprint(products)
             uuids = [i.uuid for i in products]
-            pprint(uuids)
+            # pprint(uuids)
             for uuid in uuids:
                 product = Products.objects(uuid=uuid).first()
                 # pprint(product)
@@ -247,7 +247,7 @@ def generate(session: Session):
         params = session["params"]["inputs"]["0"]
         since = get(params["openDate"]).replace(hour=3, minute=00).isoformat()
         until = get(params["closeDate"]).replace(hour=23, minute=00).isoformat()
-        shops_uuid = [
+        shops_uuid = (
             "20220501-DDCF-409A-8022-486441F27458",
             # '20200630-3E0D-4061-80C1-F7897E112F00',
             "20220501-9ADF-402C-8012-FB88547F6222",
@@ -256,7 +256,7 @@ def generate(session: Session):
             "20220501-4D25-40AD-80DA-77FAE02A007E",
             "20220601-4E97-40A5-801B-1A29127AFA8B",
             "20220430-A472-40B8-8077-2EE96318B7E7",
-        ]
+        )
         remainder_ = remainder(shops_uuid)
         pprint(remainder_)
 
@@ -324,7 +324,7 @@ def generate(session: Session):
                         _dict3[prod_name] = "{}/{}/{}".format(
                             product_quantity_seller, product_quantity, order
                         )
-                pprint(_dict3)
+                # pprint(_dict3)
 
                 result.append(_dict3)
             else:

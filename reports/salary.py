@@ -788,7 +788,7 @@ def generate(session: Session):
                 element.uuid
                 for element in Employees.objects(lastName=employee_last_name)
             ]
-            pprint(user)
+            # pprint(user)
             period = get_period(session)
             since = period["since"]
             until = period["until"]
@@ -879,7 +879,7 @@ def generate(session: Session):
                         "x_type": "OPEN_SESSION",
                     }
                 )
-                pprint(documents_open_session)
+                # pprint(documents_open_session)
                 for doc in documents_open_session:
                     # Название магазина (shop.name)
                     shop = Shop.objects(uuid=doc["shop_id"]).only("name").first()

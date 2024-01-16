@@ -4,11 +4,10 @@
 # - group_id, id групы товаров из списка (загрузить группы товаров из базы tc)
 # - period, название периода из списка (день, неделя,  две недели, месяц)
 
-from bd.model import Session, Shop, Products, Documents, Employees, Message, Plan
+from bd.model import Session, Products, Documents, Plan
 from arrow import utcnow, get
 from pprint import pprint
-from .util import get_shops, get_shops_in, generate_plan
-import telebot
+from .util import last_time, get_shops_in, generate_plan
 import plotly.express as px
 from io import BytesIO
 
@@ -23,7 +22,7 @@ def get_inputs(session: Session):
 
 def generate(session: Session):
     # Группы товаров для анализа продаж
-    group_id = [
+    group_id = (
         "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
         "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
         "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
@@ -33,15 +32,15 @@ def generate(session: Session):
         "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
         "568905bd-9460-11ee-9ef4-be8fe126e7b9",
         "568905be-9460-11ee-9ef4-be8fe126e7b9",
-    ]
-    _in = [
+    )
+    _in = (
         "20190327-A48C-407F-801F-DA33CB4FBBE9",
         "20220202-B042-4021-803D-09E15DADE8A4",
         "20231001-6611-407F-8068-AC44283C9196",
         "20190411-5A3A-40AC-80B3-8B405633C8BA",
         "20220201-19C9-40B0-8082-DF8A9067705D",
         "20191117-BF71-40FE-8016-1E7E4A3A4780",
-    ]
+    )
 
     # Определение временного периода для анализа
     since_2 = utcnow().replace(hour=3, minute=00).isoformat()
@@ -56,8 +55,9 @@ def generate(session: Session):
     _dict_2 = {}
     # Словарь для хранения данных о продажах по магазинам
     sales_data = {}
-
+    dict_last_time = {}
     for shop in get_shops_in(session, _in):
+        dict_last_time.update(last_time(shop["uuid"]))
         since = utcnow().replace(hour=3, minute=00).isoformat()
         until = utcnow().replace(hour=20, minute=59).isoformat()
 
@@ -68,7 +68,7 @@ def generate(session: Session):
                 "shop_id": shop["uuid"],
             }
         )
-        pprint(plan_)
+        # pprint(plan_)
         if len(plan_) > 0:
             # pprint(1)
             plan = Plan.objects(
@@ -120,7 +120,7 @@ def generate(session: Session):
         if sum_sell_today > 0:
             sales_data.update({shop["name"]: sum_sell_today})
 
-        pprint(sales_data)
+        # pprint(sales_data)
 
         # Добавление данных о продажах для текущего магазина
         if int(sum_sell_today) >= int(plan.sum):
@@ -161,28 +161,28 @@ def generate(session: Session):
     # Очищаем буфер изображения и перемещаем указатель в начало
     image_buffer.seek(0)
 
-    last_time = (
-        Documents.objects(
-            __raw__={
-                "closeDate": {"$gte": since, "$lt": until},
-            }
-        )
-        .order_by("-closeDate")
-        .only("closeDate")
-        .first()
-    )
-    if last_time:
-        time = get(last_time.closeDate).shift(hours=3).isoformat()[11:19]
-        pprint(time)
-    else:
-        time = 0
+    # last_time = (
+    #     Documents.objects(
+    #         __raw__={
+    #             "closeDate": {"$gte": since, "$lt": until},
+    #         }
+    #     )
+    #     .order_by("-closeDate")
+    #     .only("closeDate")
+    #     .first()
+    # )
+    # if last_time:
+    #     time = get(last_time.closeDate).shift(hours=3).isoformat()[11:19]
+    #     pprint(time)
+    # else:
+    #     time = 0
 
-    _dict_2.update(
-        {
-            "🕰️ Время выгрузки ->".upper(): time,
-        }
-    )
+    # _dict_2.update(
+    #     {
+    #         "🕰️ Время выгрузки ->".upper(): time,
+    #     }
+    # )
 
-    return [_dict_2], image_buffer
+    return [_dict_2, dict_last_time], image_buffer
 
     # return [_dict_2]

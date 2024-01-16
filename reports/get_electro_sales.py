@@ -23,7 +23,7 @@ def generate(session: Session):
     shops = get_shops_user_id(session)
     # shops_id = [v.uuid for v in shops]
     # pprint(shops_id)
-    group_id = [
+    group_id = (
         "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
         "568905bd-9460-11ee-9ef4-be8fe126e7b9",
         "2b8eb6b4-92ea-11ee-ab93-2cf05d04be1d",
@@ -31,7 +31,7 @@ def generate(session: Session):
         "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
         "8a8fcb5f-9582-11ee-ab93-2cf05d04be1d",
         "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
-    ]
+    )
 
     since = utcnow().replace(hour=3, minute=00).isoformat()
     until = utcnow().isoformat()

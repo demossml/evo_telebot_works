@@ -18,12 +18,12 @@ class whoInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        return [
+        return (
             {"id": "Р/С", "name": "Р/С ➡️".upper()},
             {"id": "Bagrationa", "name": "Bagrationa ➡️".upper()},
             {"id": "Skala", "name": "Skala ➡️".upper()},
             {"id": "Another", "name": "Another ➡️".upper()},
-        ]
+        )
 
 
 class baseInput:
@@ -31,12 +31,12 @@ class baseInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "Инкассация", "name": "Инкассация ➡️".upper()},
             {"id": "Прочие", "name": "Прочие ➡️".upper()},
             {"id": "Услуги", "name": "Услуги ➡️".upper()},
             {"id": "Инвестиции", "name": "Инвестиции ➡️".upper()},
-        ]
+        )
 
         return output
 

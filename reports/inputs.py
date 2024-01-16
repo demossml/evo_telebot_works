@@ -115,7 +115,7 @@ class ReportSalesInput:
     type = "SELECT"
 
     def get_options(self, session: Session) -> [{str, str}]:
-        output = [
+        output = (
             {
                 "id": "get_sales_by_day_of_the_week",
                 "name": " 🛒📅 Продажи по дням нед... ➡️".upper(),
@@ -130,7 +130,7 @@ class ReportSalesInput:
             },
             # {"id": 'get_sales_by_employees',
             #  "name": "🛒👱👱‍Продажи по продавцам ➡️".upper()},
-        ]
+        )
 
         return output
 
@@ -140,7 +140,7 @@ class ReportDataAnalysisInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "analysis_sales_shops", "name": "ПРОД. ПО МАГАЗИНАМ 📈📊"},
             {
                 "id": "analysis_sales_by_day_the_week",
@@ -153,7 +153,7 @@ class ReportDataAnalysisInput:
             {"id": "analysis_outcome_shops", "name": "ВАЗВРАТЫ ПО МАГАЗИНАМ 📉�📊"},
             {"id": "analysis_sales_shops_group", "name": "ПРОДАЖИ ПО ГРУППЕ 📉�📊"},
             {"id": "analysis_sales_shops_groups", "name": "ПРОДАЖИ ПО ГРУППАМ 📉�📊"},
-        ]
+        )
         return output
 
 
@@ -167,13 +167,13 @@ class ReportsZInput:
     type = "SELECT"
 
     def get_options(self, session: Session) -> [{str, str}]:
-        return [
+        return (
             {"id": "detailed_report", "name": "🧾 Z_Отчеты ➡️".upper()},
             {"id": "report_cash_outcome", "name": "🧾Отчет по выплатам ➡️".upper()},
             {"id": "report_cash_income", "name": "🧾Отчет по внесениям  ➡️".upper()},
             {"id": "get_check", "name": "🧾Запрос чека ➡️".upper()},
             {"id": "surplus", "name": "🧾ИЗЛИШКИ В КАССЕ ➡️".upper()},
-        ]
+        )
 
 
 class ReportCommodityInput:
@@ -185,7 +185,7 @@ class ReportCommodityInput:
     type = "SELECT"
 
     def get_options(self, session: Session) -> [{str, str}]:
-        output = [
+        output = (
             {"id": "get_commodity_balances", "name": "™️ Товарные остатки  ➡️".upper()},
             {"id": "order_constructor", "name": "🧮 Конструктор заказа  ➡️".upper()},
             {"id": "get_accept", "name": "🚚 Приемка/Списание товара  ➡️".upper()},
@@ -194,7 +194,7 @@ class ReportCommodityInput:
                 "name": "🛑Товар без движиния(продаж) ➡️".upper(),
             },
             {"id": "marriage", "name": "Брак нат ТТ 🚭⚠️➡️".upper()},
-        ]
+        )
 
         return output
 
@@ -208,7 +208,7 @@ class ReportSalaryInput:
     type = "SELECT"
 
     def get_options(self, session: Session) -> [{str, str}]:
-        output = [
+        output = (
             {"id": "setting", "name": "🛠 Настройка ➡️".upper()},
             {"id": "get_salary_aks", "name": "ЗП по груп. акс. ➡️".upper()},
             {
@@ -223,7 +223,7 @@ class ReportSalaryInput:
                 "id": "get_salary_total_day",
                 "name": "ЗП ЗА ДЕНЬ",
             },
-        ]
+        )
 
         return output
 
@@ -238,7 +238,7 @@ class ReportsSalarySettingInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "group_uuid_accessory", "name": "Групп аксессуаров ➡️".upper()},
             {
                 "id": "motivation_uuid_accessory",
@@ -247,7 +247,7 @@ class ReportsSalarySettingInput:
             {"id": "assigning_salary", "name": "Оклады на ТТ ₱➡️".upper()},
             {"id": "motivation", "name": "Мотив. за вып. плана  ₱ ➡️".upper()},
             {"id": "surcharge", "name": "Доплата к зп ₱ ➡️".upper()},
-        ]
+        )
         return output
 
 
@@ -261,7 +261,7 @@ class ReportGroupUuidAccessoryInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {
                 "id": "get_group_uuid_accessory",
                 "name": "Просмотр групп аксессуаров ➡️".upper(),
@@ -270,7 +270,7 @@ class ReportGroupUuidAccessoryInput:
                 "id": "assigning_group_uuid_accessory",
                 "name": "Назначить группы аксессуаров ➡️".upper(),
             },
-        ]
+        )
         return output
 
 
@@ -284,7 +284,7 @@ class ReportMotivationInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {
                 "id": "amount_of_motivation",
                 "name": "Назначить сум. за выпол. пл. ₱➡️".upper(),
@@ -293,7 +293,7 @@ class ReportMotivationInput:
                 "id": "get_amount_of_motivation",
                 "name": "Сумма за выпол. пл. ₱ ➡️".upper(),
             },
-        ]
+        )
         return output
 
 
@@ -307,7 +307,7 @@ class ReportMotivationUuidInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {
                 "id": "product_ext_motivation",
                 "name": "Назначить товар доп. мотивации ➡️".upper(),
@@ -316,7 +316,7 @@ class ReportMotivationUuidInput:
                 "id": "get_product_ext_motivation",
                 "name": "Товар доб. мотивации  ➡️".upper(),
             },
-        ]
+        )
         return output
 
 
@@ -330,10 +330,10 @@ class ReportАssignSalaryInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "assigning_salary_", "name": "Назначить оклад на ТТ ₱➡️".upper()},
             {"id": "get_salary", "name": "Оклады на ТТ₱ ➡️".upper()},
-        ]
+        )
         return output
 
 
@@ -347,7 +347,7 @@ class ReportMotivationInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {
                 "id": "amount_of_motivation",
                 "name": "Назначить сум. за выпол. пл. ₱➡️".upper(),
@@ -356,7 +356,7 @@ class ReportMotivationInput:
                 "id": "get_amount_of_motivation",
                 "name": "Сумма за выпол. пл. ₱ ➡️".upper(),
             },
-        ]
+        )
         return output
 
 
@@ -370,10 +370,10 @@ class ReportSurchargeInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "assign_a_surcharge", "name": "Назначить доплату к зп ➡️".upper()},
             {"id": "get_surcharge", "name": "Доплата к зп  ➡️".upper()},
-        ]
+        )
         return output
 
 
@@ -387,9 +387,7 @@ class ReportsSettingsInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
-            {"id": "clear_db", "name": "Очистить базу данных ➡️".upper()},
-        ]
+        output = ({"id": "clear_db", "name": "Очистить базу данных ➡️".upper()},)
         return output
 
 
@@ -403,7 +401,7 @@ class ReportsClearDbInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "clear_db_employees", "name": "👫 Очистить (Сотрудники) ➡️".upper()},
             {"id": "clear_db_shops", "name": "🏪 Очистить (Магазины) ➡️".upper()},
             {"id": "clear_db_documents", "name": "📑 Очистить (Документы) ➡️".upper()},
@@ -412,7 +410,7 @@ class ReportsClearDbInput:
             {"id": "clear_db_sesion", "name": "🛒 Очистить (Session) ➡️".upper()},
             {"id": "clear_db_get_time", "name": "🛒 Очистить (GetTime) ➡️".upper()},
             {"id": "clear_db_surplus", "name": "🛒 Очистить (Surplus) ➡️".upper()},
-        ]
+        )
         return output
 
 
@@ -683,11 +681,11 @@ class ProductElectroInput:
         output = []
         shops_id = session.params["inputs"]["0"]["shop"]
         # pprint(shops_id)
-        group_id = [
+        group_id = (
             "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
             "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
             "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
-        ]
+        )
         product = Products.objects(
             __raw__={"shop_id": shops_id, "parentUuid": {"$in": group_id}}
         )
@@ -803,10 +801,10 @@ class DocStatusInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "open", "name": "Продожить".upper()},
             {"id": "completed", "name": "Закрыть документ".upper()},
-        ]
+        )
         return output
 
 
@@ -820,7 +818,7 @@ class PeriodDateInput:
     type = "SELECT"
 
     def get_options(self, session: Session) -> [{str, str}]:
-        output = [
+        output = (
             {"id": "day", "name": "📆 День ➡️".upper()},
             {"id": "week", "name": "📆 Неделя ➡️".upper()},
             {"id": "fortnight", "name": "📆 Две недели ➡️".upper()},
@@ -830,7 +828,7 @@ class PeriodDateInput:
             {"id": "12 months", "name": "📆 12 Месяцев ➡️".upper()},
             {"id": "24 months", "name": "📆 24 Месяцев ➡️".upper()},
             {"id": "48 months", "name": "📆 48 Месяцев ➡️".upper()},
-        ]
+        )
 
         return output
 
@@ -1014,12 +1012,12 @@ class СounterpartyInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = [
+        output = (
             {"id": "sns_", "name": "СНС"},
             {"id": "don_", "name": "ДОНСКОЙ-ТАБАК"},
             {"id": "mega_", "name": "МЕГАПОЛИС"},
             {"id": "fizzy_", "name": "FIZZY"},
-        ]
+        )
 
         return output
 
