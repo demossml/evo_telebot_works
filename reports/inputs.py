@@ -208,22 +208,47 @@ class ReportSalaryInput:
     type = "SELECT"
 
     def get_options(self, session: Session) -> [{str, str}]:
-        output = (
-            {"id": "setting", "name": "🛠 Настройка ➡️".upper()},
-            {"id": "get_salary_aks", "name": "ЗП по груп. акс. ➡️".upper()},
-            {
-                "id": "get_salary_motivation_uuid",
-                "name": "ЗП за мотив. товар ➡️".upper(),
-            },
-            {
-                "id": "get_salary_total",
-                "name": "ЗП ПО ПРОДАВЦАМ",
-            },
-            {
-                "id": "get_salary_total_day",
-                "name": "ЗП ЗА ДЕНЬ",
-            },
-        )
+        if session.employee.role == "CASHIER":
+            output = (
+                {"id": "get_salary_aks", "name": "ЗП по груп. акс. ➡️".upper()},
+                {
+                    "id": "get_salary_motivation_uuid",
+                    "name": "ЗП за мотив. товар ➡️".upper(),
+                },
+                {
+                    "id": "get_salary_total",
+                    "name": "ЗП ПО ПРОДАВЦАМ",
+                },
+                {
+                    "id": "get_salary_total_day",
+                    "name": "ЗП ЗА ДЕНЬ",
+                },
+                {
+                    "id": "get_salary_plan_day",
+                    "name": "💹 ЗП План по Электро ➡️",
+                },
+            )
+        if session.employee.role == "ADMIN":
+            output = (
+                {"id": "setting", "name": "🛠 Настройка ➡️".upper()},
+                {"id": "get_salary_aks", "name": "ЗП по груп. акс. ➡️".upper()},
+                {
+                    "id": "get_salary_motivation_uuid",
+                    "name": "ЗП за мотив. товар ➡️".upper(),
+                },
+                {
+                    "id": "get_salary_total",
+                    "name": "ЗП ПО ПРОДАВЦАМ",
+                },
+                {
+                    "id": "get_salary_total_day",
+                    "name": "ЗП ЗА ДЕНЬ",
+                },
+                {
+                    "id": "get_salary_plan_day",
+                    "name": "💹 ЗП План по Электро ➡️",
+                },
+            )
 
         return output
 

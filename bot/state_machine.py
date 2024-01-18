@@ -24,7 +24,7 @@ class State(str, Enum):
 # Обработчик входящие сообщения
 async def handle_message(bot: telebot.TeleBot, message: Message, session: Session):
     # Определить список стартовых команд
-    start = ["Menu", "/start", "Меню"]
+    start = ("Menu", "/start", "Меню")
     # Проверьте, является ли сообщение командой запуска.
     if message.text in start:
         # Сброс состояния сессии и комнаты

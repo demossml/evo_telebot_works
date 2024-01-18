@@ -1,7 +1,15 @@
 from os import environ
 from typing import Any
 
-from mongoengine import *
+from mongoengine import (
+    DynamicDocument,
+    FloatField,
+    IntField,
+    StringField,
+    DictField,
+    BinaryField,
+    connect,
+)
 from arrow import utcnow
 from dataclasses import dataclass
 from telebot import types

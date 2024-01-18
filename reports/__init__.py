@@ -37,6 +37,7 @@ def get_reports(session: Session):
     if "role" in session.employee:
         if session.employee.role == "CASHIER":
             return {
+                "salary": salary,
                 "get_cash_report": get_cash_report,
                 "get_commodity_reports": get_commodity_reports,
                 "get_sales": get_sales,

@@ -1,16 +1,12 @@
-from bd.model import Shop, Products, Documents, Session, Employees, GroupUuidAks
+from bd.model import Shop, Products, Documents, Session, Employees, GroupUuidAks, Plan
 from .util import (
     get_shops_uuid_user_id,
     get_period,
-    get_aks_salary,
     get_shops,
     get_intervals,
-    get_mot_salary,
-    get_plan_bonus,
-    get_salary,
-    get_surcharge,
     get_total_salary,
     get_period_day,
+    generate_plan,
 )
 from pprint import pprint
 from collections import OrderedDict
@@ -204,7 +200,14 @@ def get_inputs(session: Session):
                 "openDate": OpenDatePastInput,
                 "closeDate": CloseDatePastInput,
             }
-        # Запрос ЗП за мотив. товар по одлноту сотруднику за период
+        # Запрос ЗП за выполнение. плана по одлноту сотруднику за период
+        if session.params["inputs"]["0"]["reports"] == "get_salary_plan_day":
+            return {
+                "employee_uuid": EmployeesInput,
+                "period": PeriodDateInput,
+                "openDate": OpenDatePastInput,
+                "closeDate": CloseDatePastInput,
+            }
         if session.params["inputs"]["0"]["reports"] == "get_salary_motivation_uuid":
             return {
                 "employee_uuid": EmployeesInput,
@@ -212,6 +215,7 @@ def get_inputs(session: Session):
                 "openDate": OpenDatePastInput,
                 "closeDate": CloseDatePastInput,
             }
+
         # ЗП ИТОГО
         if session.params["inputs"]["0"]["reports"] == "get_salary_total":
             if "period" in session.params["inputs"]["0"]:
@@ -921,4 +925,172 @@ def generate(session: Session):
                         }
                     )
 
+            return result
+        # Запрос ЗП за выполнение. плана по одлноту сотруднику за период
+        if params["reports"] == "get_salary_plan_day":
+            group_id = (
+                "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
+                "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
+                "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
+                "2b8eb6b4-92ea-11ee-ab93-2cf05d04be1d",
+                "8a8fcb5f-9582-11ee-ab93-2cf05d04be1d",
+                "97d6fa81-84b1-11ea-b9bb-70c94e4ebe6a",
+                "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
+                "568905bd-9460-11ee-9ef4-be8fe126e7b9",
+                "568905be-9460-11ee-9ef4-be8fe126e7b9",
+            )
+            # Инициализация пустого списка для хранения результатов
+            result = []
+            # Получение фамилии сотрудника из параметра
+            employee_last_name = params["employee_uuid"]
+            # Извлекаем UUID сотрудника из базы данных по фамилии
+            user_uuid = [
+                element.uuid
+                for element in Employees.objects(lastName=employee_last_name)
+            ]
+
+            user = Employees.objects(lastName=employee_last_name).only("name").first()
+
+            # Получение периода из сессии
+            period = get_period(session)
+
+            # Получение начальной и конечной дат периода
+            since = period["since"]
+            until = period["until"]
+
+            # Получение интервалов между датами с шагом в 1 день
+            intervals = get_intervals(since, until, "days", 1)
+            total_salary_plan = 0
+            # Итерируем по интервалам
+            for since_, until_ in intervals:
+                # Поиск документов типа "OPEN_SESSION" за указанный период
+                documents_open_session = Documents.objects(
+                    __raw__={
+                        "closeDate": {"$gte": since_, "$lt": until_},
+                        "openUserUuid": {"$in": user_uuid},
+                        "x_type": "OPEN_SESSION",
+                    }
+                ).first()
+                # Если найдена открытая сессия документов
+                if documents_open_session:
+                    # Получаем магазин, связанный с этим документом
+                    shop = (
+                        Shop.objects(uuid=documents_open_session.shop_id)
+                        .only("name")
+                        .first()
+                    )
+                    # pprint(since_)
+                    # pprint(until_)
+                    # pprint(documents_open_session.shop_id)
+                    # Получение данных о планах продаж для магазина
+                    documents_plan = (
+                        Plan.objects(
+                            __raw__={
+                                "closeDate": {"$gte": since_, "$lt": until_},
+                                "shop_id": documents_open_session.shop_id,
+                            }
+                        )
+                        .order_by("-closeDate")
+                        .first()
+                    )
+
+                    # pprint(documents_plan)
+                    data_plan = {}
+                    sum_plan = 0
+                    if documents_plan:
+                        sum_plan = documents_plan.sum
+                    else:
+                        sum_plan = "no data"
+
+                    # Получение списка продуктов, относящихся к группам товаров
+                    products = Products.objects(
+                        __raw__={
+                            "shop_id": documents_open_session.shop_id,
+                            "parentUuid": {"$in": group_id},
+                        }
+                    )
+
+                    # Формирование списка идентификаторов продуктов
+                    products_uuid = [element.uuid for element in products]
+
+                    # Типы операций для анализа (продажи и возвраты)
+                    x_type = ["SELL", "PAYBACK"]
+
+                    # Получение документов о продажах и возвратах для продуктов
+                    documents_2 = Documents.objects(
+                        __raw__={
+                            "closeDate": {"$gte": since_, "$lt": until_},
+                            "shop_id": documents_open_session.shop_id,
+                            "x_type": {"$in": x_type},
+                            "transactions.commodityUuid": {"$in": products_uuid},
+                        }
+                    )
+                    sum_sell_today = 0
+
+                    # Вычисление суммы продаж за текущий период
+                    for doc_2 in documents_2:
+                        for trans_2 in doc_2["transactions"]:
+                            if trans_2["x_type"] == "REGISTER_POSITION":
+                                if trans_2["commodityUuid"] in products_uuid:
+                                    sum_sell_today += trans_2["sum"]
+
+                    data_plan.update({"Прод": sum_sell_today})
+
+                    documents_plan_motivation = (
+                        GroupUuidAks.objects(
+                            __raw__={
+                                "closeDate": {"$lte": until_[:10]},
+                                "shop_id": documents_open_session.shop_id,
+                                "x_type": "MOTIVATION",
+                            }
+                        )
+                        .order_by("-closeDate")
+                        .first()
+                    )
+
+                    # Если есть документы по плану мотивации
+                    if documents_plan_motivation:
+                        # Если данные по плану равны "no data"
+                        if sum_plan == "no data":
+                            symbol = "🔴"
+                            salary_plan = "no data"
+                        else:
+                            # Если сумма продаж сегодня больше или равна установленному плану
+                            if sum_sell_today >= sum_plan:
+                                symbol = "✅"
+                                salary_plan = documents_plan_motivation["motivation"]
+                                total_salary_plan += documents_plan_motivation[
+                                    "motivation"
+                                ]
+                            else:
+                                symbol = "🟡"
+                                salary_plan = 0
+                    else:
+                        symbol = "🔴"
+                        salary_plan = 0
+
+                    # Обновление данных плана
+                    data_plan.update(
+                        {
+                            "План:".upper(): f"{sum_plan}₱",
+                            "Прод:".upper(): f"{sum_sell_today}₱",
+                            "Зп:".upper(): f"{salary_plan}₱",
+                            "Магазин:".upper(): shop.name,
+                        }
+                    )
+                    data_plan.update(
+                        {
+                            symbol: " ",
+                        }
+                    )
+                    pprint(data_plan)
+                    result.append(data_plan)
+            result.append(
+                {
+                    "Начало периода:".upper(): since[0:10],
+                    "Окончание периода:".upper(): until[0:10],
+                    "Продавец:".upper(): user.name,
+                    "Итого зп:".upper(): f"{total_salary_plan}₱",
+                }
+            )
             return result
