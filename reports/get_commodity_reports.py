@@ -471,7 +471,7 @@ def generate(session: Session):
                         else:
                             sales_d = 0
 
-                        product_quantity = commodity_balances[product["uuid"]] - sales_d
+                        product_quantity = commodity_balances[product["uuid"]]
 
                         if product["uuid"] in _dict:
                             product_quantity_seller = _dict[product["uuid"]]
