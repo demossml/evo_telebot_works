@@ -1210,7 +1210,7 @@ def generate(session: Session):
 
                         documents_sale = Documents.objects(
                             __raw__={
-                                "closeDate": {"$gte": since, "$lt": until},
+                                "closeDate": {"$gte": since_, "$lt": until_},
                                 "shop_id": documents_open_session.shop_id,
                                 "x_type": "SELL",
                                 "transactions.commodityUuid": {"$in": products_uuid},
@@ -1243,17 +1243,17 @@ def generate(session: Session):
                             }
                         )
 
-                    else:
-                        pprint("no data")
-                        result.append(
-                            {
-                                "СУММА:": f"{0}₽",
-                                "ПРОЦЕНТ:": "5%",
-                                "ЗП": f"{0}₽",
-                                "ДАТА:": since_[:10],
-                                "МАГАЗИН": shop.name,
-                            }
-                        )
+                else:
+                    pprint("no data")
+                    result.append(
+                        {
+                            "СУММА:": f"{0}₽",
+                            "ПРОЦЕНТ:": "5%",
+                            "ЗП": f"{0}₽",
+                            "ДАТА:": since_[:10],
+                            "МАГАЗИН": shop.name,
+                        }
+                    )
 
             result.append(
                 {

@@ -223,10 +223,10 @@ class ReportSalaryInput:
                     "id": "get_salary_total_day",
                     "name": "ЗП ЗА ДЕНЬ",
                 },
-                {
-                    "id": "get_salary_day",
-                    "name": "💹 ЗП акссы all ➡️",
-                },
+                # {
+                #     "id": "get_salary_day",
+                #     "name": "💹 ЗП акссы all ➡️",
+                # },
                 {
                     "id": "get_salary_plan_day",
                     "name": "💹 ЗП План по Электро ➡️",
