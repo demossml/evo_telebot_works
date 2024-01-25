@@ -224,6 +224,10 @@ class ReportSalaryInput:
                     "name": "ЗП ЗА ДЕНЬ",
                 },
                 {
+                    "id": "get_salary_day",
+                    "name": "💹 ЗП акссы all ➡️",
+                },
+                {
                     "id": "get_salary_plan_day",
                     "name": "💹 ЗП План по Электро ➡️",
                 },
@@ -247,6 +251,10 @@ class ReportSalaryInput:
                 {
                     "id": "get_salary_plan_day",
                     "name": "💹 ЗП План по Электро ➡️",
+                },
+                {
+                    "id": "get_salary_day",
+                    "name": "💹 ЗП акссы all ➡️",
                 },
             )
 
@@ -437,7 +445,7 @@ class ReportsClearDbInput:
             {"id": "clear_db_surplus", "name": "🛒 Очистить (Surplus) ➡️".upper()},
             {
                 "id": "clear_db_group_uuid_aks",
-                "name": "🛒 Очистить (GroupUuidAks) ➡️".upper() 
+                "name": "🛒 Очистить (GroupUuidAks) ➡️",
             },
         )
         return output
@@ -720,7 +728,7 @@ class ProductElectroInput:
             "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
             "568905bd-9460-11ee-9ef4-be8fe126e7b9",
             "568905be-9460-11ee-9ef4-be8fe126e7b9",
-            )
+        )
         product = Products.objects(
             __raw__={"shop_id": shops_id, "parentUuid": {"$in": group_id}}
         )

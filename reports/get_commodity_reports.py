@@ -453,7 +453,7 @@ def generate(session: Session):
 
                 _dict = gather_statistics_uuid(documents, products_uuid)
 
-                _dict1 = gather_statistics_uuid(documents1, products_uuid)
+                # _dict1 = gather_statistics_uuid(documents1, products_uuid)
 
                 # sold_p = gather_statistics_name(documents, products_uuid)
                 # sold_p["продано".upper()] = "{} - {}".format(since[8:10], until[8:10])
@@ -466,10 +466,10 @@ def generate(session: Session):
                 _dict3 = {"Заказ:".upper(): groupName_}
                 if len(_dict) > 0:
                     for product in products:
-                        if product["uuid"] in _dict1:
-                            sales_d = _dict1[product["uuid"]]
-                        else:
-                            sales_d = 0
+                        # if product["uuid"] in _dict1:
+                        #     sales_d = _dict1[product["uuid"]]
+                        # else:
+                        #     sales_d = 0
 
                         product_quantity = commodity_balances[product["uuid"]]
 
