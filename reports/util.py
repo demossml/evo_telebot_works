@@ -19,9 +19,10 @@ from io import BytesIO
 # Принимает словарь с данными о продукте
 
 
-def format_sell_groups(_dict: dict) -> list[dict]:
+def format_sell_groups(_dict: dict, since: str, until: str) -> list[dict]:
     """
     :param _dict: словарь с данными о продукте
+
     :return: [
     {
         '1 Наименование:': str,
@@ -30,9 +31,11 @@ def format_sell_groups(_dict: dict) -> list[dict]:
         '4 Цена продажи:': str,
         '5 Сумма(цена поставки):': str
     }
+
     ]
     """
     result = []
+    cost_price = 0
     for k, v in _dict.items():
         prod = Products.objects(uuid=k, group__exact=False).first()
         result.append(
@@ -44,6 +47,15 @@ def format_sell_groups(_dict: dict) -> list[dict]:
                 "5 Сумма(цена поставки):": "{} ₱".format(v["sum"]),
             }
         )
+        cost_price += prod.costPrice
+    result.append(
+        {
+            "⬇️⬇️⬇️⬇️Итого⬇️⬇️⬇️⬇️".upper(): " ",
+            "Цена продажи:".upper(): f"{cost_price} ₱",
+            "Начало периода:".upper(): since[0:10],
+            "Окончание периода:".upper(): until[0:10],
+        }
+    )
 
     return result
 
@@ -1428,3 +1440,13 @@ def last_time(shop_id: str) -> dict[str:str]:
 
     pprint(time)
     return {f"🕰️ выг. {shop.name}": time}
+
+
+def sale_uuid(shop_id: list[str], since: str, until: str) -> list:
+    documents = Documents.objects(
+        __raw__={
+            "closeDate": {"$gte": since, "$lt": until},
+            "shop_id": {"$in": shop_id},
+            "x_type": "SELL",
+        }
+    )

@@ -103,6 +103,8 @@ class TransferInput:
 
 
 def get_inputs(session: Session):
+    # Периоды для запроса зарплатных данных
+    period = ["day", "week", "fortnight", "month"]
     if session.params["inputs"]["0"]:
         if session.params["inputs"]["0"]["report"] == "marriage":
             if "report_marriage" in session.params["inputs"]["0"]:
@@ -163,7 +165,6 @@ def get_inputs(session: Session):
                 "group": GroupInput,
                 "period": PeriodDateInput,
                 "openDate": OpenDatePast2Input,
-                "closeDate": CloseDatePastInput,
             }
 
     else:
@@ -526,15 +527,20 @@ def generate(session: Session):
             return [_dict]
 
         if session.params["inputs"]["0"]["report"] == "get_product_not_for_sale":
+            # Преобразование периода из параметров сессии в формат даты
             since = period_to_date(session.params["inputs"]["0"]["period"])
             until = utcnow().isoformat()
 
+            # Получение информации о магазинах из сессии
             shops = get_shops(session)
             shop_id = shops["shop_id"]
             shop_name = shops["shop_name"]
 
+            # Получение балансов товаров
             commodity_balances = get_commodity_balances(session)
+            pprint(commodity_balances)
 
+            # Поиск документов в базе данных с условиями по времени, магазинам и типу транзакции
             documents = Documents.objects(
                 __raw__={
                     "closeDate": {"$gte": since, "$lt": until},
@@ -547,15 +553,26 @@ def generate(session: Session):
             for doc in documents:
                 for trans in doc["transactions"]:
                     if trans["x_type"] == "REGISTER_POSITION":
-                        sell_uuid.append(trans["commodityUuid"])
-            _dict = {}
+                        if trans["commodityUuid"] not in sell_uuid:
+                            sell_uuid.append(trans["commodityUuid"])
+            pprint(sell_uuid)
+            data_result = {}
             for k, v in commodity_balances.items():
+                pprint(k)
+                # Проверка, что остаток товара не равен 0
                 if v > 0:
+                    # Проверка, что товар не был продан ранее
                     if k not in sell_uuid:
+                        # Получение информации о продукте из базы данных
                         prod = Products.objects(uuid=k, group__exact=False).first()
-                        _dict[k] = {"col": v, "sum": v * prod.price}
-            _dict = dict(OrderedDict(sorted(_dict.items(), key=lambda t: -t[1]["sum"])))
+                        data_result[k] = {"col": v, "sum": v * prod.price}
+            # Сортировка словаря по убыванию суммы продаж и преобразование в упорядоченный словарь
+            data_result = dict(
+                OrderedDict(sorted(data_result.items(), key=lambda t: -t[1]["sum"]))
+            )
+            pprint(data_result)
 
-            result = format_sell_groups(_dict)
+            # Форматирование результатов группировки продаж
+            result = format_sell_groups(data_result, since, until)
 
             return result
