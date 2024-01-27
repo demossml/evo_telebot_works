@@ -8,10 +8,14 @@ from .util import (
     gather_statistics_name,
     gather_statistics_uuid,
     get_commodity_balances_all,
+    get_sale_uuid,
+    get_commodity_balances_p,
 )
 from pprint import pprint
 from arrow import get, utcnow
 from collections import OrderedDict
+import time
+
 
 from .inputs import (
     ReportCommodityInput,
@@ -536,11 +540,29 @@ def generate(session: Session):
             shop_id = shops["shop_id"]
             shop_name = shops["shop_name"]
 
-            # Получение балансов товаров
-            commodity_balances = get_commodity_balances(session)
-            pprint(commodity_balances)
+            # Если параметр "group" равен "all", получаем все товары в магазине
+            if params["group"] == "all":
+                products = Products.objects(
+                    __raw__={
+                        "shop_id": shop_id[0],
+                    }
+                )
+
+            else:
+                # Иначе получаем товары, принадлежащие определенной группе
+                products = Products.objects(
+                    __raw__={"shop_id": shop_id[0], "parentUuid": params["group"]}
+                )
+            # Получаем идентификаторы всех товаров в текущей группе
+            products_uuid = [element.uuid for element in products]
+
+            commodity_balances = get_commodity_balances_p(shop_id, products_uuid)
 
             # Поиск документов в базе данных с условиями по времени, магазинам и типу транзакции
+            start_time = time.time()
+            print(
+                f"Start функции2: {time.strftime('%H:%M:%S', time.localtime(start_time))} "
+            )
             documents = Documents.objects(
                 __raw__={
                     "closeDate": {"$gte": since, "$lt": until},
@@ -555,10 +577,13 @@ def generate(session: Session):
                     if trans["x_type"] == "REGISTER_POSITION":
                         if trans["commodityUuid"] not in sell_uuid:
                             sell_uuid.append(trans["commodityUuid"])
-            pprint(sell_uuid)
+            end_time = time.time()
+            execution_time = end_time - start_time
+            print(f"Время выполнения функции2: {execution_time:.2f} секунд")
+
             data_result = {}
             for k, v in commodity_balances.items():
-                pprint(k)
+                # pprint(k)
                 # Проверка, что остаток товара не равен 0
                 if v > 0:
                     # Проверка, что товар не был продан ранее
@@ -570,7 +595,6 @@ def generate(session: Session):
             data_result = dict(
                 OrderedDict(sorted(data_result.items(), key=lambda t: -t[1]["sum"]))
             )
-            pprint(data_result)
 
             # Форматирование результатов группировки продаж
             result = format_sell_groups(data_result, since, until)
