@@ -41,6 +41,9 @@ from .inputs import (
 
 from arrow import utcnow, get
 import decimal
+import concurrent.futures
+from collections import defaultdict
+from pprint import pprint
 
 
 name = "🛒 Зарплата ➡️".upper()
@@ -1133,53 +1136,33 @@ def generate(session: Session):
             )
             return result
         if params["reports"] == "get_salary_day":
-            result = []
 
-            # Получение фамилии сотрудника из параметров
-            employee_last_name = params["employee_uuid"]
-            employee_name = (
-                Employees.objects(lastName=employee_last_name).only("name").first()
-            )
+            def process_interval(interval, user: str):
+                """
+                Обработка данных для указанного временного интервала.
 
-            # Получение списка uuid сотрудников с заданной фамилией из базы данных
-            user = [
-                element.uuid
-                for element in Employees.objects(lastName=employee_last_name)
-            ]
+                Args:
+                    interval (tuple): Кортеж, представляющий временной интервал (since, until).
+                    user (list): Список UUID сотрудников.
 
-            pprint(user)
+                Returns:
+                    list: Список результатов обработки интервала.
+                """
+                since, until = interval
 
-            # Получение периода из сессии
-            since = (
-                get(session.params["inputs"]["0"]["openDate"])
-                .replace(hour=23, minute=00)
-                .isoformat()
-            )
-            until = (
-                get(session.params["inputs"]["0"]["closeDate"])
-                .replace(hour=23, minute=00)
-                .isoformat()
-            )
-
-            # Разбивка периода на интервалы дней
-            intervals = get_intervals(since, until, "days", 1)
-
-            data_total_sall = 0
-            data_total_salary = 0
-
-            # Итерация по интервалам
-            for since_, until_ in intervals:
-                # pprint(since_)
+                # Получение документов для открытой сессии в указанный интервал времени
                 documents_open_session = Documents.objects(
                     __raw__={
-                        "closeDate": {"$gte": since_, "$lt": until_},
+                        "closeDate": {"$gte": since, "$lt": until},
                         "openUserUuid": {"$in": user},
                         "x_type": "OPEN_SESSION",
                     }
                 ).first()
 
-                # Проверка наличия открытой сессии
+                result = []
+
                 if documents_open_session:
+                    # Если есть открытая сессия, получаем информацию о магазине
                     shop = (
                         Shop.objects(uuid=documents_open_session.shop_id)
                         .only("name")
@@ -1190,7 +1173,7 @@ def generate(session: Session):
                     documents_aks = (
                         GroupUuidAks.objects(
                             __raw__={
-                                "closeDate": {"$lte": until_[:10]},
+                                "closeDate": {"$lte": until[:10]},
                                 "shop_id": documents_open_session.shop_id,
                                 "x_type": "MOTIVATION_PARENT_UUID",
                             }
@@ -1200,72 +1183,262 @@ def generate(session: Session):
                     )
 
                     if documents_aks:
-                        pprint("aks")
                         group = Products.objects(
                             __raw__={
                                 "shop_id": documents_open_session.shop_id,
-                                # 'group': True,
                                 "parentUuid": {"$in": documents_aks.parentUuids},
                             }
                         )
 
                         products_uuid = [i.uuid for i in group]
 
+                        # Получение документов о продажах в указанный интервал времени
                         documents_sale = Documents.objects(
                             __raw__={
-                                "closeDate": {"$gte": since_, "$lt": until_},
+                                "closeDate": {"$gte": since, "$lt": until},
                                 "shop_id": documents_open_session.shop_id,
                                 "x_type": "SELL",
                                 "transactions.commodityUuid": {"$in": products_uuid},
                             }
                         )
 
-                        sum_sales = 0
-
-                        for doc in documents_sale:
-                            for trans in doc["transactions"]:
-                                if trans["x_type"] == "REGISTER_POSITION":
-                                    if trans["commodityUuid"] in products_uuid:
-                                        sum_sales += decimal.Decimal(trans["sum"])
-                        salary_total_day = (
-                            decimal.Decimal(sum_sales)
-                            / decimal.Decimal(100)
-                            * decimal.Decimal(5)
+                        sum_sales = sum(
+                            decimal.Decimal(trans["sum"])
+                            for doc in documents_sale
+                            for trans in doc["transactions"]
+                            if trans["x_type"] == "REGISTER_POSITION"
+                            and trans["commodityUuid"] in products_uuid
                         )
 
-                        data_total_sall += decimal.Decimal(sum_sales)
-                        data_total_salary += decimal.Decimal(salary_total_day)
+                        # Вычисление зарплаты за день
+                        salary_total_day = decimal.Decimal(sum_sales) / 100 * 5
 
                         result.append(
                             {
                                 "СУММА:": f"{sum_sales}₽",
                                 "ПРОЦЕНТ:": "5%",
                                 "ЗП": f"{salary_total_day}₽",
-                                "ДАТА:": since_[:10],
+                                "ДАТА:": since[:10],
                                 "МАГАЗИН": shop.name,
                             }
                         )
 
                 else:
-                    pprint("no data")
+                    # Если нет открытой сессии - выходной день
                     result.append(
                         {
-                            "🏖️ выходной день:".upper(): since_[:10],
-                            # "МАГАЗИН": shop.name,
+                            "🏖️ выходной день:".upper(): since[:10],
                         }
                     )
 
-            result.append(
-                {
-                    "⬇️⬇️⬇️⬇️Итого⬇️⬇️⬇️⬇️".upper(): " ",
-                    "СУММА:": f"{data_total_sall}₽",
-                    "ПРОЦЕНТ:": "5%",
-                    "ЗП": f"{data_total_salary}₽",
-                    "Начало периода:": since[0:10],
-                    "Окончание периода:": until[0:10],
-                    "Продавец:".upper(): employee_name.name.upper(),
-                    "МАГАЗИН": shop.name,
-                }
-            )
+                return result
+
+            def get_salary_aks_p(session):
+                """
+                Получение данных о продажах и зарплате для каждого временного интервала.
+
+                Args:
+                    session: Объект сессии.
+
+                Returns:
+                    tuple: Список результатов обработки интервалов, общая сумма продаж и общая зарплата.
+                """
+                result = []
+
+                employee_last_name = params["employee_uuid"]
+
+                employee_name = (
+                    Employees.objects(lastName=employee_last_name).only("name").first()
+                )
+
+                user = [
+                    element.uuid
+                    for element in Employees.objects(lastName=employee_last_name)
+                ]
+
+                since = (
+                    get(session.params["inputs"]["0"]["openDate"])
+                    .replace(hour=23, minute=0)
+                    .isoformat()
+                )
+                until = (
+                    get(session.params["inputs"]["0"]["closeDate"])
+                    .replace(hour=23, minute=0)
+                    .isoformat()
+                )
+
+                intervals = get_intervals(since, until, "days", 1)
+
+                # Параллельное выполнение задач
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    tasks = [
+                        executor.submit(process_interval, interval, user)
+                        for interval in intervals
+                    ]
+
+                    for task in concurrent.futures.as_completed(tasks):
+                        result.extend(task.result())
+
+                # Вычисление общей суммы продаж и общей зарплаты
+                data_total_sall = sum(
+                    decimal.Decimal(item["СУММА:"][:-1])
+                    for item in result
+                    if "СУММА:" in item
+                )
+                data_total_salary = sum(
+                    decimal.Decimal(item["ЗП"][:-1]) for item in result if "ЗП" in item
+                )
+
+                result.append(
+                    {
+                        "⬇️⬇️⬇️⬇️⬇️Итого⬇️⬇️⬇️⬇️⬇️".upper(): " ",
+                        "ПРОДАЖИ:": f"{data_total_sall}₽",
+                        "ПРОЦЕНТ:": "5%",
+                        "ЗП": f"{data_total_salary}₽",
+                        "Начало периода:": since[0:10],
+                        "Окончание периода:": until[0:10],
+                        "Продавец:".upper(): employee_name.name.upper(),
+                    }
+                )
+
+                return result, data_total_sall, data_total_salary
+
+            result, data_total_sall, data_total_salary = get_salary_aks_p(session)
+            print("Total Sales:", data_total_sall)
+            print("Total Salary:", data_total_salary)
+            pprint(result)
 
             return result
+
+            # result = []
+
+            # # Получение фамилии сотрудника из параметров
+            # employee_last_name = params["employee_uuid"]
+            # employee_name = (
+            #     Employees.objects(lastName=employee_last_name).only("name").first()
+            # )
+
+            # # Получение списка uuid сотрудников с заданной фамилией из базы данных
+            # user = [
+            #     element.uuid
+            #     for element in Employees.objects(lastName=employee_last_name)
+            # ]
+
+            # # Получение периода из сессии
+            # since = (
+            #     get(session.params["inputs"]["0"]["openDate"])
+            #     .replace(hour=23, minute=00)
+            #     .isoformat()
+            # )
+            # until = (
+            #     get(session.params["inputs"]["0"]["closeDate"])
+            #     .replace(hour=23, minute=00)
+            #     .isoformat()
+            # )
+
+            # # Разбивка периода на интервалы дней
+            # intervals = get_intervals(since, until, "days", 1)
+
+            # data_total_sall = 0
+            # data_total_salary = 0
+
+            # # Итерация по интервалам
+            # for since_, until_ in intervals:
+            #     # pprint(since_)
+            #     documents_open_session = Documents.objects(
+            #         __raw__={
+            #             "closeDate": {"$gte": since_, "$lt": until_},
+            #             "openUserUuid": {"$in": user},
+            #             "x_type": "OPEN_SESSION",
+            #         }
+            #     ).first()
+
+            #     # Проверка наличия открытой сессии
+            #     if documents_open_session:
+            #         shop = (
+            #             Shop.objects(uuid=documents_open_session.shop_id)
+            #             .only("name")
+            #             .first()
+            #         )
+
+            #         # Получение группы по идентификатору магазина
+            #         documents_aks = (
+            #             GroupUuidAks.objects(
+            #                 __raw__={
+            #                     "closeDate": {"$lte": until_[:10]},
+            #                     "shop_id": documents_open_session.shop_id,
+            #                     "x_type": "MOTIVATION_PARENT_UUID",
+            #                 }
+            #             )
+            #             .order_by("-closeDate")
+            #             .first()
+            #         )
+
+            #         if documents_aks:
+            #             group = Products.objects(
+            #                 __raw__={
+            #                     "shop_id": documents_open_session.shop_id,
+            #                     # 'group': True,
+            #                     "parentUuid": {"$in": documents_aks.parentUuids},
+            #                 }
+            #             )
+
+            #             products_uuid = [i.uuid for i in group]
+
+            #             documents_sale = Documents.objects(
+            #                 __raw__={
+            #                     "closeDate": {"$gte": since_, "$lt": until_},
+            #                     "shop_id": documents_open_session.shop_id,
+            #                     "x_type": "SELL",
+            #                     "transactions.commodityUuid": {"$in": products_uuid},
+            #                 }
+            #             )
+
+            #             sum_sales = 0
+
+            #             for doc in documents_sale:
+            #                 for trans in doc["transactions"]:
+            #                     if trans["x_type"] == "REGISTER_POSITION":
+            #                         if trans["commodityUuid"] in products_uuid:
+            #                             sum_sales += decimal.Decimal(trans["sum"])
+            #             salary_total_day = (
+            #                 decimal.Decimal(sum_sales)
+            #                 / decimal.Decimal(100)
+            #                 * decimal.Decimal(5)
+            #             )
+
+            #             data_total_sall += decimal.Decimal(sum_sales)
+            #             data_total_salary += decimal.Decimal(salary_total_day)
+
+            #             result.append(
+            #                 {
+            #                     "СУММА:": f"{sum_sales}₽",
+            #                     "ПРОЦЕНТ:": "5%",
+            #                     "ЗП": f"{salary_total_day}₽",
+            #                     "ДАТА:": since_[:10],
+            #                     "МАГАЗИН": shop.name,
+            #                 }
+            #             )
+
+            #     else:
+            #         pprint("no data")
+            #         result.append(
+            #             {
+            #                 "🏖️ выходной день:".upper(): since_[:10],
+            #             }
+            #         )
+
+            # result.append(
+            #     {
+            #         "⬇️⬇️⬇️⬇️⬇️Итого⬇️⬇️⬇️⬇️⬇️".upper(): " ",
+            #         "ПРОДАЖИ:": f"{data_total_sall}₽",
+            #         "ПРОЦЕНТ:": "5%",
+            #         "ЗП": f"{data_total_salary}₽",
+            #         "Начало периода:": since[0:10],
+            #         "Окончание периода:": until[0:10],
+            #         "Продавец:".upper(): employee_name.name.upper(),
+            #         "МАГАЗИН": shop.name,
+            #     }
+            # )
+
+            # return result

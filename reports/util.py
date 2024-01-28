@@ -1529,3 +1529,10 @@ def get_commodity_balances_p(shop_id: list, product_uuid: list) -> defaultdict:
                 commodity_balances[uuid] += balance
 
     return commodity_balances
+
+
+def process_salary_aks(
+    since: str,
+    until: str,
+):
+    pass
