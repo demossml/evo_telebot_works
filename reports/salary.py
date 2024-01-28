@@ -1301,12 +1301,9 @@ def generate(session: Session):
                     }
                 )
 
-                return result, data_total_sall, data_total_salary
+                return result
 
-            result, data_total_sall, data_total_salary = get_salary_aks_p(session)
-            print("Total Sales:", data_total_sall)
-            print("Total Salary:", data_total_salary)
-            pprint(result)
+            result = get_salary_aks_p(session)
 
             return result
 
