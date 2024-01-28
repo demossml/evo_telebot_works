@@ -357,6 +357,11 @@ def generate(session: Session):
             return result
 
         if session.params["inputs"]["0"]["report"] == "order_constructor":
+            # start_time = time.time()
+            # print(
+            #     f"Start функции2: {time.strftime('%H:%M:%S', time.localtime(start_time))} "
+            # )
+
             # Извлекаем параметры из запроса
             params = session["params"]["inputs"]["0"]
             counterparty = params["counterparty"]
@@ -433,7 +438,7 @@ def generate(session: Session):
                 groupUuid = [element.uuid for element in group]
 
                 products = Products.objects(
-                    shop_id__exact=shop_id, group__exact=False, parentUuid=groupUuid[0]
+                    shop_id__exact=shop_id, group__exact=False, parentUuid__in=groupUuid
                 )
                 products_uuid = [element.uuid for element in products]
 
@@ -466,8 +471,8 @@ def generate(session: Session):
 
                 sold_today.update(gather_statistics_name(documents1, products_uuid))
 
-                commodity_balances = get_commodity_balances_all(shop_id, products_uuid)
-                # pprint(commodity_balances)
+                commodity_balances = get_commodity_balances_p([shop_id], products_uuid)
+                pprint(commodity_balances)
                 _dict3 = {"Заказ:".upper(): groupName_}
                 if len(_dict) > 0:
                     for product in products:
@@ -497,6 +502,9 @@ def generate(session: Session):
 
                 result.append(_dict3)
             result.append(sold_today)
+            # end_time = time.time()
+            # execution_time = end_time - start_time
+            # print(f"Время выполнения функции2: {execution_time:.2f} секунд")
             return result
 
         if session.params["inputs"]["0"]["report"] == "get_accept":

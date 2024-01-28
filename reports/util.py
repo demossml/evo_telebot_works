@@ -1511,106 +1511,20 @@ def process_uuid(
     return uuid, commodity_balance
 
 
-def get_commodity_balances_p(shop_id: list, uuid: list) -> defaultdict:
-    # Инициализируем словарь для хранения балансов товаров
+def get_commodity_balances_p(shop_id: list, product_uuid: list) -> defaultdict:
     commodity_balances = defaultdict(int)
-
-    # Устанавливаем типы транзакций и идентификаторы магазинов
-    # shop_id = ["20220202-B042-4021-803D-09E15DADE8A4"]
-    # group_uuid = "ebdf9e30-899e-11e8-b95f-c8d3ff286ecb"
 
     # Используем ThreadPoolExecutor для создания потоков
     with ThreadPoolExecutor() as executor:
         for shop_uuid in shop_id:
-            # pprint(shop_uuid)
-            # Получаем список продуктов для заданного магазина и группы
-            products = Products.objects(
-                __raw__={
-                    "shop_id": shop_uuid,
-                    "group": False,
-                    "uuid": {"$in": uuid},
-                }
-            )
-
             # Используем executor.map для параллельного выполнения process_uuid для каждого товара
             results = executor.map(
-                lambda element: process_uuid(element.uuid, shop_uuid),
-                [element for element in products if element.quantity > 0],
+                lambda element: process_uuid(element, shop_uuid),
+                [element for element in product_uuid],
             )
 
             # Обновляем словарь с балансами товаров
             for uuid, balance in results:
                 commodity_balances[uuid] += balance
 
-    return commodity_balances
-
-
-def get_commodity_balances_u(session: Session) -> dict[str:int]:
-    """
-    :param session:
-    :return: {'uuid': str, 'quantity': init}
-    """
-    # Создаем пустой словарь для хранения балансов товаров
-    commodity_balances = {}
-    # Получаем параметры из сессии
-    params = session.params["inputs"]["0"]
-    # Список типов транзакций
-    x_type = ("SELL", "PAYBACK", "ACCEPT")
-    # Получаем список магазинов из функции get_shops
-    shops = get_shops(session)
-    shop_id = shops["shop_id"]
-    # Итерируемся по идентификаторам магазинов
-    for shop_uuid in shop_id:
-        # Если параметр "group" равен "all", получаем все товары в магазине
-        if params["group"] == "all":
-            products = Products.objects(
-                __raw__={
-                    "shop_id": shop_uuid,
-                }
-            )
-
-        else:
-            # Иначе получаем товары, принадлежащие определенной группе
-            products = Products.objects(
-                __raw__={"shop_id": shop_uuid, "parentUuid": params["group"]}
-            )
-        # Получаем идентификаторы всех товаров в текущей группе
-        products_uuid = [element.uuid for element in products]
-        # Итерируемся по идентификаторам товаров
-        for uuid in products_uuid:
-            # Ищем документы, связанные с текущим товаром
-            documents = (
-                Documents.objects(
-                    __raw__={
-                        "shop_id": shop_uuid,
-                        "x_type": {"$in": x_type},
-                        "transactions.commodityUuid": uuid,
-                    }
-                )
-                .order_by("-closeDate")
-                .first()
-            )
-
-            if documents:
-                for trans in documents["transactions"]:
-                    if trans["x_type"] == "REGISTER_POSITION":
-                        if trans["commodityUuid"] == uuid:
-                            if documents.x_type == "SELL":
-                                # Обновляем баланс товара при продаже
-                                commodity_balances[trans["commodityUuid"]] = (
-                                    trans["balanceQuantity"] - trans["quantity"]
-                                )
-
-                            if documents.x_type == "PAYBACK":
-                                # Обновляем баланс товара при возврате
-                                commodity_balances[trans["commodityUuid"]] = (
-                                    trans["balanceQuantity"] + trans["quantity"]
-                                )
-
-                            if documents.x_type == "ACCEPT":
-                                # Обновляем баланс товара при приемке
-                                commodity_balances[trans["commodityUuid"]] = trans[
-                                    "balanceQuantity"
-                                ]
-    # Возвращаем словарь с балансами товаров
     return commodity_balances
