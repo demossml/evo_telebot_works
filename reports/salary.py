@@ -1114,6 +1114,7 @@ def generate(session: Session):
                             "План:".upper(): f"{sum_plan}₱",
                             "Прод:".upper(): f"{sum_sell_today}₱",
                             "Зп:".upper(): f"{salary_plan}₱",
+                            "ДАТА:": documents_open_session.closeDate[:10],
                             "Магазин:".upper(): shop.name,
                         }
                     )
