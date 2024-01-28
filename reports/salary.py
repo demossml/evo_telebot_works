@@ -1020,9 +1020,7 @@ def generate(session: Session):
                         .only("name")
                         .first()
                     )
-                    # pprint(since_)
-                    # pprint(until_)
-                    # pprint(documents_open_session.shop_id)
+
                     # Получение данных о планах продаж для магазина
                     documents_plan = (
                         Plan.objects(
@@ -1075,7 +1073,7 @@ def generate(session: Session):
                                 if trans_2["commodityUuid"] in products_uuid:
                                     sum_sell_today += trans_2["sum"]
 
-                    data_plan.update({"Прод": sum_sell_today})
+                    # data_plan.update({"Прод": sum_sell_today})
 
                     documents_plan_motivation = (
                         GroupUuidAks.objects(
