@@ -1137,6 +1137,9 @@ def generate(session: Session):
 
             # Получение фамилии сотрудника из параметров
             employee_last_name = params["employee_uuid"]
+            employee_name = (
+                Employees.objects(lastName=employee_last_name).only("name").first()
+            )
 
             # Получение списка uuid сотрудников с заданной фамилией из базы данных
             user = [
@@ -1260,6 +1263,7 @@ def generate(session: Session):
                     "ЗП": f"{data_total_salary}₽",
                     "Начало периода:": since[0:10],
                     "Окончание периода:": until[0:10],
+                    "Продавец:".upper(): employee_name.name.upper(),
                     "МАГАЗИН": shop.name,
                 }
             )
