@@ -1251,7 +1251,7 @@ def generate(session: Session):
                             "ПРОЦЕНТ:": "5%",
                             "ЗП": f"{0}₽",
                             "ДАТА:": since_[:10],
-                            "МАГАЗИН": shop.name,
+                            # "МАГАЗИН": shop.name,
                         }
                     )
 

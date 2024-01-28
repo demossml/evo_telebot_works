@@ -1512,6 +1512,7 @@ def process_uuid(
 
 
 def get_commodity_balances_p(shop_id: list, product_uuid: list) -> defaultdict:
+    #
     commodity_balances = defaultdict(int)
 
     # Используем ThreadPoolExecutor для создания потоков
