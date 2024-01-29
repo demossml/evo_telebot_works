@@ -1136,7 +1136,7 @@ def generate(session: Session):
             return result
         if params["reports"] == "get_salary_day":
 
-            def process_interval(interval, user: str):
+            def process_interval(interval, user: list):
                 """
                 Обработка данных для указанного временного интервала.
 
@@ -1148,6 +1148,7 @@ def generate(session: Session):
                     list: Список результатов обработки интервала.
                 """
                 since, until = interval
+                pprint(since)
 
                 # Получение документов для открытой сессии в указанный интервал времени
                 documents_open_session = Documents.objects(
@@ -1161,6 +1162,7 @@ def generate(session: Session):
                 result = []
 
                 if documents_open_session:
+                    pprint(documents_open_session)
                     # Если есть открытая сессия, получаем информацию о магазине
                     shop = (
                         Shop.objects(uuid=documents_open_session.shop_id)
@@ -1223,6 +1225,7 @@ def generate(session: Session):
                         )
 
                 else:
+                    pprint("🏖️ выходной день:")
                     # Если нет открытой сессии - выходной день
                     result.append(
                         {
@@ -1257,7 +1260,7 @@ def generate(session: Session):
 
                 since = (
                     get(session.params["inputs"]["0"]["openDate"])
-                    .replace(hour=23, minute=0)
+                    .replace(hour=3, minute=0)
                     .isoformat()
                 )
                 until = (
