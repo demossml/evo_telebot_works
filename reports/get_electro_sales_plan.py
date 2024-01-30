@@ -78,7 +78,7 @@ def generate(session: Session) -> list[dict]:
                 }
             ).first()
         else:
-            generate_plan_()
+            generate_plan()
 
             plan = Plan.objects(
                 __raw__={
@@ -165,57 +165,57 @@ def generate(session: Session) -> list[dict]:
 
     return [_dict_2, dict_last_time], image_buffer
 
-    data_resul = {}
-    data_sale = analyze_sales_parallel(session)
-    sales_data = {}
-    data_last_time = {}
-    for k, v in data_sale.items():
-        plan = get_plan(k)
-        if v >= plan.sum:
-            symbol = "✅"
-        else:
-            symbol = "🔴"
+    # data_resul = {}
+    # data_sale = analyze_sales_parallel(session)
+    # sales_data = {}
+    # data_last_time = {}
+    # for k, v in data_sale.items():
+    #     plan = get_plan(k)
+    #     if v >= plan.sum:
+    #         symbol = "✅"
+    #     else:
+    #         symbol = "🔴"
 
-        shop = Shop.objects(uuid__exact=k).only("name").first()
+    #     shop = Shop.objects(uuid__exact=k).only("name").first()
 
-        # Формирование информации о планах и фактических продажах
-        data_resul[
-            "{}{}".format(symbol, shop.name[:9]).upper()
-        ] = "пл.{}₽/пр.{}₽".format(plan.sum, v)
+    #     # Формирование информации о планах и фактических продажах
+    #     data_resul[
+    #         "{}{}".format(symbol, shop.name[:9]).upper()
+    #     ] = "пл.{}₽/пр.{}₽".format(plan.sum, v)
 
-        sales_data[shop.name] = v
+    #     sales_data[shop.name] = v
 
-        data_last_time.update(last_time(k))
+    #     data_last_time.update(last_time(k))
 
-    end_time = time.time()
-    execution_time = end_time - start_time
-    print(f"Время выполнения функции sync_evo: {execution_time:.2f} секунд")
-    # Извлекаем названия магазина и суммы продаж
-    shop_names = list(sales_data.keys())
-    sum_sales_ = list(sales_data.values())
+    # end_time = time.time()
+    # execution_time = end_time - start_time
+    # print(f"Время выполнения функции sync_evo: {execution_time:.2f} секунд")
+    # # Извлекаем названия магазина и суммы продаж
+    # shop_names = list(sales_data.keys())
+    # sum_sales_ = list(sales_data.values())
 
-    # Создаем фигуру для круговой диаграммы
-    fig = px.pie(
-        names=shop_names,
-        values=sum_sales_,
-        title="Доля выручки по Электронкам  по магазинам",
-        labels={"names": "Магазины", "values": "Выручка"},
-        # Цвет фона графика
-    )
+    # # Создаем фигуру для круговой диаграммы
+    # fig = px.pie(
+    #     names=shop_names,
+    #     values=sum_sales_,
+    #     title="Доля выручки по Электронкам  по магазинам",
+    #     labels={"names": "Магазины", "values": "Выручка"},
+    #     # Цвет фона графика
+    # )
 
-    # Настройки внешнего вида графика
-    fig.update_layout(
-        title="Продажи  по Электронкам по магазинам",
-        font=dict(size=18, family="Arial, sans-serif", color="black"),
-        # plot_bgcolor="black",  # Цвет фона графика
-    )
+    # # Настройки внешнего вида графика
+    # fig.update_layout(
+    #     title="Продажи  по Электронкам по магазинам",
+    #     font=dict(size=18, family="Arial, sans-serif", color="black"),
+    #     # plot_bgcolor="black",  # Цвет фона графика
+    # )
 
-    # Сохраняем диаграмму в формате PNG в объект BytesIO
-    image_buffer = BytesIO()
+    # # Сохраняем диаграмму в формате PNG в объект BytesIO
+    # image_buffer = BytesIO()
 
-    fig.write_image(image_buffer, format="png", width=700, height=700)
+    # fig.write_image(image_buffer, format="png", width=700, height=700)
 
-    # Очищаем буфер изображения и перемещаем указатель в начало
-    image_buffer.seek(0)
+    # # Очищаем буфер изображения и перемещаем указатель в начало
+    # image_buffer.seek(0)
 
-    return [data_resul, data_last_time], image_buffer
+    # return [data_resul, data_last_time], image_buffer
