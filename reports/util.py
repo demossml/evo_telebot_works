@@ -14,7 +14,8 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from io import BytesIO
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from collections import defaultdict
 from pprint import pprint
 import time
@@ -776,36 +777,13 @@ def generate_plan():
         "568905bd-9460-11ee-9ef4-be8fe126e7b9",
         "568905be-9460-11ee-9ef4-be8fe126e7b9",
     )
-    # Список идентификаторов для фильтрации магазинов
-    _in = (
-        "20190327-A48C-407F-801F-DA33CB4FBBE9",
-        "20220202-B042-4021-803D-09E15DADE8A4",
-        "20231001-6611-407F-8068-AC44283C9196",
-        "20190411-5A3A-40AC-80B3-8B405633C8BA",
-        "20220201-19C9-40B0-8082-DF8A9067705D",
-        "20191117-BF71-40FE-8016-1E7E4A3A4780",
-    )
-    # Список идентификаторов магазинов на основе фильтрации
-    uuid = (
-        "20210712-1362-4012-8026-5A35685630B2",
-        "20220222-6C28-4069-8006-082BE12BEB32",
-        "20200630-3E0D-4061-80C1-F7897E112F00",
-        "20210923-FB1F-4023-80F6-9ECB3F5A0FA8",
-        "20220201-19C9-40B0-8082-DF8A9067705D",
-        "20220201-8B00-40C2-8002-EF7E53ED1220",
-        "20220201-A55A-40B8-8071-EC8733AFFA8E",
-        "20220202-B042-4021-803D-09E15DADE8A4",
-    )
-    # Получение магазинов с использованием фильтрации
-    shops = Shop.objects(__raw__={"uuid": {"$in": _in}})
+
+    shops = Shop.objects()
 
     _dict = {}
 
     for shop in shops:
-        if shop["uuid"] in uuid:
-            period = [7, 14, 21, 28]
-        else:
-            period = [7, 14, 21, 28]
+        period = [7, 14, 21, 28]
         for element in period:
             # Рассчитываем временные интервалы с использованием UTC времени
             since = utcnow().shift(days=-element).replace(hour=3, minute=00).isoformat()
@@ -844,28 +822,23 @@ def generate_plan():
             else:
                 sum_sell = 0
             pprint(sum_sell)
-            # Устанавливаем значение _day
-            if shop["uuid"] in uuid:
-                _day = 4
-            else:
-                _day = 4
+
+            _day = 4
             # Обновляем словарь суммами продаж
             if shop["uuid"] in _dict:
                 _dict[shop["uuid"]] += round(
-                    (int(sum_sell) / _day + int(sum_sell) / 5 / 100 * 4)
+                    (int(sum_sell) / _day + int(sum_sell) / 5 / 100 * 5)
                 )
             else:
                 _dict[shop["uuid"]] = round(
-                    (int(sum_sell) / _day + int(sum_sell) / 5 / 100 * 4)
+                    (int(sum_sell) / _day + int(sum_sell) / 5 / 100 * 5)
                 )
     # Обновляем параметры плана в базе данных
     for k, v in _dict.items():
         params = {"closeDate": utcnow().isoformat(), "shop_id": k}
+        # Выставляем минимальное значение 3500
+        params["sum"] = max(int(3500), v)
 
-        if v < 3000:
-            params["sum"] = int(3000)
-        else:
-            params["sum"] = v
         # print(params)
         Plan.objects(closeDate=utcnow().isoformat()).update(**params, upsert=True)
     # Возвращаем параметры плана
@@ -1420,7 +1393,6 @@ def last_time(shop_id: str) -> dict[str:str]:
     until = utcnow().isoformat()
 
     shop = Shop.objects(uuid__exact=shop_id).only("name").first()
-    pprint(shop["name"])
     Documents_last_time = (
         Documents.objects(
             __raw__={
@@ -1437,7 +1409,6 @@ def last_time(shop_id: str) -> dict[str:str]:
     else:
         time = 0
 
-    pprint(time)
     return {f"🕰️ выг. {shop.name}": time}
 
 
@@ -1531,8 +1502,204 @@ def get_commodity_balances_p(shop_id: list, product_uuid: list) -> defaultdict:
     return commodity_balances
 
 
-def process_salary_aks(
-    since: str,
-    until: str,
-):
-    pass
+def process_shop(shop_uuid, group_id, period):
+    _dict = {}
+
+    for element in period:
+        since = utcnow().shift(days=-element).replace(hour=3, minute=00).isoformat()
+        until = utcnow().shift(days=-element).replace(hour=21, minute=00).isoformat()
+
+        products = Products.objects(
+            __raw__={"shop_id": shop_uuid, "parentUuid": {"$in": group_id}}
+        )
+
+        products_uuid = [element.uuid for element in products]
+
+        x_type = ("SELL", "PAYBACK")
+
+        documents = Documents.objects(
+            __raw__={
+                "closeDate": {"$gte": since, "$lt": until},
+                "shop_id": shop_uuid,
+                "x_type": {"$in": x_type},
+                "transactions.commodityUuid": {"$in": products_uuid},
+            }
+        )
+
+        sum_sell = 0
+
+        if len(documents) > 0:
+            for doc in documents:
+                for trans in doc["transactions"]:
+                    if trans["x_type"] == "REGISTER_POSITION":
+                        if trans["commodityUuid"] in products_uuid:
+                            sum_sell += trans["sum"]
+
+        # pprint(sum_sell)
+
+        _day = 4
+
+        if shop_uuid in _dict:
+            _dict[shop_uuid] += round(
+                (int(sum_sell) / _day + int(sum_sell) / 5 / 100 * 5)
+            )
+        else:
+            _dict[shop_uuid] = round(
+                (int(sum_sell) / _day + int(sum_sell) / 5 / 100 * 5)
+            )
+
+    return _dict
+
+
+def generate_plan_():
+    group_id = (
+        "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
+        "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
+        "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
+        "2b8eb6b4-92ea-11ee-ab93-2cf05d04be1d",
+        "8a8fcb5f-9582-11ee-ab93-2cf05d04be1d",
+        "97d6fa81-84b1-11ea-b9bb-70c94e4ebe6a",
+        "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
+        "568905bd-9460-11ee-9ef4-be8fe126e7b9",
+        "568905be-9460-11ee-9ef4-be8fe126e7b9",
+    )
+
+    shop_id = [element.uuid for element in Shop.objects()]
+    period = [7, 14, 21, 28]
+
+    _dict = {}
+
+    with ThreadPoolExecutor() as executor:
+        # Запускаем потоки для каждого магазина
+        results = list(
+            executor.map(lambda shop: process_shop(shop, group_id, period), shop_id)
+        )
+
+    # Объединяем результаты из всех потоков
+    for result in results:
+        for shop_uuid, value in result.items():
+            if shop_uuid in _dict:
+                _dict[shop_uuid] += value
+            else:
+                _dict[shop_uuid] = value
+
+    for k, v in _dict.items():
+        params = {"closeDate": utcnow().isoformat(), "shop_id": k}
+
+        params["sum"] = max(int(3500), v)
+
+        Plan.objects(closeDate=utcnow().isoformat()).update(**params, upsert=True)
+
+    return params
+
+
+def get_plan(shop: str) -> object:
+    since = utcnow().replace(hour=3, minute=00).isoformat()
+    until = utcnow().replace(hour=20, minute=59).isoformat()
+
+    # Получение данных о планах продаж для магазина
+    plan = (
+        Plan.objects(
+            __raw__={
+                "closeDate": {"$gte": since, "$lt": until},
+                "shop_id": shop,
+            }
+        )
+        .only("sum")
+        .first()
+    )
+    if len(plan) > 0:
+        return plan
+    else:
+        generate_plan_()
+        return (
+            Plan.objects(
+                __raw__={
+                    "closeDate": {"$gte": since, "$lt": until},
+                    "shop_id": shop,
+                }
+            )
+            .only("sum")
+            .first()
+        )
+
+
+def analyze_sales_for_shop(shop_id) -> dict:
+    # Группы товаров для анализа продаж
+    group_id = (
+        "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
+        "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
+        "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
+        "2b8eb6b4-92ea-11ee-ab93-2cf05d04be1d",
+        "8a8fcb5f-9582-11ee-ab93-2cf05d04be1d",
+        "97d6fa81-84b1-11ea-b9bb-70c94e4ebe6a",
+        "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
+        "568905bd-9460-11ee-9ef4-be8fe126e7b9",
+        "568905be-9460-11ee-9ef4-be8fe126e7b9",
+    )
+    # Определение временного периода для анализа
+    since = utcnow().replace(hour=3, minute=00).isoformat()
+    until = utcnow().isoformat()
+
+    # Словарь для хранения данных о продажах по магазинам
+
+    # dict_last_time.update(last_time(shop["uuid"]))
+    since = utcnow().replace(hour=3, minute=00).isoformat()
+    until = utcnow().replace(hour=20, minute=59).isoformat()
+
+    # Получение списка продуктов, относящихся к группам товаров
+    products = Products.objects(
+        __raw__={"shop_id": shop_id, "parentUuid": {"$in": group_id}}
+    )
+
+    # Формирование списка идентификаторов продуктов
+    products_uuid = [element.uuid for element in products]
+
+    # Типы операций для анализа (продажи и возвраты)
+    x_type = ("SELL", "PAYBACK")
+
+    # Получение документов о продажах и возвратах для продуктов
+    documents_sale = Documents.objects(
+        __raw__={
+            "closeDate": {"$gte": since, "$lt": until},
+            "shop_id": shop_id,
+            "x_type": {"$in": x_type},
+            "transactions.commodityUuid": {"$in": products_uuid},
+        }
+    )
+
+    sum_sell_today = 0
+    # Вычисление суммы продаж за текущий период
+    for doc in documents_sale:
+        for trans in doc["transactions"]:
+            if trans["x_type"] == "REGISTER_POSITION":
+                if trans["commodityUuid"] in products_uuid:
+                    sum_sell_today += trans["sum"]
+    return {shop_id: sum_sell_today}
+
+    # pprint(sales_data)
+
+
+def analyze_sales_parallel(session):
+    sales_data = defaultdict(int)
+
+    with ThreadPoolExecutor() as executor:
+        # Получаем список магазинов
+        shops = get_shops_uuid_user_id(session)
+
+        # Запускаем выполнение задачи для каждого магазина в отдельном потоке
+        future_to_shop = {
+            executor.submit(analyze_sales_for_shop, shop): shop for shop in shops
+        }
+
+        # Дожидаемся завершения всех потоков и собираем результаты
+        for future in as_completed(future_to_shop):
+            shop = future_to_shop[future]
+            try:
+                result = future.result()
+                sales_data.update(result)
+            except Exception as e:
+                print(f"An error occurred for shop {shop}: {e}")
+
+    # pprint(sales_data)
+    return sales_data

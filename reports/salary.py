@@ -1142,10 +1142,11 @@ def generate(session: Session):
 
                 Args:
                     interval (tuple): Кортеж, представляющий временной интервал (since, until).
-                    user (list): Список UUID сотрудников.
+                    user (list): str Список UUID сотрудников.
 
                 Returns:
-                    list: Список результатов обработки интервала.
+                    list: Список словарей результатов обработки интервала.
+
                 """
                 since, until = interval
                 pprint(since)
@@ -1162,7 +1163,6 @@ def generate(session: Session):
                 result = []
 
                 if documents_open_session:
-                    pprint(documents_open_session)
                     # Если есть открытая сессия, получаем информацию о магазине
                     shop = (
                         Shop.objects(uuid=documents_open_session.shop_id)
@@ -1225,7 +1225,6 @@ def generate(session: Session):
                         )
 
                 else:
-                    pprint("🏖️ выходной день:")
                     # Если нет открытой сессии - выходной день
                     result.append(
                         {
