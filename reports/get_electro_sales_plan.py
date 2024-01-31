@@ -189,9 +189,10 @@ def generate(session: Session) -> list[dict]:
 
         sales_data[shop.name] = v
         time_sync = TimeSync.objects(shop=k).only("time").first()
-
-        data_last_time.update({f"🕰️ выг. {shop.name}": time_sync.time})
-
+        if time_sync:
+            data_last_time.update({f"🕰️ выг. {shop.name}": time_sync.time})
+        else:
+            data_last_time.update({f"🕰️ выг. {shop.name}": "No data"})
     # Извлекаем названия магазина и суммы продаж
     shop_names = list(sales_data.keys())
     sum_sales_ = list(sales_data.values())
