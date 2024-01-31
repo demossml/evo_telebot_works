@@ -1393,7 +1393,6 @@ def last_time(shop_id: str) -> dict[str:str]:
     until = utcnow().isoformat()
 
     shop = Shop.objects(uuid__exact=shop_id).only("name").first()
-    pprint(shop["name"])
     Documents_last_time = (
         Documents.objects(
             __raw__={
@@ -1410,7 +1409,6 @@ def last_time(shop_id: str) -> dict[str:str]:
     else:
         time = 0
 
-    pprint(time)
     return {f"🕰️ выг. {shop.name}": time}
 
 

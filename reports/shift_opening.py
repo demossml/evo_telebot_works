@@ -8,7 +8,13 @@ from bd.model import (
     Products,
     GroupUuidAks,
 )
-from .util import generate_plan, get_shops, get_shops_user_id, get_period_day
+from .util import (
+    generate_plan,
+    get_shops,
+    get_shops_user_id,
+    get_period_day,
+    generate_plan_,
+)
 from .inputs import (
     ShopInput,
     OpenDatePast2Input,

@@ -221,6 +221,10 @@ class CashRegister(DynamicDocument):
     pass
 
 
+class TimeSync(DynamicDocument):
+    pass
+
+
 class AfsRequest(DynamicDocument):
     # ID магазина
     # поле обязательно для заполнения

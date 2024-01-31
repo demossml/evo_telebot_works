@@ -1,7 +1,7 @@
 from evotor import Evotor
 from config import EVOTOR_TOKEN_2, EVOTOR_TOKEN_4, EVOTOR_TOKEN_5
 from util import get_intervals, prune
-from bd.model import Shop, Products, Documents, Employees, Users
+from bd.model import Shop, Products, Documents, Employees, Users, TimeSync
 from pprint import pprint
 from arrow import utcnow
 import schedule
@@ -117,6 +117,11 @@ class EvoSync:
             self.sync_products(shop["uuid"])
             # Синхронизация документов для данного магазина
             self.sync_docoments(shop["uuid"])
+            params = {
+                "shop": shop["uuid"],
+                "time": utcnow().shift(hours=3).isoformat()[11:19],
+            }
+            TimeSync.objects(shop=shop["uuid"]).update(**params, upsert=True)
 
 
 async def sync_evo(event):

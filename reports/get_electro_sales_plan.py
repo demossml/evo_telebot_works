@@ -4,7 +4,7 @@
 # - group_id, id групы товаров из списка (загрузить группы товаров из базы tc)
 # - period, название периода из списка (день, неделя,  две недели, месяц)
 
-from bd.model import Session, Shop, Plan, Products, Documents
+from bd.model import Session, Shop, Plan, Products, Documents, TimeSync
 from arrow import utcnow, get
 from pprint import pprint
 from .util import (
@@ -33,7 +33,7 @@ def get_inputs(session: Session):
 
 
 def generate(session: Session) -> list[dict]:
-    # start_time = time.time()
+    start_time = time.time()
 
     # # Группы товаров для анализа продаж
     # group_id = (
@@ -132,9 +132,9 @@ def generate(session: Session) -> list[dict]:
     #     _dict_2[
     #         "{}{}".format(symbol, shop["name"][:9]).upper()
     #     ] = "пл.{}₽/пр.{}₽".format(int(plan.sum), int(sum_sell_today))
-    # end_time = time.time()
-    # execution_time = end_time - start_time
-    # print(f"Время выполнения функции sync_evo: {execution_time:.2f} секунд")
+    # # end_time = time.time()
+    # # execution_time = end_time - start_time
+    # # print(f"Время выполнения функции sync_evo: {execution_time:.2f} секунд")
 
     # # Извлекаем названия магазина и суммы продаж
     # shop_names = list(sales_data.keys())
@@ -162,7 +162,9 @@ def generate(session: Session) -> list[dict]:
 
     # # Очищаем буфер изображения и перемещаем указатель в начало
     # image_buffer.seek(0)
-
+    # end_time = time.time()
+    # execution_time = end_time - start_time
+    # print(f"Время выполнения функции sync_evo: {execution_time:.2f} секунд")
     # return [_dict_2, dict_last_time], image_buffer
 
     data_resul = {}
@@ -172,7 +174,7 @@ def generate(session: Session) -> list[dict]:
     data_last_time = {}
     for k, v in data_sale.items():
         plan = get_plan(k)
-        pprint(plan)
+        # pprint(plan)
         if v >= plan.sum:
             symbol = "✅"
         else:
@@ -186,12 +188,10 @@ def generate(session: Session) -> list[dict]:
         ] = "пл.{}₽/пр.{}₽".format(plan.sum, v)
 
         sales_data[shop.name] = v
+        time_sync = TimeSync.objects(shop=k).only("time").first()
 
-        data_last_time.update(last_time(k))
+        data_last_time.update({f"🕰️ выг. {shop.name}": time_sync.time})
 
-    # end_time = time.time()
-    # execution_time = end_time - start_time
-    # print(f"Время выполнения функции sync_evo: {execution_time:.2f} секунд")
     # Извлекаем названия магазина и суммы продаж
     shop_names = list(sales_data.keys())
     sum_sales_ = list(sales_data.values())
@@ -219,5 +219,8 @@ def generate(session: Session) -> list[dict]:
 
     # Очищаем буфер изображения и перемещаем указатель в начало
     image_buffer.seek(0)
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Время выполнения функции sync_evo: {execution_time:.2f} секунд")
 
     return [data_resul, data_last_time], image_buffer
