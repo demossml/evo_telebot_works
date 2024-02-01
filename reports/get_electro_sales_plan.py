@@ -4,7 +4,7 @@
 # - group_id, id групы товаров из списка (загрузить группы товаров из базы tc)
 # - period, название периода из списка (день, неделя,  две недели, месяц)
 
-from bd.model import Session, Shop, Plan, Products, Documents, TimeSync
+from bd.model import Session, Shop, Plan, Products, Documents, TimeSync, Status
 from arrow import utcnow, get
 from pprint import pprint
 from .util import (
@@ -173,26 +173,28 @@ def generate(session: Session) -> list[dict]:
     sales_data = {}
     data_last_time = {}
     for k, v in data_sale.items():
-        plan = get_plan(k)
-        # pprint(plan)
-        if v >= plan.sum:
-            symbol = "✅"
-        else:
-            symbol = "🔴"
+        doc_status = Status.objects(shop=k, status="deleted").first()
+        if not doc_status:
+            plan = get_plan(k)
+            # pprint(plan)
+            if v >= plan.sum:
+                symbol = "✅"
+            else:
+                symbol = "🔴"
 
-        shop = Shop.objects(uuid__exact=k).only("name").first()
+            shop = Shop.objects(uuid__exact=k).only("name").first()
 
-        # Формирование информации о планах и фактических продажах
-        data_resul[
-            "{}{}".format(symbol, shop.name[:9]).upper()
-        ] = "пл.{}₽/пр.{}₽".format(plan.sum, v)
+            # Формирование информации о планах и фактических продажах
+            data_resul[
+                "{}{}".format(symbol, shop.name[:9]).upper()
+            ] = "пл.{}₽/пр.{}₽".format(plan.sum, v)
 
-        sales_data[shop.name] = v
-        time_sync = TimeSync.objects(shop=k).only("time").first()
-        if time_sync:
-            data_last_time.update({f"🕰️ выг. {shop.name}": time_sync.time})
-        else:
-            data_last_time.update({f"🕰️ выг. {shop.name}": "No data"})
+            sales_data[shop.name] = v
+            time_sync = TimeSync.objects(shop=k).only("time").first()
+            if time_sync:
+                data_last_time.update({f"🕰️ выг. {shop.name}": time_sync.time})
+            else:
+                data_last_time.update({f"🕰️ выг. {shop.name}": "No data"})
     # Извлекаем названия магазина и суммы продаж
     shop_names = list(sales_data.keys())
     sum_sales_ = list(sales_data.values())

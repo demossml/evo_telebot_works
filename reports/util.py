@@ -7,6 +7,7 @@ from bd.model import (
     Plan,
     GroupUuidAks,
     CashRegister,
+    Status,
 )
 from arrow import utcnow, get
 from typing import List, Tuple
@@ -210,10 +211,12 @@ def get_shops_user_id(session: Session) -> object:
     for item in Employees.objects(lastName=str(session.user_id)):
         # Для каждого найденного сотрудника итерируемся по его магазинам.
         for store in item.stores:
-            # Проверяем, не находится ли магазин уже в списке UUID.
-            if store not in uuid:
-                # Добавляем магазина в список UUID, если его там нет.
-                uuid.append(store)
+            doc_status = Status.objects(shop=store, status="deleted").first()
+            if not doc_status:
+                # Проверяем, не находится ли магазин уже в списке UUID.
+                if store not in uuid:
+                    # Добавляем магазина в список UUID, если его там нет.
+                    uuid.append(store)
     # Возвращаем объект Shop, в котором UUID магазина содержатся в списке UUID
     return Shop.objects(uuid__in=uuid)
 
@@ -229,10 +232,12 @@ def get_shops_uuid_user_id(session: Session) -> list:
     for item in Employees.objects(lastName=str(session.user_id)):
         # Для каждого сотрудника итерируемся по списку магазинов, к которым он привязан
         for store in item.stores:
-            # Проверяем, не был ли магазин уже добавлен в список UUID
-            if store not in uuid:
-                # Если магазина еще нет в списке, добавляем его
-                uuid.append(store)
+            doc_status = Status.objects(shop=store, status="deleted").first()
+            if not doc_status:
+                # Проверяем, не был ли магазин уже добавлен в список UUID
+                if store not in uuid:
+                    # Если магазина еще нет в списке, добавляем его
+                    uuid.append(store)
     # Возвращаем список уникальных UUID магазинов
     return uuid
 
