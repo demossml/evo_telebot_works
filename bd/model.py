@@ -181,6 +181,10 @@ class Plan(DynamicDocument):
     pass
 
 
+class Status(DynamicDocument):
+    pass
+
+
 class ZReopt(DynamicDocument):
     pass
 

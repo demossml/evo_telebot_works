@@ -26,43 +26,53 @@ from reports import (
 )
 
 
-from bd.model import Session
+from bd.model import Session, Status
 
 
 ids = [5700958253]
 
 
 def get_reports(session: Session):
+    doc_status = Status.objects(user_id=str(session.user_id)).first()
+    if doc_status:
+        if doc_status["status"] == "restore":
+            status = "yes"
+        else:
+            status = "no"
+    else:
+        status = "yes"
     # print(session.employee.role)
     if "role" in session.employee:
-        if session.employee.role == "CASHIER":
-            return {
-                "salary": salary,
-                "get_cash_report": get_cash_report,
-                "get_commodity_reports": get_commodity_reports,
-                "get_sales": get_sales,
-                "shift_opening": shift_opening,
-                "get_electro_sales": get_electro_sales,
-                "get_electro_sales_plan": get_electro_sales_plan,
-                "break_": break_,
-                "get_salary_today": get_salary_today,
-            }
+        if status == "yes":
+            if session.employee.role == "CASHIER":
+                return {
+                    "salary": salary,
+                    "get_cash_report": get_cash_report,
+                    "get_commodity_reports": get_commodity_reports,
+                    "get_sales": get_sales,
+                    "shift_opening": shift_opening,
+                    "get_electro_sales": get_electro_sales,
+                    "get_electro_sales_plan": get_electro_sales_plan,
+                    "break_": break_,
+                    "get_salary_today": get_salary_today,
+                }
         if session.employee.role == "ADMIN":
-            return {
-                "settings": settings,
-                "salary": salary,
-                "break_": break_,
-                "cash_balance_in_tt_all": cash_balance_in_tt_all,
-                "data_analysis": data_analysis,
-                "get_cash_report": get_cash_report,
-                "get_commodity_reports": get_commodity_reports,
-                "get_sales": get_sales,
-                "shift_opening": shift_opening,
-                "get_electro_sales": get_electro_sales,
-                "get_electro_sales_plan": get_electro_sales_plan,
-                "get_salary_today": get_salary_today,
-                "sales_today": sales_today,
-            }
+            if status == "yes":
+                return {
+                    "settings": settings,
+                    "salary": salary,
+                    "break_": break_,
+                    "cash_balance_in_tt_all": cash_balance_in_tt_all,
+                    "data_analysis": data_analysis,
+                    "get_cash_report": get_cash_report,
+                    "get_commodity_reports": get_commodity_reports,
+                    "get_sales": get_sales,
+                    "shift_opening": shift_opening,
+                    "get_electro_sales": get_electro_sales,
+                    "get_electro_sales_plan": get_electro_sales_plan,
+                    "get_salary_today": get_salary_today,
+                    "sales_today": sales_today,
+                }
     if session.user_id in ids:
         return {
             "balances": balances,

@@ -420,7 +420,46 @@ class ReportsSettingsInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
-        output = ({"id": "clear_db", "name": "Очистить базу данных ➡️".upper()},)
+        output = (
+            {"id": "clear_db", "name": "Очистить базу данных ➡️".upper()},
+            {"id": "delete_restore_shop", "name": "удаление ТТ➡️".upper()},
+            {
+                "id": "delete_restore_employees",
+                "name": "удаление сотрудника.➡️".upper(),
+            },
+        )
+        return output
+
+
+class ReportsDeleteRestoreShopInput:
+    """
+    Меню очистки базы данных
+    """
+
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        output = (
+            {"id": "delete_shops", "name": "🔴 удалить ТТ ➡️".upper()},
+            {"id": "restore_shops", "name": "🟢 восстановить ТТ ➡️".upper()},
+        )
+        return output
+
+
+class ReportsDeleteRestoreEmployeesInput:
+    """ """
+
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        output = (
+            {"id": "delete_employees", "name": "🔴 удалить сотрудника ➡️".upper()},
+            {"id": "restore_employees", "name": "🟢 восстановить сотрудника ➡️".upper()},
+        )
         return output
 
 
@@ -561,6 +600,46 @@ class EmployeesInput:
                 if item["lastName"] not in uuids:
                     output.append({"id": item["lastName"], "name": item["name"]})
                     uuids.append(item["lastName"])
+
+        return output
+
+
+class EmployeesUuidInput:
+    """
+    Выбор одного или несколько сотрудников.
+    """
+
+    name = "Магазин"
+    desc = "Выберите сотрудника".upper()
+
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        output = []
+        # employees = Employees.objects(stores__in=session.employee.stores)
+        # for i in employees:
+        #     print(i['name'])
+
+        room = session["room"]
+        # pprint(room)
+        uuid = []
+        # содоет ключи в session.params["inputs"]
+        for i in range(int(room) + 1):
+            # если в 'uuid' есть в session.params["inputs"][str(i)]
+            if "uuid" in session.params["inputs"][str(i)]:
+                # если 'uuid' нет в словаре с ключем i в списке uuid
+                if session.params["inputs"][str(i)]["uuid"] not in uuid:
+                    # добовляет 'uuid' в список uuid
+                    uuid.append(session.params["inputs"][str(i)]["uuid"])
+        shop_id = get_shops_uuid_user_id(session)
+        employees = Employees.objects(stores__in=shop_id)
+
+        uuids = []
+        for item in employees:
+            if item["uuid"] not in uuid:
+                if item["uuid"] not in uuids:
+                    output.append({"id": item["uuid"], "name": item["name"]})
+                    uuids.append(item["uuid"])
 
         return output
 
