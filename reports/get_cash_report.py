@@ -6,6 +6,7 @@ from bd.model import (
     ZReopt,
     Plan,
     Surplus,
+    MonthlyResult,
 )
 from arrow import utcnow, get
 from .util import (
@@ -14,6 +15,7 @@ from .util import (
     get_period,
     generate_plan,
     get_total_salary,
+    cash_outcome,
 )
 from .inputs import (
     ShopInput,
@@ -28,9 +30,13 @@ from .inputs import (
     ReportsZReport2Input,
     AfsInput,
     ReportsSurplusInput,
+    ReportMonthlyResultInput,
+    OpenDateDateMonthInput,
 )
 from pprint import pprint
+from decimal import Decimal
 import time
+
 
 name = "🧾Кассовые отчеты ➡️".upper()
 desc = ""
@@ -86,6 +92,24 @@ class SurplusInput:
 
 class CashReceiptInput:
     desc = "Напишите номер чека"
+    type = "MESSAGE"
+
+
+class CashlessPaymentInput:
+
+    desc = "Напишите сумму расходов по р/с"
+    type = "MESSAGE"
+
+
+class CashPaymentInput:
+
+    desc = "Напишите сумму расходов наличными"
+    type = "MESSAGE"
+
+
+class GrossProfitInput:
+
+    desc = "Напишите сумму валовой прибыли"
     type = "MESSAGE"
 
 
@@ -209,6 +233,35 @@ def get_inputs(session: Session):
                     }
             else:
                 return {"period": PeriodDateInput}
+        if session.params["inputs"]["0"]["report"] == "monthly_result":
+            if "report_m_r" in session.params["inputs"]["0"]:
+                if session.params["inputs"]["0"]["report_m_r"] == "cashless_payment":
+                    return {
+                        "shop_id": ShopInput,
+                        "openDate": OpenDateDateMonthInput,
+                        "payment": CashlessPaymentInput,
+                    }
+                if session.params["inputs"]["0"]["report_m_r"] == "cash_payment":
+                    return {
+                        "shop_id": ShopInput,
+                        "openDate": OpenDateDateMonthInput,
+                        "payment": CashPaymentInput,
+                    }
+                if session.params["inputs"]["0"]["report_m_r"] == "gross_profit":
+                    return {
+                        "shop_id": ShopInput,
+                        "openDate": OpenDateDateMonthInput,
+                        "payment": GrossProfitInput,
+                    }
+                if session.params["inputs"]["0"]["report_m_r"] == "profit_request":
+                    return {
+                        "shop": ShopAllInput,
+                        "openDate": OpenDateDateMonthInput,
+                    }
+
+            else:
+                return {"report_m_r": ReportMonthlyResultInput}
+
     else:
         return {
             "report": ReportsZInput,
@@ -530,9 +583,9 @@ def generate(session: Session):
                                 _dict["{} ИТОГО ПРОДАЖИ:".format("8")] = "{}₽".format(
                                     trans["sales"]["summ"]
                                 )
-                                _dict[
-                                    "{} НАЛИЧНЫМИ В КАССЕ:".format("9")
-                                ] = "{}₽".format(trans["cash"])
+                                _dict["{} НАЛИЧНЫМИ В КАССЕ:".format("9")] = (
+                                    "{}₽".format(trans["cash"])
+                                )
                                 _dict["{} ИТОГО ВЫПЛАТЫ:".format("10")] = "{}₽".format(
                                     trans["cashOut"]
                                 )
@@ -540,11 +593,13 @@ def generate(session: Session):
                     if doc["x_type"] == "CASH_OUTCOME":
                         for trans in doc["transactions"]:
                             if trans["x_type"] == "CASH_OUTCOME":
-                                _dict[
-                                    "ВЫПЛАТА ЧЕК №{}".format(doc["number"])
-                                ] = "{}₽/{}".format(
-                                    trans["sum"],
-                                    payment_category[str(trans["paymentCategoryId"])],
+                                _dict["ВЫПЛАТА ЧЕК №{}".format(doc["number"])] = (
+                                    "{}₽/{}".format(
+                                        trans["sum"],
+                                        payment_category[
+                                            str(trans["paymentCategoryId"])
+                                        ],
+                                    )
                                 )
                                 if trans["paymentCategoryId"] == 5:
                                     summ_salary += trans["sum"]
@@ -552,9 +607,9 @@ def generate(session: Session):
                     if doc["x_type"] == "CASH_INCOME":
                         for trans in doc["transactions"]:
                             if trans["x_type"] == "CASH_INCOME":
-                                _dict[
-                                    "ВНЕСЕНИЕ ЧЕК №{}".format(doc["number"])
-                                ] = "{}₽".format(trans["sum"])
+                                _dict["ВНЕСЕНИЕ ЧЕК №{}".format(doc["number"])] = (
+                                    "{}₽".format(trans["sum"])
+                                )
 
                     if doc["x_type"] == "ACCEPT":
                         for trans in doc["transactions"]:
@@ -618,6 +673,136 @@ def generate(session: Session):
                 )
 
             return dict_1, result
+    if "report_m_r" in session.params["inputs"]["0"]:
+        if session.params["inputs"]["0"]["report_m_r"] == "cashless_payment":
+            params = {
+                "shop_id": session.params["inputs"]["0"]["shop_id"],
+                "openDate": session.params["inputs"]["0"]["openDate"][0:7],
+                "paymentCashless": int(session.params["inputs"]["0"]["payment"]),
+            }
+
+            MonthlyResult.objects(
+                shop_id=params["shop_id"], openDate=params["openDate"]
+            ).update(**params, upsert=True)
+            shop = Shop.objects(uuid=params["shop_id"]).only("name").first()
+            return {}, [
+                {
+                    "Магазин:".upper(): shop.name,
+                    "Расход безнал.:".upper(): f"{params['paymentCashless']}₱",
+                    "Дата:".upper(): params["openDate"],
+                }
+            ]
+
+        if session.params["inputs"]["0"]["report_m_r"] == "cash_payment":
+            params = {
+                "shop_id": session.params["inputs"]["0"]["shop_id"],
+                "openDate": session.params["inputs"]["0"]["openDate"][0:7],
+                "paymentCash": int(session.params["inputs"]["0"]["payment"]),
+            }
+
+            MonthlyResult.objects(
+                shop_id=params["shop_id"], openDate=params["openDate"]
+            ).update(**params, upsert=True)
+            shop = Shop.objects(uuid=params["shop_id"]).only("name").first()
+            return {}, [
+                {
+                    "Магазин:".upper(): shop.name,
+                    "Расход нал.:".upper(): f"{params['paymentCash']}₱",
+                    "Дата:".upper(): params["openDate"],
+                }
+            ]
+
+        if session.params["inputs"]["0"]["report_m_r"] == "gross_profit":
+            params = {
+                "shop_id": session.params["inputs"]["0"]["shop_id"],
+                "openDate": session.params["inputs"]["0"]["openDate"][0:7],
+                "grossProfit": int(session.params["inputs"]["0"]["payment"]),
+            }
+
+            MonthlyResult.objects(
+                shop_id=params["shop_id"], openDate=params["openDate"]
+            ).update(**params, upsert=True)
+            shop = Shop.objects(uuid=params["shop_id"]).only("name").first()
+            return {}, [
+                {
+                    "Магазин:".upper(): shop.name,
+                    "Валовая прибыль:".upper(): f"{params['grossProfit']}₱",
+                    "Дата:".upper(): params["openDate"],
+                }
+            ]
+
+        if session.params["inputs"]["0"]["report_m_r"] == "profit_request":
+            data_report = []
+            shops = get_shops(session)
+            shops_id = shops["shop_id"]
+            shop_name = shops["shop_name"]
+            open_date = session.params["inputs"]["0"]["openDate"][0:7]
+            data_ = "-01T00:00:15.000+0000"
+
+            since = get(open_date + data_).floor("month").isoformat()
+
+            until = get(open_date + data_).ceil("month").isoformat()
+
+            data_income_total = 0
+
+            for shop in shops_id:
+                shop_ = Shop.objects(uuid=shop).only("name").first()
+                pprint(shop)
+                pprint(open_date)
+
+                data_monthly_result = MonthlyResult.objects(
+                    shop_id=shop, openDate=open_date
+                ).first()
+                pprint(data_monthly_result)
+                if data_monthly_result:
+                    cash_outcome_ = cash_outcome(shop, since, until)
+
+                    # Список категорий расходов
+                    expense_categories = [
+                        "Заработная плата",
+                        "Оплата услуг",
+                        "Аренда",
+                        "Прочее",
+                    ]
+
+                    # Суммируем расходы по каждой категории
+                    cost_amount = sum(
+                        cash_outcome_.get(category, 0)
+                        for category in expense_categories
+                    )
+                    # cost_amount = sum(
+                    #     map(expense_categories, lambda x: cash_outcome_.get(x, 0))
+                    # )
+                    pprint(cost_amount)
+                    data_income = data_monthly_result.grossProfit - cost_amount
+
+                    data_income_total += data_income
+
+                    data_s = {
+                        category.upper(): str(cash_outcome_.get(category, 0))
+                        for category in expense_categories
+                    }
+
+                    data_s.update(
+                        {
+                            "Расходы безнал:".upper(): f"{data_monthly_result.paymentCashless}₱",
+                            "Расходы нал:".upper(): f"{data_monthly_result.paymentCash}₱",
+                            "Валовая прибыль:".upper(): f"{data_monthly_result.grossProfit}₱",
+                            "Магазин:".upper(): shop_["name"],
+                            " Доход :".upper(): f"{data_income}₱",
+                        }
+                    )
+                    data_report.append(data_s)
+
+            data_report.append(
+                {
+                    "Дата:".upper(): open_date,
+                    "Доход итого:".upper(): f"{data_income_total}₱",
+                }
+            )
+            # pprint(data_report)
+            return ({}, data_report)
+
     else:
         if session.params["inputs"]["0"]["report"] == "detailed_report":
             period = get_period_day(session)
@@ -691,29 +876,31 @@ def generate(session: Session):
                                 _dict["✅{} ИТОГО ПРОДАЖИ:".format("8")] = "{}₽".format(
                                     trans["sales"]["summ"]
                                 )
-                                _dict[
-                                    "✅{} НАЛИЧНЫМИ В КАССЕ:".format("9")
-                                ] = "{}₽".format(trans["cash"])
-                                _dict["✅{} ИТОГО ВЫПЛАТЫ:".format("10")] = "{}₽".format(
-                                    trans["cashOut"]
+                                _dict["✅{} НАЛИЧНЫМИ В КАССЕ:".format("9")] = (
+                                    "{}₽".format(trans["cash"])
+                                )
+                                _dict["✅{} ИТОГО ВЫПЛАТЫ:".format("10")] = (
+                                    "{}₽".format(trans["cashOut"])
                                 )
 
                     if doc["x_type"] == "CASH_OUTCOME":
                         for trans in doc["transactions"]:
                             if trans["x_type"] == "CASH_OUTCOME":
-                                _dict[
-                                    "✅ВЫПЛАТА ЧЕК №{}".format(doc["number"])
-                                ] = "{}₽/{}".format(
-                                    trans["sum"],
-                                    payment_category[str(trans["paymentCategoryId"])],
+                                _dict["✅ВЫПЛАТА ЧЕК №{}".format(doc["number"])] = (
+                                    "{}₽/{}".format(
+                                        trans["sum"],
+                                        payment_category[
+                                            str(trans["paymentCategoryId"])
+                                        ],
+                                    )
                                 )
 
                     if doc["x_type"] == "CASH_INCOME":
                         for trans in doc["transactions"]:
                             if trans["x_type"] == "CASH_INCOME":
-                                _dict[
-                                    "✅ВНЕСЕНИЕ ЧЕК №{}".format(doc["number"])
-                                ] = "{}₽".format(trans["sum"])
+                                _dict["✅ВНЕСЕНИЕ ЧЕК №{}".format(doc["number"])] = (
+                                    "{}₽".format(trans["sum"])
+                                )
 
                     if doc["x_type"] == "ACCEPT":
                         for trans in doc["transactions"]:
@@ -728,6 +915,7 @@ def generate(session: Session):
             shops = get_shops(session)
             shops_id = shops["shop_id"]
             shop_name = shops["shop_name"]
+            pprint(shop_name)
 
             period = get_period(session)
             since = period["since"]
@@ -766,8 +954,8 @@ def generate(session: Session):
                                 else:
                                     name_ = " "
                                     last_name = " "
-                                pprint(trans["id"])
-                                pprint(payment_category[str(trans["id"])])
+                                # pprint(trans["id"])
+                                # pprint(payment_category[str(trans["id"])])
                                 result.append(
                                     {
                                         "№ чека:".upper(): doc["number"],

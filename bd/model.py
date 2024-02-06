@@ -185,6 +185,10 @@ class Status(DynamicDocument):
     pass
 
 
+class MonthlyResult(DynamicDocument):
+    pass
+
+
 class ZReopt(DynamicDocument):
     pass
 

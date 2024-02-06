@@ -78,6 +78,7 @@ class ReportsZReport2Input:
                 {"id": "z_report", "name": "Заполнить Z Отчет 🧾".upper()},
                 {"id": "z_photo", "name": "Загрузить фото 📷".upper()},
             ]
+
         else:
             output = [
                 {"id": "z_report", "name": "Z Отчет 🧾".upper()},
@@ -158,7 +159,6 @@ class ReportDataAnalysisInput:
 
 
 class ReportsZInput:
-
     """
     Кассовые отчеты
     """
@@ -167,13 +167,43 @@ class ReportsZInput:
     type = "SELECT"
 
     def get_options(self, session: Session) -> [{str, str}]:
-        return (
-            {"id": "detailed_report", "name": "🧾 Z_Отчеты ➡️".upper()},
-            {"id": "report_cash_outcome", "name": "🧾Отчет по выплатам ➡️".upper()},
-            {"id": "report_cash_income", "name": "🧾Отчет по внесениям  ➡️".upper()},
-            {"id": "get_check", "name": "🧾Запрос чека ➡️".upper()},
-            {"id": "surplus", "name": "🧾ИЗЛИШКИ В КАССЕ ➡️".upper()},
+        users_id = [490899906]
+        if session.user_id in users_id:
+            return (
+                {"id": "detailed_report", "name": "🧾 Z_Отчеты ➡️".upper()},
+                {"id": "report_cash_outcome", "name": "🧾Отчет по выплатам ➡️".upper()},
+                {"id": "report_cash_income", "name": "🧾Отчет по внесениям  ➡️".upper()},
+                {"id": "get_check", "name": "🧾Запрос чека ➡️".upper()},
+                # {"id": "surplus", "name": "🧾ИЗЛИШКИ В КАССЕ ➡️".upper()},
+                {"id": "monthly_result", "name": "💹 Итог месяца ➡️".upper()},
+            )
+        else:
+            return (
+                {"id": "detailed_report", "name": "🧾 Z_Отчеты ➡️".upper()},
+                {"id": "report_cash_outcome", "name": "🧾Отчет по выплатам ➡️".upper()},
+                {"id": "report_cash_income", "name": "🧾Отчет по внесениям  ➡️".upper()},
+                {"id": "get_check", "name": "🧾Запрос чека ➡️".upper()},
+                {"id": "surplus", "name": "🧾ИЗЛИШКИ В КАССЕ ➡️".upper()},
+            )
+
+
+class ReportMonthlyResultInput:
+    """
+    Tоварные отчеты
+    """
+
+    desc = "Выберите отчет"
+    type = "SELECT"
+
+    def get_options(self, session: Session) -> [{str, str}]:
+        output = (
+            {"id": "cashless_payment", "name": "Расходы безналичный расчёт  ➡️".upper()},
+            {"id": "cash_payment", "name": "Расходы наличный расчёт ➡️".upper()},
+            {"id": "gross_profit", "name": "Валовая прибыль  ➡️".upper()},
+            {"id": "profit_request", "name": "Прибыль за месяц ➡️".upper()},
         )
+
+        return output
 
 
 class ReportCommodityInput:
@@ -495,16 +525,19 @@ class ShopAllInput:
     Магазины и все магазины
     """
 
+    # Описание поля ввода
     desc = "Выберите магазин из списка"
     type = "SELECT"
 
     def get_options(self, session: Session) -> [{str, str}]:
-        output = [{"id": "all", "name": "{} ➡️".format("Все магазины").upper()}]
+        # Создаем список с опцией "Все магазины"
+        output = [{"id": "all", "name": "ВСЕ МАГАЗИНЫ ➡️"}]
 
-        for item in get_shops_user_id(session):
-            output.append(
-                {"id": item["uuid"], "name": "{} ➡️".format(item["name"]).upper()}
-            )
+        # Получаем магазины пользователя и добавляем их в список опций
+        output.extend(
+            {"id": item["uuid"], "name": "{} ➡️".format(item["name"]).upper()}
+            for item in get_shops_user_id(session)
+        )
 
         return output
 
@@ -951,6 +984,31 @@ class PeriodDateInput:
             {"id": "24 months", "name": "📆 24 Месяцев ➡️".upper()},
             {"id": "48 months", "name": "📆 48 Месяцев ➡️".upper()},
         )
+
+        return output
+
+
+class OpenDateDateMonthInput:
+    """
+    Предыдущие периоды
+    """
+
+    name = "Выберите период 📅".upper()
+    desc = "Выберите месяц 📅".upper()
+    type = "SELECT"
+
+    def get_options(self, session: Session) -> [{str, str}]:
+        output = []
+        since = (
+            utcnow().to("local").shift(months=-6).replace(hour=3, minute=00).isoformat()
+        )
+        until = utcnow().to("local").isoformat()
+
+        intervals = get_intervals(since, until, "months", 1)
+        for left, right in intervals:
+            output.append({"id": left, "name": "{} ➡️".format(left[0:7])})
+
+        return output
 
         return output
 

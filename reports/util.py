@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 from pprint import pprint
 import time
-
+from decimal import Decimal
 
 # Принимает словарь с данными о продукте
 
@@ -118,7 +118,14 @@ def get_group(session: Session) -> dict[str:str]:
     return group
 
 
-def get_shops(session: Session) -> dict[str : list | str]:
+def status_shop(shop_id: str) -> bool:
+    # Получаем объект статуса из базы данных для указанного магазина со статусом "deleted"
+    doc_status = Status.objects(shop=shop_id, status="deleted").first()
+    # Возвращаем True, если объект не найден или его статус "restore", иначе возвращаем False
+    return not (doc_status and doc_status.status != "restore")
+
+
+def get_shops(session: Session) -> dict:
     """
     :param session:
     :return: {
@@ -128,6 +135,7 @@ def get_shops(session: Session) -> dict[str : list | str]:
     """
     # Получение параметров из сессии
     params = session.params["inputs"]["0"]
+    pprint(params["shop"])
 
     # Создание списка для хранения уникальных идентификаторов магазинов (uuid)
     uuid = []
@@ -141,7 +149,13 @@ def get_shops(session: Session) -> dict[str : list | str]:
         if params["shop"] == "all":
             # Возвращаем информацию о всех магазинах
             return {
-                "shop_id": [item["uuid"] for item in Shop.objects(uuid__in=uuid)],
+                "shop_id": [
+                    item["uuid"]  # Выбираем uuid из каждого элемента
+                    for item in Shop.objects(uuid__in=uuid)
+                    if status_shop(
+                        item["uuid"]
+                    )  # Проверяем статус магазина с помощью функции status_shop
+                ],
                 "shop_name": "Все".upper(),
             }
         else:
@@ -152,12 +166,20 @@ def get_shops(session: Session) -> dict[str : list | str]:
     else:
         # Если параметр "shop" отсутствует, возвращаем информацию о всех магазинах
         return {
-            "shop_id": [item["uuid"] for item in Shop.objects(uuid__in=uuid)],
+            "shop_id": [
+                item["uuid"]
+                for item in Shop.objects(
+                    uuid__in=uuid
+                )  # Перебираем магазины с указанными UUID
+                if status_shop(
+                    item["uuid"]
+                )  # Проверяем статус магазина с помощью функции status_shop
+            ],
             "shop_name": "Все".upper(),
         }
 
 
-def get_shops_last_room(session: Session) -> dict[str : list | str]:
+def get_shops_last_room(session: Session) -> dict:
     """
     :param session:
     :return: {
@@ -182,7 +204,13 @@ def get_shops_last_room(session: Session) -> dict[str : list | str]:
         if params["shop"] == "all":
             # Возвращаем информацию о всех магазинах
             return {
-                "shop_id": [item["uuid"] for item in Shop.objects(uuid__in=uuid)],
+                "shop_id": [
+                    item["uuid"]
+                    for item in Shop.objects(uuid__in=uuid)
+                    if status_shop(
+                        item["uuid"]
+                    )  # Перебираем магазины с указанными UUID
+                ],
                 "shop_name": "Все".upper(),
             }
         else:
@@ -193,7 +221,11 @@ def get_shops_last_room(session: Session) -> dict[str : list | str]:
     else:
         # Если параметр "shop" отсутствует, возвращаем информацию о всех магазинах
         return {
-            "shop_id": [item["uuid"] for item in Shop.objects(uuid__in=uuid)],
+            "shop_id": [
+                item["uuid"]
+                for item in Shop.objects(uuid__in=uuid)
+                if status_shop(item["uuid"])
+            ],
             "shop_name": "Все".upper(),
         }
 
@@ -211,8 +243,7 @@ def get_shops_user_id(session: Session) -> object:
     for item in Employees.objects(lastName=str(session.user_id)):
         # Для каждого найденного сотрудника итерируемся по его магазинам.
         for store in item.stores:
-            doc_status = Status.objects(shop=store, status="deleted").first()
-            if not doc_status:
+            if status_shop(store):
                 # Проверяем, не находится ли магазин уже в списке UUID.
                 if store not in uuid:
                     # Добавляем магазина в список UUID, если его там нет.
@@ -232,8 +263,7 @@ def get_shops_uuid_user_id(session: Session) -> list:
     for item in Employees.objects(lastName=str(session.user_id)):
         # Для каждого сотрудника итерируемся по списку магазинов, к которым он привязан
         for store in item.stores:
-            doc_status = Status.objects(shop=store, status="deleted").first()
-            if not doc_status:
+            if status_shop(store):
                 # Проверяем, не был ли магазин уже добавлен в список UUID
                 if store not in uuid:
                     # Если магазина еще нет в списке, добавляем его
@@ -1709,3 +1739,90 @@ def analyze_sales_parallel(session):
 
     # pprint(sales_data)
     return sales_data
+
+
+def cash_outcome_for_shop(shop_id, since, until):
+    payment_category = {
+        1: "Инкассация".upper(),
+        2: "Оплата поставщику".upper(),
+        3: "Оплата услуг".upper(),
+        4: "Аренда".upper(),
+        5: "Заработная плата".upper(),
+        6: "Прочее".upper(),
+    }
+
+    sum_payment_category = {}
+
+    x_type = "CASH_OUTCOME"
+
+    documents = Documents.objects(
+        __raw__={
+            "closeDate": {"$gte": since, "$lt": until},
+            "shop_id": shop_id,
+            "x_type": x_type,
+        }
+    )
+
+    for doc in documents:
+        if doc["x_type"] == "CASH_OUTCOME":
+            for trans in doc["transactions"]:
+                if trans["x_type"] == "CASH_OUTCOME":
+                    category = payment_category.get(trans["paymentCategoryId"])
+                    if category:
+                        sum_payment_category[category] = (
+                            sum_payment_category.get(category, 0) + trans["sum"]
+                        )
+
+    return {shop_id: sum_payment_category}
+
+
+def cash_outcome_parallel(shops: list, since: str, until: str) -> dict:
+    sum_payment_category = defaultdict(dict)
+
+    with ThreadPoolExecutor() as executor:
+        # Запускаем потоки для каждого магазина
+        results = list(
+            executor.map(lambda shop: cash_outcome_for_shop(shop, since, until), shops)
+        )
+
+    # Объединяем результаты из всех потоков
+    for result in results:
+        for shop_id, categories in result.items():
+            sum_payment_category[shop_id].update(categories)
+
+    # pprint(dict(sum_payment_category))
+    return dict(sum_payment_category)
+
+
+def cash_outcome(shop_id, since, until):
+    payment_category = {
+        1: "Инкассация",
+        2: "Оплата поставщику",
+        3: "Оплата услуг",
+        4: "Аренда",
+        5: "Заработная плата",
+        6: "Прочее",
+    }
+
+    sum_payment_category = {}
+
+    x_type = "CASH_OUTCOME"
+
+    documents = Documents.objects(
+        __raw__={
+            "closeDate": {"$gte": since, "$lt": until},
+            "shop_id": shop_id,
+            "x_type": x_type,
+        }
+    )
+
+    for doc in documents:
+        if doc["x_type"] == "CASH_OUTCOME":
+            for trans in doc["transactions"]:
+                if trans["x_type"] == "CASH_OUTCOME":
+                    category = payment_category.get(trans["paymentCategoryId"])
+                    if category:
+                        sum_payment_category[category] = sum_payment_category.get(
+                            category, 0
+                        ) + Decimal(trans["sum"]).quantize(Decimal("0.00"))
+    return sum_payment_category
