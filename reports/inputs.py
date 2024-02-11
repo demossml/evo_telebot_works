@@ -167,7 +167,7 @@ class ReportsZInput:
     type = "SELECT"
 
     def get_options(self, session: Session) -> [{str, str}]:
-        users_id = [490899906]
+        users_id = [490899906, 475039971]
         if session.user_id in users_id:
             return (
                 {"id": "detailed_report", "name": "🧾 Z_Отчеты ➡️".upper()},

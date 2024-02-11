@@ -774,7 +774,12 @@ def generate(session: Session):
                     #     map(expense_categories, lambda x: cash_outcome_.get(x, 0))
                     # )
                     pprint(cost_amount)
-                    data_income = data_monthly_result.grossProfit - cost_amount
+                    data_income = (
+                        data_monthly_result.grossProfit
+                        - cost_amount
+                        - data_monthly_result.paymentCashless
+                        - data_monthly_result.paymentCashless
+                    )
 
                     data_income_total += data_income
 
