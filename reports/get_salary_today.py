@@ -4,7 +4,6 @@ from .util import (
 )
 from pprint import pprint
 from collections import OrderedDict
-import matplotlib.pyplot as plt
 
 
 from arrow import utcnow, get

@@ -2,8 +2,6 @@ from bd.model import Shop, Products, Documents, Session, Employees
 from .util import get_intervals, get_period, get_shops_user_id, get_shops
 from pprint import pprint
 from collections import OrderedDict
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 
 
 from .inputs import (
@@ -22,58 +20,52 @@ mime = "text"
 
 
 def get_inputs(session: Session):
-    period = ("day", "week", "fortnight", "month")
-    if session.params["inputs"]["0"]:
-        if "period" in session.params["inputs"]["0"]:
-            if session.params["inputs"]["0"]["period"] == "day":
-                return {}
-            if session.params["inputs"]["0"]["period"] not in period:
-                return {"openDate": OpenDatePastInput}
-            else:
-                return {"openDate": OpenDatePastInput, "closeDate": CloseDatePastInput}
-        if session.params["inputs"]["0"]["report"] == "get_sales_by_day_of_the_week":
-            shop_uuid = get_shops_user_id(session)
-            if len(shop_uuid) > 0:
-                return {"shop": ShopAllInput, "period": PeriodDateInput}
-            else:
-                return {
-                    "period": PeriodDateInput,
-                }
-        if (
-            session.params["inputs"]["0"]["report"]
-            == "get_sales_by_shop_product_group_rub"
-        ):
-            shop_uuid = get_shops_user_id(session)
-            if len(shop_uuid) > 0:
-                return {
-                    "shop": ShopAllInput,
-                    "group": GroupInput,
-                    "period": PeriodDateInput,
-                }
-            else:
-                return {
-                    "group": GroupInput,
-                    "period": PeriodDateInput,
-                }
-        if (
-            session.params["inputs"]["0"]["report"]
-            == "get_sales_by_shop_product_group_unit"
-        ):
-            shop_uuid = get_shops_user_id(session)
-            if len(shop_uuid) > 0:
-                return {
-                    "shop": ShopAllInput,
-                    "group": GroupInput,
-                    "period": PeriodDateInput,
-                }
-            else:
-                return {
-                    "group": GroupInput,
-                    "period": PeriodDateInput,
-                }
+    # Получаем входные данные из сессии
+    inputs = session.params.get("inputs", {}).get("0", {})
 
-    else:
+    # Если входных данных нет, возвращаем ввод для отчета по продажам
+    if not inputs:
         return {"report": ReportSalesInput}
+
+    # Извлекаем период и тип отчета из входных данных
+    period = inputs.get("period", None)
+    report_type = inputs.get("report", None)
+
+    # Получаем идентификаторы магазинов пользователя
+    shop_uuid = get_shops_user_id(session)
+    # Создаем ввод для магазина, если у пользователя есть магазины
+    shop_input = {"shop": ShopAllInput} if len(shop_uuid) > 0 else {}
+
+    # Обработка вводных данных в зависимости от периода
+    if period in ("day", "week", "fortnight", "month"):
+        # Если период - день, возвращаем пустой ввод, в противном случае возвращаем ввод с датами
+        return (
+            {"openDate": OpenDatePastInput, "closeDate": CloseDatePastInput}
+            if period != "day"
+            else {}
+        )
+    # Если период не является одним из допустимых, возвращаем ввод с прошедшей датой
+    elif period is not None:
+        return {"openDate": OpenDatePastInput}
+
+    # Обработка вводных данных в зависимости от типа отчета
+    if report_type == "get_sales_by_day_of_the_week":
+        # Возвращаем ввод для отчета по дням недели с учетом наличия магазинов
+        return {"shop": ShopAllInput, "period": PeriodDateInput, **shop_input}
+    elif report_type in (
+        "get_sales_by_shop_product_group_rub",
+        "get_sales_by_shop_product_group_unit",
+    ):
+        # Возвращаем ввод для отчета по продажам по магазинам, группам продуктов и периоду с учетом наличия магазинов
+        return {
+            "shop": ShopAllInput,
+            "group": GroupInput,
+            "period": PeriodDateInput,
+            **shop_input,
+        }
+    # Возвращаем ввод для отчета по продажам по группам продуктов и периоду с учетом наличия магазинов
+    else:
+        return {"group": GroupInput, "period": PeriodDateInput, **shop_input}
 
 
 def generate(session: Session):
@@ -94,16 +86,16 @@ def generate(session: Session):
 
     # Получение списка продуктов в зависимости от параметра 'group'
     if "group" in params:
-        if params["group"] == "all":
-            products = Products.objects(
-                __raw__={
-                    "shop_id": {"$in": shop_id},
-                }
-            )
-        else:
-            products = Products.objects(
-                __raw__={"shop_id": {"$in": shop_id}, "parentUuid": params["group"]}
-            )
+        # Создаем базовый запрос с условием, что 'shop_id' находится в списке магазинов
+        query = {"shop_id": {"$in": shop_id}}
+
+        # Если параметр 'group' не равен "all", добавляем условие для 'parentUuid' в запрос
+        if params["group"] != "all":
+            query["parentUuid"] = params["group"]
+
+        # Выполняем запрос к базе данных с использованием сформированного запроса
+        products = Products.objects(__raw__=query)
+        # Получаем список UUID продуктов из результата запроса
         products_uuid = [element.uuid for element in products]
 
     if params["report"] == "get_sales_by_day_of_the_week":
@@ -123,7 +115,11 @@ def generate(session: Session):
         intervals = get_intervals(since, until, "days", 1)
         for since_, until_ in intervals:
             for shop in shop_id:
-                _dict = {}
+                _dict = {
+                    "Магазин:": "{}:".format(
+                        Shop.objects(uuid__exact=shop).only("name").first().name
+                    ).upper()
+                }
                 # Получаем документы с открытой сессией
                 documents_open_session = Documents.objects(
                     __raw__={
@@ -175,7 +171,7 @@ def generate(session: Session):
                                     trans["paymentType"]
                                 ] += trans["sum"]
 
-                    _dict["Магазин:"] = "{}:".format(shop_.name).upper()
+                    # _dict["Магазин:"] = "{}:".format(shop_.name).upper()
                     _dict["Пордавец:"] = "{} {}:".format(last_name, name_).upper()
                     _dict["Дата:"] = since_[0:10]
                     _dict["Сумма:"] = "{} {}".format(sum_sell, "₽")

@@ -107,41 +107,52 @@ class TransferInput:
 
 
 def get_inputs(session: Session):
-    # Периоды для запроса зарплатных данных
-    period = ["day", "week", "fortnight", "month"]
-    if session.params["inputs"]["0"]:
-        if session.params["inputs"]["0"]["report"] == "marriage":
-            if "report_marriage" in session.params["inputs"]["0"]:
-                if (
-                    session.params["inputs"]["0"]["report_marriage"]
-                    == "marriage_registration"
-                ):
-                    return {
-                        "shop": ShopInput,
-                        "product": ProductElectroInput,
-                        "package": PackageInput,
-                        "photo": PhotoProductInput,
-                        "defect": DefectInput,
-                    }
-                if session.params["inputs"]["0"]["report_marriage"] == "get_marriage":
-                    if "period" in session.params["inputs"]["0"]:
-                        if session.params["inputs"]["0"]["period"] == "day":
-                            return {}
-                        else:
-                            return {
-                                "openDate": OpenDatePast2Input,
-                                "closeDate": CloseDatePastInput,
-                            }
+    # Получаем входные данные из сессии
+    inputs = session.params.get("inputs", {}).get("0", {})
+
+    # Если входных данных нет, возвращаем ввод для отчета по продажам
+    if inputs:
+        # Тип запрашиваемого отчета
+        report_type = inputs.get("report", None)
+        # Тип отчета о браке
+        report_marriage_type = inputs.get("report_marriage", None)
+
+        # Обработка отчета о браке
+        if report_type == "marriage":
+            if report_marriage_type == "marriage_registration":
+                # Ввод данных для регистрации брака
+                return {
+                    "shop": ShopInput,
+                    "product": ProductElectroInput,
+                    "package": PackageInput,
+                    "photo": PhotoProductInput,
+                    "defect": DefectInput,
+                }
+            elif report_marriage_type == "get_marriage":
+                # Ввод данных для получения информации о браке
+                if inputs.get("period"):
+                    return (
+                        {
+                            "openDate": OpenDatePast2Input,
+                            "closeDate": CloseDatePastInput,
+                        }
+                        if inputs.get("period") != "day"
+                        else {}
+                    )
+                else:
                     return {"shop": ShopInput, "period": PeriodDateInput}
             else:
+                # Ввод данных для отчета о браке
                 return {"report_marriage": ReportsMarriageInput}
-
-        if session.params["inputs"]["0"]["report"] == "get_commodity_balances":
+        # Обработка отчета о товарных остатках
+        elif report_type == "get_commodity_balances":
             return {
                 "shop": ShopInput,
                 "group": GroupInput,
             }
-        if session.params["inputs"]["0"]["report"] == "order_constructor":
+
+        # Обработка отчета о конструкторе заказа
+        elif report_type == "order_constructor":
             return {
                 "shop": ShopInput,
                 "counterparty": СounterpartyInput,
@@ -149,21 +160,27 @@ def get_inputs(session: Session):
                 "openDate": OpenDatePast2Input,
                 "closeDate": CloseDatePastInput,
             }
-        if session.params["inputs"]["0"]["report"] == "get_accept":
-            if "period" in session.params["inputs"]["0"]:
-                if session.params["inputs"]["0"]["period"] == "day":
-                    return {"shop": ShopInput, "number": DocumentsAcceptInput}
 
-                else:
-                    return {
-                        "shop": ShopInput,
+        # Обработка отчета о получении товара
+        elif report_type == "get_accept":
+            if inputs.get("period"):
+                return (
+                    {
                         "openDate": OpenDatePast2Input,
                         "closeDate": CloseDatePastInput,
-                        "number": DocumentsAcceptInput,
                     }
+                    if inputs.get("period") != "day"
+                    else {}
+                )
             else:
-                return {"report_a_w": ReportsAcceptInput, "period": PeriodDateInput}
-        if session.params["inputs"]["0"]["report"] == "get_product_not_for_sale":
+                return {
+                    "report_a_w": ReportsAcceptInput,
+                    "shop": ShopInput,
+                    "number": DocumentsAcceptInput,
+                    "period": PeriodDateInput,
+                }
+        # Обработка отчета о товаре, без движения
+        elif report_type == "get_product_not_for_sale":
             return {
                 "shop": ShopAllInput,
                 "group": GroupInput,
@@ -172,6 +189,7 @@ def get_inputs(session: Session):
             }
 
     else:
+        # Ввод для выбора отчета о товарах
         return {"report": ReportCommodityInput}
 
 
@@ -194,20 +212,27 @@ def generate(session: Session):
 
             MarriageWarehouse.objects(closeDate=data).update(**params, upsert=True)
             shop_uuid = session.params["inputs"]["0"]["shop"]
-            shop_name = [i["name"] for i in Shop.objects(uuid=shop_uuid)]
-            product = Products.objects(
-                __raw__={
-                    "shop_id": shop_uuid,
-                    "uuid": session.params["inputs"]["0"]["product"],
-                }
+            shop_name = (
+                Shop.objects(uuid__exact=shop_uuid).only("name").first().name
+            ).upper()
+
+            product_name = (
+                Products.objects(
+                    __raw__={
+                        "shop_id": shop_uuid,
+                        "uuid": session.params["inputs"]["0"]["product"],
+                    }
+                )
+                .only("name")
+                .first()
+                .name
             )
-            product_name = [i["name"] for i in product]
 
             _dict = {
                 "№".upper(): session.params["inputs"]["0"]["number"],
-                "ТТ:".upper(): shop_name[0],
+                "ТТ:".upper(): shop_name,
                 "Дата:".upper(): session.params["inputs"]["0"]["closeDate"][0:16],
-                "Наименование:".upper(): product_name[0],
+                "Наименование:".upper(): product_name,
                 "Дефект:".upper(): session.params["inputs"]["0"]["defect"],
                 "Упаковка:".upper(): session.params["inputs"]["0"]["package"],
             }
@@ -228,28 +253,36 @@ def generate(session: Session):
                 }
             )
             for item in Marriage:
-                product = Products.objects(
-                    __raw__={"shop_id": item["shop"], "uuid": item["product"]}
+                product_name = (
+                    Products.objects(
+                        __raw__={
+                            "shop_id": item["shop"],
+                            "uuid": item["product"],
+                        }
+                    )
+                    .only("name")
+                    .first()
+                    .name
                 )
-                product_name = [i["name"] for i in product]
-                employee_name = [
-                    i["name"] for i in Employees.objects(lastName=item["user_id"])
-                ]
-                shop_name = [i["name"] for i in Shop.objects(uuid=item["shop"])]
+
+                shop_name = (
+                    Shop.objects(uuid__exact=shop_uuid).only("name").first().name
+                )
+
                 result.append(
                     {
                         "№".upper(): item["number"],
-                        "ТТ:": shop_name[0],
+                        "ТТ:": shop_name,
                         "Дата:": item["closeDate"][0:16],
-                        "Наименование:": product_name[0],
+                        "Наименование:": product_name,
                         "Дефект:": item["defect"],
                         "Упаковка:": item["package"],
                     }
                 )
                 if product_name[0] in dict_:
-                    dict_[product_name[0]] += 1
+                    dict_[product_name] += 1
                 else:
-                    dict_[product_name[0]] = 1
+                    dict_[product_name] = 1
             result.append(dict_)
             return result
 
@@ -263,6 +296,7 @@ def generate(session: Session):
 
             for shop_uuid in shop_id:
                 if "group" in params:
+
                     if params["group"] == "all":
                         products = Products.objects(
                             __raw__={
