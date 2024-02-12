@@ -51,7 +51,7 @@ services:
       - ./app:/home/nonroot/app # Монтирование кода синхронизации в контейнер
     #    volumes:
     #      - ./:/app
-    command: sh -c "poetry run python3 evotor/sync.py" # Команда для запуска синхронизации
+    # command: sh -c "poetry run python3 evotor/sync.py" # Команда для запуска синхронизации
 
 #    depends_on:
 #      - mongodb    -
