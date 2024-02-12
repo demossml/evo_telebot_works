@@ -12,8 +12,7 @@ from bd.model import (
 from arrow import utcnow, get
 from typing import List, Tuple
 from pprint import pprint
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+
 from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -1307,53 +1306,6 @@ def get_total_salary(
     result.update({"total_salary": total_salary})
     # Возвращаем словарь result с информацией о заработке сотрудника
     return result
-
-
-def diagram(data: dict) -> BytesIO:
-    """
-    Создает круговую диаграмму на основе данных из словаря и возвращает изображение в формате BytesIO.
-    Args:
-        data: dict - Входные данные в виде словаря, где ключи - названия, а значения - суммы.
-
-    Return: BytesIO - Объект BytesIO с изображением.
-    """
-
-    # Извлекаем ключи (названия) и значения (суммы) из словаря данных
-    name = list(data.keys())
-    sum = list(data.values())
-
-    # Создаем новую фигуру (график) для диаграммы с заданными размерами
-    plt.figure(figsize=(10, 10))
-
-    # Устанавливаем размер шрифта для процентных значений на диаграмме
-    plt.rcParams["font.size"] = 14  # Здесь задайте желаемый размер шрифта
-
-    # Создаем круговую диаграмму с указанными данными и параметрами
-    plt.pie(
-        sum,
-        labels=name,
-        autopct="%1.1f%%",  # Формат для отображения процентов на диаграмме
-        startangle=140,  # Угол начала отрисовки диаграммы
-        textprops={"fontweight": "bold"},  # Свойства текста (жирный шрифт)
-    )
-
-    # Задаем равное соотношение сторон для круга
-    plt.axis("equal")
-
-    # Создаем объект BytesIO для сохранения изображения в памяти
-    image_buffer = BytesIO()
-
-    # Сохраняем диаграмму в объект BytesIO в формате PNG
-    plt.savefig(image_buffer, format="png")
-
-    # Очищаем буфер изображения и перемещаем указатель в начало
-    image_buffer.seek(0)
-
-    # Закрываем текущий график, чтобы он не отображался
-    plt.close()
-
-    # Возвращаем объект BytesIO с изображением
-    return image_buffer
 
 
 # Функция для сбора статистики по продажам {uuid: commodity}

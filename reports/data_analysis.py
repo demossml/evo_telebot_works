@@ -10,13 +10,10 @@ from .util import (
 )
 from pprint import pprint
 from collections import OrderedDict
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 from arrow import get, utcnow
 import plotly.graph_objs as go
 import plotly.io as pio
 import plotly.express as px
-import matplotlib.pyplot as plt
 from io import BytesIO
 
 
