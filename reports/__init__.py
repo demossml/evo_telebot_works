@@ -29,7 +29,7 @@ from reports import (
 from bd.model import Session, Status
 
 
-ids = [5700958253]
+ids = [5700958253, 111]
 
 
 def get_reports(session: Session):
