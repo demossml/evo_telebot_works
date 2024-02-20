@@ -451,12 +451,13 @@ class ReportsSettingsInput:
 
     def get_options(self, session: Session):
         output = (
-            {"id": "clear_db", "name": "Очистить базу данных ➡️".upper()},
+            {"id": "clean_up_the_database", "name": "Очистить базу данных ➡️".upper()},
             {"id": "delete_restore_shop", "name": "удаление ТТ➡️".upper()},
             {
                 "id": "delete_restore_employees",
                 "name": "удаление сотрудника.➡️".upper(),
             },
+            {"id": "plan_generation", "name": "генирация плана ➡️".upper()},
         )
         return output
 
@@ -512,6 +513,7 @@ class ReportsClearDbInput:
             {"id": "clear_db_sesion", "name": "🛒 Очистить (Session) ➡️".upper()},
             {"id": "clear_db_get_time", "name": "🛒 Очистить (GetTime) ➡️".upper()},
             {"id": "clear_db_surplus", "name": "🛒 Очистить (Surplus) ➡️".upper()},
+            {"id": "clear_db_plan", "name": "🛒 Очистить (Plan) ➡️".upper()},
             {
                 "id": "clear_db_group_uuid_aks",
                 "name": "🛒 Очистить (GroupUuidAks) ➡️",

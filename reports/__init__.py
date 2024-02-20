@@ -41,7 +41,7 @@ def get_reports(session: Session):
             status = "no"
     else:
         status = "yes"
-    # print(session.employee.role)
+    print(status)
     if "role" in session.employee:
         if status == "yes":
             if session.employee.role == "CASHIER":

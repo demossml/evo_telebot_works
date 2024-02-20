@@ -20,6 +20,8 @@ from collections import defaultdict
 from pprint import pprint
 import time
 from decimal import Decimal
+from multiprocessing import Pool, cpu_count
+
 
 # Принимает словарь с данными о продукте
 
@@ -1778,3 +1780,279 @@ def cash_outcome(shop_id, since, until):
                             category, 0
                         ) + Decimal(trans["sum"]).quantize(Decimal("0.00"))
     return sum_payment_category
+
+
+# # Функция для вычисления продаж для одного магазина
+# def calculate_sales(
+#     shop,
+#     group_id,
+#     since_,
+# ):
+#     """
+#     Рассчитывает продажи для одного магазина в указанный временной период.
+
+#     :param shop: Информация о магазине.
+#     :param group_id: Список идентификаторов групп товаров.
+#     :param date: Дата.
+#     :return: Рассчитанная средняя сумма продаж для магазина.
+#     """
+
+
+#     intervals_plan = get_intervals_plan(since_)
+
+#     shop_name = Shop.objects(uuid=shop).only("name").first().name
+#     sum_sell = 0
+#     for since, until in intervals_plan:
+
+#         products = Products.objects(
+#             __raw__={"shop_id": shop, "parentUuid": {"$in": group_id}}
+#         )
+#         products_uuid = [element.uuid for element in products]
+
+#         x_type = ("SELL", "PAYBACK")
+#         # Получаем документы из базы данных на основе фильтров
+#         documents = Documents.objects(
+#             __raw__={
+#                 "closeDate": {"$gte": since, "$lt": until},
+#                 "shop_id": shop,
+#                 "x_type": {"$in": x_type},
+#                 "transactions.commodityUuid": {"$in": products_uuid},
+#             }
+#         )
+
+#         if len(documents) > 0:
+#             for doc in documents:
+#                 for trans in doc["transactions"]:
+#                     if trans["x_type"] == "REGISTER_POSITION":
+#                         if trans["commodityUuid"] in products_uuid:
+#                             sum_sell += trans["sum"]
+#     # pprint("{}. ppp".format(sum_sell / 4 * 1.05))
+#     result = (
+#         Decimal((sum_sell / 4) * 1.05).quantize(Decimal("0"))
+#         if sum_sell > 0
+#         else Decimal("0.00")
+#     )
+#     pprint(f"{shop_name} | {sum_sell}/{result} | {since}/{until} ")
+#     return result
+
+
+# # Функция для получения временных интервалов для заданной даты
+# def get_intervals_plan(date) -> tuple:
+#     output = []
+#     period = [7, 14, 21, 28]
+#     for element in period:
+#         # Рассчитываем временные интервалы с использованием UTC времени
+#         since = get(date).shift(days=-element).replace(hour=0, minute=1).isoformat()
+#         # pprint(since)
+#         until = get(date).shift(days=-element).replace(hour=23, minute=59).isoformat()
+#         output.append((since, until))
+#     return output
+
+
+# # Функция для рассчета продаж для одного магазина в указанный временной период
+# def calculate_sales(shop, group_id, since_):
+#     # Рассчитываем временные интервалы
+#     intervals_plan = get_intervals_plan(since_)
+
+#     # Получаем информацию о магазине
+#     shop_name = Shop.objects(uuid=shop).only("name").first().name
+#     sum_sell = 0
+
+#     # Итерация по временным интервалам
+#     for since, until in intervals_plan:
+#         # Получаем продукты для магазина и группы товаров
+#         products = Products.objects(
+#             __raw__={"shop_id": shop, "parentUuid": {"$in": group_id}}
+#         )
+#         products_uuid = [element.uuid for element in products]
+
+#         x_type = ("SELL", "PAYBACK")
+
+#         # Получаем документы из базы данных на основе фильтров
+#         documents = Documents.objects(
+#             __raw__={
+#                 "closeDate": {"$gte": since, "$lt": until},
+#                 "shop_id": shop,
+#                 "x_type": {"$in": x_type},
+#                 "transactions.commodityUuid": {"$in": products_uuid},
+#             }
+#         )
+
+#         # Вычисляем сумму продаж
+#         if len(documents) > 0:
+#             for doc in documents:
+#                 for trans in doc["transactions"]:
+#                     if trans["x_type"] == "REGISTER_POSITION":
+#                         if trans["commodityUuid"] in products_uuid:
+#                             sum_sell += trans["sum"]
+#         pprint(f"{shop_name}  {since}/{until} ")
+
+#     # Рассчитываем результат и добавляем информацию в результаты
+#     result = (
+#         Decimal((sum_sell / 4) * 1.05).quantize(Decimal("0"))
+#         if sum_sell > 0
+#         else Decimal("0.00")
+#     )
+#     return {shop_name: f"{result} / {since_[:10]}"}
+
+
+# from functools import partial
+
+
+# # Функция для параллельного вычисления продаж для магазинов в заданный период
+# def process_shops_parallel(shops, group_id, since, until):
+#     # Создание пула процессов с количеством равным минимальному из 5 и количеству магазинов
+#     num_processes = min(cpu_count(), 5, len(shops))
+#     with Pool(processes=num_processes) as pool:
+#         # Частичное применение функции calculate_sales с фиксированными параметрами
+#         calculate_sales_partial = partial(
+#             calculate_sales, group_id=group_id, since_=since
+#         )
+#         # Запуск параллельных вычислений для каждого магазина
+#         results = pool.map(calculate_sales_partial, shops)
+#     return results
+
+
+# # Основная функция для генерации планов продаж для магазинов параллельно
+# def generate_plan_parallel(shops, start_date, end_date):
+#     # Идентификаторы групп товаров
+#     group_id = (
+#         "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
+#         "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
+#         "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
+#         "2b8eb6b4-92ea-11ee-ab93-2cf05d04be1d",
+#         "8a8fcb5f-9582-11ee-ab93-2cf05d04be1d",
+#         "97d6fa81-84b1-11ea-b9bb-70c94e4ebe6a",
+#         "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
+#         "568905bd-9460-11ee-9ef4-be8fe126e7b9",
+#         "568905be-9460-11ee-9ef4-be8fe126e7b9",
+#     )
+
+#     # Получение временных интервалов для каждого периода
+#     intervals = get_intervals(start_date, end_date, "days", 1)
+
+#     # Результаты будут храниться в списке
+#     result_data = []
+
+#     # Итерация по временным интервалам
+#     for since, until in intervals:
+#         # Параллельное вычисление продаж для каждого магазина
+#         sales_results = process_shops_parallel(shops, group_id, since, until)
+#         result_data.append((sales_results))
+
+#     pprint(result_data)
+#     return result_data
+
+
+# Функция для вычисления продаж для одного магазина
+def calculate_sales(
+    shop,
+    group_id,
+    since_,
+):
+    """
+    Рассчитывает продажи для одного магазина в указанный временной период.
+
+    :param shop: Информация о магазине.
+    :param group_id: Список идентификаторов групп товаров.
+    :param date: Дата.
+    :return: Рассчитанная средняя сумма продаж для магазина.
+    """
+
+    intervals_plan = get_intervals_plan(since_)
+
+    shop_name = Shop.objects(uuid=shop).only("name").first().name
+    sum_sell = 0
+    for since, until in intervals_plan:
+
+        products = Products.objects(
+            __raw__={"shop_id": shop, "parentUuid": {"$in": group_id}}
+        )
+        products_uuid = [element.uuid for element in products]
+
+        x_type = ("SELL", "PAYBACK")
+        # Получаем документы из базы данных на основе фильтров
+        documents = Documents.objects(
+            __raw__={
+                "closeDate": {"$gte": since, "$lt": until},
+                "shop_id": shop,
+                "x_type": {"$in": x_type},
+                "transactions.commodityUuid": {"$in": products_uuid},
+            }
+        )
+
+        if len(documents) > 0:
+            for doc in documents:
+                for trans in doc["transactions"]:
+                    if trans["x_type"] == "REGISTER_POSITION":
+                        if trans["commodityUuid"] in products_uuid:
+                            sum_sell += trans["sum"]
+        else:
+            sum_sell += 0
+    # Рассчитываем результат с учетом минимальной суммы
+    min_result = 4
+    result = max(min_result, int(Decimal((sum_sell / 4) * 1.05).quantize(Decimal("0"))))
+
+    pprint(f"{shop_name} | {sum_sell}/{result} | {since}/{until} ")
+    params = {
+        "closeDate": since_,
+        "shop_id": shop,
+        "sum": result,
+    }
+    Plan.objects(closeDate=utcnow().isoformat()).update(**params, upsert=True)
+
+    return {shop_name: f"{result} | {since_[:10]}"}
+
+
+# Функция для получения временных интервалов для заданной даты
+def get_intervals_plan(date) -> list:
+    output = []
+    period = [7, 14, 21, 28]
+    for element in period:
+        since = get(date).shift(days=-element).replace(hour=0, minute=1).isoformat()
+        until = get(date).shift(days=-element).replace(hour=23, minute=59).isoformat()
+        output.append((since, until))
+    return output
+
+
+# Основная функция для генерации планов продаж для магазинов параллельно
+def generate_plan_parallel(shops, start_date, end_date):
+    group_id = (
+        "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
+        "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
+        "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
+        "2b8eb6b4-92ea-11ee-ab93-2cf05d04be1d",
+        "8a8fcb5f-9582-11ee-ab93-2cf05d04be1d",
+        "97d6fa81-84b1-11ea-b9bb-70c94e4ebe6a",
+        "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
+        "568905bd-9460-11ee-9ef4-be8fe126e7b9",
+        "568905be-9460-11ee-9ef4-be8fe126e7b9",
+    )
+
+    # Получение временных интервалов для каждого периода
+    intervals = get_intervals(start_date, end_date, "days", 1)
+
+    result_data = []
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        # Список для хранения будущих результатов
+        future_to_shop = {
+            executor.submit(calculate_sales, shop, group_id, since): shop
+            for since, until in intervals
+            for shop in shops
+        }
+        for future in as_completed(future_to_shop):
+            shop = future_to_shop[future]
+            try:
+                result = future.result()
+                result_data.append(result)
+            except Exception as e:
+                print(f"Exception occurred for shop {shop}: {e}")
+
+    # Сортировка по shop_name и since_[:10]}
+    sorted_result_data = sorted(
+        result_data,
+        key=lambda x: (list(x.keys())[0], x[list(x.keys())[0]].split(" | ")[1]),
+    )
+
+    pprint(sorted_result_data)
+    return sorted_result_data

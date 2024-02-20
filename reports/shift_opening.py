@@ -150,6 +150,7 @@ shop_data = (
 
 
 def get_inputs(session: Session):
+
     # Если входные параметры сессии существуют
     if session.params["inputs"]["0"]:
         # Если тип отчета - "shift_opening_report"
