@@ -126,6 +126,13 @@ def status_shop(shop_id: str) -> bool:
     return not (doc_status and doc_status.status != "restore")
 
 
+def status_employee(uuid: str) -> bool:
+    # Получаем объект статуса из базы данных для указанного магазина со статусом "deleted"
+    doc_status = Status.objects(employee=uuid, status="deleted").first()
+    # Возвращаем True, если объект не найден или его статус "restore", иначе возвращаем False
+    return not (doc_status and doc_status.status != "restore")
+
+
 def get_shops(session: Session) -> dict:
     """
     :param session:

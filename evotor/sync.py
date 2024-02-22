@@ -8,7 +8,8 @@ import schedule
 import time
 from threading import Thread, Event
 import asyncio
-
+import psutil
+import concurrent.futures
 
 # Сенхронизирует базу tc и облако эватор.
 # Принимает два оргумента shop_id и evotor.
@@ -124,6 +125,9 @@ class EvoSync:
             TimeSync.objects(shop=shop["uuid"]).update(**params, upsert=True)
 
 
+tokens = {"token_1": EVOTOR_TOKEN_2, "token_2": EVOTOR_TOKEN_4}
+
+
 async def sync_evo(event):
     start_time = time.time()
     print(
@@ -155,44 +159,3 @@ if __name__ == "__main__":
         loop.run_until_complete(main())
     finally:
         loop.close()
-
-# # Функция для синхронизации всей информации для всех магазинов
-# def sync_evo_1():
-#     evo = EvoSync(EVOTOR_TOKEN_2)
-#     # Засекаем время начала выполнения
-#     start_time = time.time()
-#     print(f"Start функции sync_evo_1: {start_time} секунд")
-#     evo.sync_total()
-#     # sync_total(Evotor(EVOTOR_TOKEN_4))
-#     # sync_total(Evotor(EVOTOR_TOKEN_5))
-
-#     # Рассчитываем время выполнения и выводим в консоль
-#     end_time = time.time()
-#     execution_time = end_time - start_time
-#     print(f"Время выполнения функции sync_evo_1: {execution_time:.2f} секунд")
-#     sync_evo_1()
-
-
-# def sync_evo_2():
-#     evo = EvoSync(EVOTOR_TOKEN_4)
-#     # Засекаем время начала выполнения
-#     start_time = time.time()
-#     print(f"Start функции sync_evo_: {start_time} секунд")
-
-#     # sync_total(Evotor(EVOTOR_TOKEN_2))
-#     evo.sync_total()
-
-#     # Рассчитываем время выполнения и выводим в консоль
-#     end_time = time.time()
-#     execution_time = end_time - start_time
-#     print(
-#         f"Время выполнения фуsync_evo_2 нкции sync_evo_2: {execution_time:.2f} секунд"
-#     )
-#     sync_evo_2()
-
-
-# th1 = Thread(target=sync_evo_1)
-# th1.start()
-
-# th2 = Thread(target=sync_evo_2)
-# th2.start()

@@ -60,7 +60,10 @@ def get_inputs(session: Session):
         if not report_type_d:
             return {"report_d": ReportsDeleteRestoreShopInput}
         if report_type_d == "delete_shops":
-            return {"report": ReportsClearDbInput}
+            return {
+                "shop": ShopInput,
+                "docStatus": DocStatusInput,
+            }
         elif report_type_d == "restore_shops":
             return {
                 "shop": ShopInput,
@@ -130,6 +133,7 @@ def get_inputs(session: Session):
 
 def generate(session: Session):
     inputs = session.params.get("inputs", {}).get("0", {})
+    pprint(inputs)
     report_type = inputs.get("report", None)
     report_type_d = inputs.get("report_d", None)
     room = session["room"]

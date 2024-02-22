@@ -12,6 +12,7 @@ from .util import (
     get_products_shops,
     get_shops,
     period_first_day_of_the_month,
+    status_employee,
 )
 
 
@@ -621,10 +622,12 @@ class EmployeesInput:
         uuid = []
         # содоет ключи в session.params["inputs"]
         for i in range(int(room) + 1):
+
             # если в 'uuid' есть в session.params["inputs"][str(i)]
             if "uuid" in session.params["inputs"][str(i)]:
                 # если 'uuid' нет в словаре с ключем i в списке uuid
                 if session.params["inputs"][str(i)]["uuid"] not in uuid:
+
                     # добовляет 'uuid' в список uuid
                     uuid.append(session.params["inputs"][str(i)]["uuid"])
         shop_id = get_shops_uuid_user_id(session)
@@ -665,6 +668,7 @@ class EmployeesUuidInput:
             if "uuid" in session.params["inputs"][str(i)]:
                 # если 'uuid' нет в словаре с ключем i в списке uuid
                 if session.params["inputs"][str(i)]["uuid"] not in uuid:
+
                     # добовляет 'uuid' в список uuid
                     uuid.append(session.params["inputs"][str(i)]["uuid"])
         shop_id = get_shops_uuid_user_id(session)
@@ -689,7 +693,7 @@ class GroupInput:
     desc = "Выберите группу товаров из списка 📋".upper()
     type = "SELECT"
 
-    def get_options(self, session: Session) -> [{str, str}]:
+    def get_options(self, session: Session) -> list:
         output = [{"id": "all", "name": "{} ➡️".format("Все группы").upper()}]
 
         for k, v in get_group(session).items():
