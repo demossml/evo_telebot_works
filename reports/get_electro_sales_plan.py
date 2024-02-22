@@ -30,7 +30,7 @@ def generate(session: Session) -> list[dict]:
 
     data_resul = {}
     data_sale = analyze_sales_parallel(session)
-    # pprint(data_sale)
+    pprint(data_sale)
     sales_data = {}
     data_last_time = {}
     for k, v in data_sale.items():

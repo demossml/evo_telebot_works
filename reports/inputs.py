@@ -370,6 +370,7 @@ class ReportMotivationUuidInput:
     type = "SELECT"
 
     def get_options(self, session: Session):
+        # pprint("product_ext_motivation")
         output = (
             {
                 "id": "product_ext_motivation",
