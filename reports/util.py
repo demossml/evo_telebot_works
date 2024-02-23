@@ -2063,3 +2063,80 @@ def generate_plan_parallel(shops, start_date, end_date):
 
     pprint(sorted_result_data)
     return sorted_result_data
+
+
+def get_sales_by_category(
+    shop_id: str,
+    since: str,
+    until: str,
+) -> dict:
+    """
+    Возвращает словарь, содержащий сумму продаж по категориям платежей за определенный период.
+
+    Args:
+        shop_id (str): Идентификатор магазина.
+        since (str): Начальная дата периода (включительно).
+        until (str): Конечная дата периода (исключительно).
+
+    Returns:
+        dict: Словарь с суммами продаж по категориям платежей.
+              Структура: {shop_id: {"payment_type": total_sales, ...}}
+    """
+    # Используем defaultdict для автоматического создания ключей с начальным значением 0
+    payment_type_sum_sell = defaultdict(Decimal)
+
+    # Ищем документы, соответствующие условиям
+    documents = Documents.objects(
+        __raw__={
+            "closeDate": {"$gte": since, "$lt": until},
+            "shop_id": shop_id,
+            "x_type": "SELL",
+        }
+    )
+    # Итерируемся по найденным документам  documents (продажам)
+    for doc in documents:
+        # Итерируемся по транзакциям в каждом документе
+        for trans in doc["transactions"]:
+            # Если тип транзакции "PAYMENT" (оплата)
+            if trans["x_type"] == "PAYMENT":
+
+                # Увеличиваем сумму продаж по определенному типу платежа
+                payment_type_sum_sell[trans["paymentType"]] += Decimal(
+                    trans["sum"]
+                ).quantize(Decimal("0.00"))
+
+    return {shop_id: dict(payment_type_sum_sell)}
+
+
+def sales_parallel(shops: list, since: str, until: str) -> dict:
+    """
+    Возвращает словарь, содержащий сумму продаж по категориям платежей для нескольких магазинов.
+
+    Args:
+        shops (list): Список идентификаторов магазинов.
+        since (str): Начальная дата периода (включительно).
+        until (str): Конечная дата периода (исключительно).
+
+    Returns:
+        dict: Словарь с суммами продаж по категориям платежей для каждого магазина.
+              Структура: {shop_id: {"payment_type": total_sales, ...}, ...}
+    """
+    sales_results = {}
+
+    with ThreadPoolExecutor() as executor:
+        # Запускаем обработку каждого магазина в отдельном потоке
+        futures = {
+            executor.submit(get_sales_by_category, shop_id, since, until): shop_id
+            for shop_id in shops
+        }
+
+        # Получаем результаты вычислений
+        for future in futures:
+            shop_id = futures[future]
+            try:
+                result = future.result()
+                sales_results.update(result)
+            except Exception as e:
+                print(f"Error processing shop {shop_id}: {e}")
+
+    return sales_results
