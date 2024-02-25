@@ -123,6 +123,8 @@ def generate(session: Session):
         title="Общие продажи по магазинам",  # Заголовок внешнего круга
         labels={"names": "Магазины", "values": "Общие продажи"},  # Метки осей
         color_discrete_sequence=px.colors.qualitative.G10,  # Задание цветовой палитры
+    ).update_traces(
+        texttemplate="%{label}: <br>%{percent}<b>",
     )
 
     # Создаем внутренний круг с данными о доле выручки по магазинам
