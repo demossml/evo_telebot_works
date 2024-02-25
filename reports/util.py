@@ -2140,3 +2140,77 @@ def sales_parallel(shops: list, since: str, until: str) -> dict:
                 print(f"Error processing shop {shop_id}: {e}")
 
     return sales_results
+
+
+# Функция для обработки данных по кассе для одного магазина
+def get_cash(shop_id):
+
+    # Инициализация структуры для хранения данных по кассе для данного магазина
+    report_data = defaultdict(int)
+
+    # Получение последнего документа типа FPRINT_Z_REPORT для данного магазина
+    document_fprint = (
+        Documents.objects(
+            __raw__={
+                "shop_id": shop_id,
+                "x_type": "FPRINT",
+                "transactions.x_type": "FPRINT_Z_REPORT",
+            },
+        )
+        .order_by("-closeDate")
+        .first()
+    )
+
+    # Начальные параметры для фильтрации документов
+    documents_query = {"shop_id": shop_id}
+
+    # Если найден документ FPRINT_Z_REPORT, обновляем данные по кассе
+    if document_fprint:
+
+        # Обновление данных по кассе с учетом последнего FPRINT_Z_REPORT
+        for trans in document_fprint.transactions:
+            report_data[shop_id] += Decimal(trans["cash"]).quantize(Decimal("0.00"))
+        since = document_fprint.closeDate
+        until = utcnow().isoformat()
+        documents_query["closeDate"] = {"$gte": since, "$lt": until}
+    # Получение всех документов для данного магазина
+    documents = Documents.objects(__raw__=documents_query)
+
+    # Обработка каждого документа и его транзакций
+    for doc in documents:
+        amount = Decimal(trans.get("sum", 0)).quantize(Decimal("0.00"))
+
+        if doc["x_type"] == "CASH_OUTCOME":
+            for trans in doc["transactions"]:
+                if trans["x_type"] == "CASH_OUTCOME":
+                    report_data[shop_id] -= amount
+
+        if doc["x_type"] == "CASH_INCOME":
+            for trans in doc["transactions"]:
+                if trans["x_type"] == "CASH_INCOME":
+                    report_data[shop_id] += amount
+        if doc["x_type"] == "SELL":
+            for trans in doc["transactions"]:
+                if trans["x_type"] == "PAYMENT":
+                    if trans["paymentType"] == "CASH":
+                        report_data[shop_id] += amount
+        if doc["x_type"] == "PAYBACK":
+            for trans in doc["transactions"]:
+                if trans["x_type"] == "PAYMENT":
+                    if trans["paymentType"] == "CASH":
+                        report_data[shop_id] -= amount
+    return dict(report_data)
+
+
+def calculate_for_shops(shops):
+    result_data = {}
+    with ThreadPoolExecutor() as executor:
+        # Параллельное выполнение функции для каждого магазина
+        future_to_shop = {executor.submit(get_cash, shop): shop for shop in shops}
+        for future in as_completed(future_to_shop):
+            shop = future_to_shop[future]
+            try:
+                result_data.update(future.result())
+            except Exception as e:
+                print(f"Error processing shop {shop}: {e}")
+    return result_data

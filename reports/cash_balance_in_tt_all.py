@@ -1,15 +1,20 @@
 from arrow import utcnow, get
-from bd.model import Session, CashRegister, Documents, Shop
+from bd.model import Session, Shop, TimeSync
 from pprint import pprint
 from .inputs import (
     ShopAllInput,
 )
-from .util import get_shops
+from .util import get_shops, calculate_for_shops
+from decimal import Decimal
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import plotly.express as px
+from io import BytesIO
 
 
 name = "💰🚬 ₱ в кассах ТТ ➡️".upper()
 desc = "Остаток в кассе"
-mime = "text"
+mime = "image_bytes"
 
 
 def get_inputs(session: Session):
@@ -17,92 +22,80 @@ def get_inputs(session: Session):
 
 
 def generate(session: Session):
-    params = session.params["inputs"]["0"]
 
     # Получение информации о магазинах
     shops = get_shops(session)
+
+    # Извлечение идентификаторов магазинов из данных о магазинах
     shops_id = shops["shop_id"]
-    pprint(shops_id)
 
-    report_data = {}
-    sum_ = 0
+    # Вычисление данных по кассе для каждого магазина
+    cash_date = calculate_for_shops(shops_id)
 
-    for shop_id in shops_id:
-        shop = Shop.objects(uuid=shop_id).only("name").first()
+    # Инициализация списка для хранения результатовы
+    result_date = []
 
-        document_fprint = (
-            Documents.objects(
-                __raw__={
-                    "shop_id": shop_id,
-                    "x_type": "FPRINT",
-                    "transactions.x_type": "FPRINT_Z_REPORT",
-                },
-            )
-            .order_by("-closeDate")
-            .first()
-        )
-        if document_fprint:
-            for trans in document_fprint.transactions:
-                pprint(trans["cash"])
-                report_data.update({shop.name: round(float(trans["cash"]), 2)})
-            since = document_fprint.closeDate
-            until = utcnow().isoformat()
-            pprint(report_data)
-            documents = Documents.objects(
-                __raw__={
-                    "closeDate": {"$gte": since, "$lt": until},
-                    "shop_id": shop_id,
-                },
-            )
+    # Инициализация словаря для хранения данных по кассе для отчета
+    report_date = {}
+
+    # Инициализация словаря для хранения времени последней синхронизации данных
+    data_last_time = {}
+
+    # Обработка данных по кассе для каждого магазина
+    for k, v in cash_date.items():
+
+        # Получение имени магазина по его идентификатору
+        shop_name = Shop.objects(uuid=k).only("name").first().name
+        report_date.update({shop_name: v})
+
+        # Получение времени последней синхронизации данных для магазина (если есть)
+        time_sync = TimeSync.objects(shop=k).only("time").first()
+        if time_sync:
+            data_last_time.update({f"🕰️ выг. {shop_name}": time_sync.time})
         else:
-            documents = Documents.objects(
-                __raw__={"shop_id": shop_id},
-            )
-        for doc in documents:
-            if doc["x_type"] == "CASH_OUTCOME":
-                for trans in doc["transactions"]:
-                    if trans["x_type"] == "CASH_OUTCOME":
-                        report_data[shop.name] -= round(float(trans["sum"]), 2)
+            data_last_time.update({f"🕰️ выг. {shop_name}": "No data"})
 
-            if doc["x_type"] == "CASH_INCOME":
-                for trans in doc["transactions"]:
-                    if trans["x_type"] == "CASH_INCOME":
-                        report_data[shop.name] += round(float(trans["sum"]), 2)
-            if doc["x_type"] == "SELL":
-                for trans in doc["transactions"]:
-                    if trans["x_type"] == "PAYMENT":
-                        if trans["paymentType"] == "CASH":
-                            pprint(trans["sum"])
-                            report_data[shop.name] += round(float(trans["sum"]), 2)
-            if doc["x_type"] == "PAYBACK":
-                for trans in doc["transactions"]:
-                    if trans["x_type"] == "PAYMENT":
-                        if trans["paymentType"] == "CASH":
-                            report_data[shop.name] -= round(float(trans["sum"]), 2)
+    # Извлекаем названия магазина и суммы продаж
+    shop_names = list(report_date.keys())
+    sum_cash = list(report_date.values())
 
-    for k, v in report_data.items():
-        report_data.update({k: f"{v}₱"})
-
-    last_time = (
-        Documents.objects(
-            __raw__={
-                "closeDate": {"$gte": since, "$lt": until},
-            }
-        )
-        .order_by("-closeDate")
-        .only("closeDate")
-        .first()
-    )
-    if last_time:
-        time = get(last_time.closeDate).shift(hours=3).isoformat()[11:19]
-        pprint(time)
-    else:
-        time = 0
-
-    report_data.update(
-        {
-            "🕰️ Время выгрузки ->".upper(): time,
-        }
+    # Создаем фигуру для круговой диаграммы
+    fig = px.pie(
+        names=shop_names,
+        values=sum_cash,
+        title="Доля выручки по Электронкам  по магазинам",
+        labels={"names": "Магазины", "values": "Выручка"},
+        # Цвет фона графика
+    ).update_traces(
+        # Шаблон текста внутри каждого сектора
+        # %{label}: подставляет название категории
+        # %{value:$,s}: подставляет значение с форматированием в долларах и использованием запятых
+        # <br>: добавляет перенос строки (HTML тег)
+        # %{percent}: подставляет процентное соотношение
+        texttemplate="%{label}: <br>%{percent}",
+        showlegend=False,  # Устанавливаем showlegend в False, чтобы скрыть легенду
     )
 
-    return [report_data]
+    # Настройки внешнего вида графика
+    fig.update_layout(
+        title="Продажи  по Электронкам по магазинам",
+        font=dict(size=18, family="Arial, sans-serif", color="black"),
+        # plot_bgcolor="black",  # Цвет фона графика
+    )
+
+    # Сохраняем диаграмму в формате PNG в объект BytesIO
+    image_buffer = BytesIO()
+
+    fig.write_image(image_buffer, format="png", width=900, height=900)
+
+    # Очищаем буфер изображения и перемещаем указатель в начало
+    image_buffer.seek(0)
+
+    # Обновление значений в словаре report_date с добавлением символа валюты "₱"
+    updated_report_data = {k: f"{v}₱" for k, v in report_date.items()}
+
+    # Добавление обновленных данных по кассе и времени последней синхронизации в результаты
+    result_date.append(updated_report_data)
+    result_date.append(data_last_time)
+
+    return result_date, image_buffer

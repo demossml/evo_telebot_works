@@ -67,6 +67,14 @@ def generate(session: Session) -> list[dict]:
         title="Доля выручки по Электронкам  по магазинам",
         labels={"names": "Магазины", "values": "Выручка"},
         # Цвет фона графика
+    ).update_traces(
+        # Шаблон текста внутри каждого сектора
+        # %{label}: подставляет название категории
+        # %{value:$,s}: подставляет значение с форматированием в долларах и использованием запятых
+        # <br>: добавляет перенос строки (HTML тег)
+        # %{percent}: подставляет процентное соотношение
+        texttemplate="%{label}: <br>%{percent}",
+        showlegend=False,  # Устанавливаем showlegend в False, чтобы скрыть легенду
     )
 
     # Настройки внешнего вида графика
@@ -79,7 +87,7 @@ def generate(session: Session) -> list[dict]:
     # Сохраняем диаграмму в формате PNG в объект BytesIO
     image_buffer = BytesIO()
 
-    fig.write_image(image_buffer, format="png", width=700, height=700)
+    fig.write_image(image_buffer, format="png", width=900, height=900)
 
     # Очищаем буфер изображения и перемещаем указатель в начало
     image_buffer.seek(0)
