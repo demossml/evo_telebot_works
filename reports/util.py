@@ -2214,3 +2214,7 @@ def calculate_for_shops(shops):
             except Exception as e:
                 print(f"Error processing shop {shop}: {e}")
     return result_data
+
+s = "2024-02-21T10:12:23.000+0000"
+s = "2024-02-21T21:00:00.000+0000"
+

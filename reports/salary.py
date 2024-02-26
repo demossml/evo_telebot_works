@@ -1075,6 +1075,7 @@ def generate(session: Session):
                     pprint("documents_plan_motivation")
                     # Если данные по плану равны "no data"
                     if sum_plan == "no data":
+                        pprint("🔴")
                         symbol = "🔴"
                         salary_plan = "no data"
                     else:
@@ -1087,6 +1088,7 @@ def generate(session: Session):
                             symbol = "🟡"
                             salary_plan = 0
                 else:
+
                     symbol = "🔴"
                     salary_plan = 0
 
@@ -1238,17 +1240,19 @@ def generate(session: Session):
                 for element in Employees.objects(lastName=employee_last_name)
             ]
 
-            since = (
-                get(session.params["inputs"]["0"]["openDate"])
-                .replace(hour=3, minute=0)
-                .isoformat()
-            )
-            until = (
-                get(session.params["inputs"]["0"]["closeDate"])
-                .replace(hour=23, minute=0)
-                .isoformat()
-            )
-
+            # since = (
+            #     get(session.params["inputs"]["0"]["openDate"])
+            #     .replace(hour=3, minute=0)
+            #     .isoformat()
+            # )
+            # until = (
+            #     get(session.params["inputs"]["0"]["closeDate"])
+            #     .replace(hour=23, minute=0)
+            #     .isoformat()
+            # )
+            since = "2024-02-21T10:12:23.000+0000"
+            until = "2024-02-21T21:00:00.000+0000"
+            pprint(777777)
             intervals = get_intervals(since, until, "days", 1)
 
             # Параллельное выполнение задач
@@ -1277,8 +1281,8 @@ def generate(session: Session):
                     "ПРОДАЖИ:": f"{data_total_sall}₽",
                     "ПРОЦЕНТ:": "5%",
                     "ЗП": f"{data_total_salary}₽",
-                    "Начало периода:": since[0:10],
-                    "Окончание периода:": until[0:10],
+                    "Начало периода:": since,
+                    "Окончание периода:": until,
                     "Продавец:".upper(): employee_name.name.upper(),
                 }
             )
