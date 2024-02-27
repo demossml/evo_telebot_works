@@ -11,6 +11,7 @@ from .util import get_shops_user_id
 from collections import OrderedDict
 from io import BytesIO
 import plotly.express as px
+import io
 
 
 name = " 💨💨💨 Fyzzi/Электро ➡️".upper()
@@ -85,38 +86,46 @@ def generate(session: Session):
 
     _dict = dict(OrderedDict(sorted(_dict.items(), key=lambda t: -t[1])))
 
-    # Извлекаем названия магазина и суммы продаж
     products_names = list(_dict.keys())
     sum_sales_quantity = list(_dict.values())
 
-    # Создаем фигуру для круговой диаграммы
-    fig = px.pie(
-        names=products_names,
-        values=sum_sales_quantity,
-        title="Доля выручки по Электронкам  по магазинам в шт.",
-        labels={"names": "Продукт", "values": "количество"},
+    # Создаем фигуру для гистограммы
+    fig = px.bar(
+        y=products_names,
+        x=sum_sales_quantity,
+        title="Продажи по Электро в шт.",
+        labels={"y": "Магазин", "x": "Сумма продаж"},
         # Цвет фона графика
-    ).update_traces(
-        # Шаблон текста внутри каждого сектора
-        # %{label}: подставляет название категории
-        # %{value:$,s}: подставляет значение с форматированием в долларах и использованием запятых
-        # <br>: добавляет перенос строки (HTML тег)
-        # %{percent}: подставляет процентное соотношение
-        texttemplate="%{label}: <br>%{percent}",
-        showlegend=False,  # Устанавливаем showlegend в False, чтобы скрыть легенду
+        # Дополнительные настройки могут быть добавлены по вашему усмотрению
     )
 
     # Настройки внешнего вида графика
     fig.update_layout(
-        title="Продажи  по Электронкам по магазинам в шт.",
-        font=dict(size=18, family="Arial, sans-serif", color="black"),
+        font=dict(size=24, family="Arial, sans-serif", color="black"),
         # plot_bgcolor="black",  # Цвет фона графика
     )
 
-    # Сохраняем диаграмму в формате PNG в объект BytesIO
-    image_buffer = BytesIO()
+    # Добавляем аннотации с суммами продаж
+    for i, value in enumerate(sum_sales_quantity):
+        fig.add_annotation(
+            x=value,
+            y=products_names[i],
+            text=f"{value:,}",  # Форматируем число с разделителями тысяч
+            showarrow=True,
+            arrowhead=2,
+            arrowcolor="black",
+            ax=-40,
+            ay=0,
+        )
 
-    fig.write_image(image_buffer, format="png", width=900, height=900)
+    # Устанавливаем ориентацию осей
+    fig.update_xaxes(title="Сумма продаж")
+    fig.update_yaxes(title="Магазин", autorange="reversed")  # Разворачиваем ось Y
+
+    # Сохраняем гистограмму в формате PNG в объект BytesIO
+    image_buffer = io.BytesIO()
+
+    fig.write_image(image_buffer, format="png", width=1400, height=2000)
 
     # Очищаем буфер изображения и перемещаем указатель в начало
     image_buffer.seek(0)

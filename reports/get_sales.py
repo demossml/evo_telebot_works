@@ -382,6 +382,7 @@ def generate(session: Session):
 
         # Очищаем буфер изображения и перемещаем указатель в начало
         image_buffer.seek(0)
+
         # Вычисляем общее количество продаж
         total_quantity = sum(sorted_sales.values())
 
