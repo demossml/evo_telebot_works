@@ -13,10 +13,13 @@ from .inputs import (
     CloseDatePastInput,
 )
 
+from io import BytesIO
+import plotly.express as px
+import io
 
 name = "🛒 ОТЧЕТЫ ПО ПРОДАЖАМ ➡️"
 desc = "ОТЧЕТЫ по ПРОДАЖАМ"
-mime = "text"
+mime = "image_bytes"
 
 
 def get_inputs(session: Session):
@@ -238,6 +241,51 @@ def generate(session: Session):
             OrderedDict(sorted(sales_data.items(), key=lambda t: -t[1]))
         )
 
+        # pprint(sorted_sales_data)
+        # Извлекаем названия магазина и суммы продаж
+        shop_names = list(sorted_sales_data.keys())
+        sum_sales_quantity = list(sorted_sales_data.values())
+
+        # Создаем фигуру для гистограммы
+        fig = px.bar(
+            y=shop_names,
+            x=sum_sales_quantity,
+            title="Продажи по магазинам в ₽",
+            labels={"y": "Магазин", "x": "Сумма продаж"},
+            # Цвет фона графика
+            # Дополнительные настройки могут быть добавлены по вашему усмотрению
+        )
+
+        # Настройки внешнего вида графика
+        fig.update_layout(
+            font=dict(size=24, family="Arial, sans-serif", color="black"),
+            # plot_bgcolor="black",  # Цвет фона графика
+        )
+
+        # Добавляем аннотации с суммами продаж
+        for i, value in enumerate(sum_sales_quantity):
+            fig.add_annotation(
+                x=value,
+                y=shop_names[i],
+                text=f"{value:,}",  # Форматируем число с разделителями тысяч
+                showarrow=True,
+                arrowhead=2,
+                arrowcolor="black",
+                ax=-40,
+                ay=0,
+            )
+
+        # Устанавливаем ориентацию осей
+        fig.update_xaxes(title="Сумма продаж")
+        fig.update_yaxes(title="Магазин", autorange="reversed")  # Разворачиваем ось Y
+
+        # Сохраняем гистограмму в формате PNG в объект BytesIO
+        image_buffer = io.BytesIO()
+
+        fig.write_image(image_buffer, format="png", width=1400, height=2000)
+
+        # Очищаем буфер изображения и перемещаем указатель в начало
+        image_buffer.seek(0)
         # Вычисляем общую сумму продаж
         total_sales = sum(sorted_sales_data.values())
 
@@ -250,7 +298,8 @@ def generate(session: Session):
         total_info["Начало периода:"] = since[0:10]
         total_info["Окончание периода:"] = until[0:10]
 
-        return [total_info]
+        return [total_info], image_buffer
+
     if params["report"] == "get_sales_by_shop_product_group_unit":
         # Фильтруем документы из базы данных
         documents = Documents.objects(
@@ -285,22 +334,54 @@ def generate(session: Session):
         sorted_sales = dict(
             OrderedDict(sorted(sales_by_product.items(), key=lambda t: -t[1]))
         )
-        pprint(sales_by_product)
-        # Извлекаем названия продуктов и количество
-        # product_names = list(sales_by_product.keys())
-        # quantities = list(sales_by_product.values())
 
-        # # Создаем круговую диаграмму
-        # plt.figure(figsize=(10, 10))
-        # plt.pie(quantities, labels=product_names, autopct="%1.1f%%", startangle=140)
-        # plt.axis("equal")  # Задаем равное соотношение сторон для круга
+        # Предположим, у вас есть данные в формате, аналогичном sorted_sales
+        # sorted_sales = {"Магазин1": сумма1, "Магазин2": сумма2, ...}
 
-        # # Сохраняем диаграмму в файл
-        # plt.savefig("круговая_диаграмма.png")
+        # Извлекаем названия магазина и суммы продаж
+        shop_names = list(sorted_sales.keys())
+        sum_sales_quantity = list(sorted_sales.values())
 
-        # # Показываем диаграмму
-        # plt.show()
+        # Создаем фигуру для гистограммы
+        fig = px.bar(
+            y=shop_names,
+            x=sum_sales_quantity,
+            title="Продажи по магазинам в шт.",
+            labels={"y": "Магазин", "x": "Сумма продаж"},
+            # Цвет фона графика
+            # Дополнительные настройки могут быть добавлены по вашему усмотрению
+        )
 
+        # Настройки внешнего вида графика
+        fig.update_layout(
+            font=dict(size=24, family="Arial, sans-serif", color="black"),
+            # plot_bgcolor="black",  # Цвет фона графика
+        )
+
+        # Добавляем аннотации с суммами продаж
+        for i, value in enumerate(sum_sales_quantity):
+            fig.add_annotation(
+                x=value,
+                y=shop_names[i],
+                text=f"{value:,}",  # Форматируем число с разделителями тысяч
+                showarrow=True,
+                arrowhead=2,
+                arrowcolor="black",
+                ax=-40,
+                ay=0,
+            )
+
+        # Устанавливаем ориентацию осей
+        fig.update_xaxes(title="Сумма продаж")
+        fig.update_yaxes(title="Магазин", autorange="reversed")  # Разворачиваем ось Y
+
+        # Сохраняем гистограмму в формате PNG в объект BytesIO
+        image_buffer = io.BytesIO()
+
+        fig.write_image(image_buffer, format="png", width=1400, height=2000)
+
+        # Очищаем буфер изображения и перемещаем указатель в начало
+        image_buffer.seek(0)
         # Вычисляем общее количество продаж
         total_quantity = sum(sorted_sales.values())
 
@@ -322,4 +403,4 @@ def generate(session: Session):
             }
         )
 
-        return [report_data]
+        return [report_data], image_buffer
