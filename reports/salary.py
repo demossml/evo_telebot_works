@@ -1252,7 +1252,7 @@ def generate(session: Session):
             )
             # since = "2024-02-21T03:12:23.000+0000"
             # until = "2024-02-21T10:12:23.000+0000"
-            pprint(777777)
+
             intervals = get_intervals(since, until, "days", 1)
 
             # Параллельное выполнение задач

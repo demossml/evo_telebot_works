@@ -56,6 +56,7 @@ def generate(session: Session) -> list[dict]:
                 data_last_time.update({f"🕰️ выг. {shop.name}": time_sync.time})
             else:
                 data_last_time.update({f"🕰️ выг. {shop.name}": "No data"})
+
     # Извлекаем названия магазина и суммы продаж
     shop_names = list(sales_data.keys())
     sum_sales_ = list(sales_data.values())

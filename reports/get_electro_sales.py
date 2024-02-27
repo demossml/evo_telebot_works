@@ -9,10 +9,13 @@ from arrow import utcnow, get
 from pprint import pprint
 from .util import get_shops_user_id
 from collections import OrderedDict
+from io import BytesIO
+import plotly.express as px
+
 
 name = " 💨💨💨 Fyzzi/Электро ➡️".upper()
 desc = "Генерирует отчет по продажам в шт. по электронкам в шт"
-mime = "text"
+mime = "image_bytes"
 
 
 def get_inputs(session: Session):
@@ -36,11 +39,6 @@ def generate(session: Session):
     since = utcnow().replace(hour=3, minute=00).isoformat()
     until = utcnow().isoformat()
 
-    # products = Products.objects(
-    #     __raw__={"parentUuid": {"$in": group_id}, "shop_id": {"$in": shops_id}}
-    # ).only("uuid")
-
-    # products_uuid = [element.uuid for element in products]
     result = []
     _dict = {}
     for shop in shops:
@@ -87,32 +85,40 @@ def generate(session: Session):
 
     _dict = dict(OrderedDict(sorted(_dict.items(), key=lambda t: -t[1])))
 
-    last_time = (
-        Documents.objects(
-            __raw__={
-                "closeDate": {"$gte": since, "$lt": until},
-            }
-        )
-        .order_by("-closeDate")
-        .only("closeDate")
-        .first()
-    )
-    if last_time:
-        time = get(last_time.closeDate).shift(hours=3).isoformat()[11:19]
-        pprint(time)
-    else:
-        time = 0
+    # Извлекаем названия магазина и суммы продаж
+    products_names = list(_dict.keys())
+    sum_sales_quantity = list(_dict.values())
 
-    total = 0
-    for k, v in _dict.items():
-        total += int(v)
-    _dict["Итого:"] = total
-    result.append(
-        {
-            "🕰️ Время выгрузки ->".upper(): time,
-            "⬇️Итого по всем тт".upper(): "⬇️".upper(),
-        }
+    # Создаем фигуру для круговой диаграммы
+    fig = px.pie(
+        names=products_names,
+        values=sum_sales_quantity,
+        title="Доля выручки по Электронкам  по магазинам в шт.",
+        labels={"names": "Продукт", "values": "количество"},
+        # Цвет фона графика
+    ).update_traces(
+        # Шаблон текста внутри каждого сектора
+        # %{label}: подставляет название категории
+        # %{value:$,s}: подставляет значение с форматированием в долларах и использованием запятых
+        # <br>: добавляет перенос строки (HTML тег)
+        # %{percent}: подставляет процентное соотношение
+        texttemplate="%{label}: <br>%{percent}",
+        showlegend=False,  # Устанавливаем showlegend в False, чтобы скрыть легенду
     )
-    result.append(_dict)
 
-    return result
+    # Настройки внешнего вида графика
+    fig.update_layout(
+        title="Продажи  по Электронкам по магазинам в шт.",
+        font=dict(size=18, family="Arial, sans-serif", color="black"),
+        # plot_bgcolor="black",  # Цвет фона графика
+    )
+
+    # Сохраняем диаграмму в формате PNG в объект BytesIO
+    image_buffer = BytesIO()
+
+    fig.write_image(image_buffer, format="png", width=900, height=900)
+
+    # Очищаем буфер изображения и перемещаем указатель в начало
+    image_buffer.seek(0)
+
+    return result, image_buffer
