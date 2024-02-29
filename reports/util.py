@@ -20,7 +20,7 @@ from collections import defaultdict
 from pprint import pprint
 import time
 from decimal import Decimal
-from multiprocessing import Pool, cpu_count
+from collections import OrderedDict
 
 
 # Принимает словарь с данными о продукте
@@ -105,14 +105,11 @@ def get_group(session: Session) -> dict[str:str]:
     :param session:
     :return: {uuid: name} группы
     """
-    uuid = []
-    for item in Employees.objects(lastName=str(session.user_id)):
-        for store in item.stores:
-            if store not in uuid:
-                uuid.append(store)
+    shops = get_shops(session)
+    shop_id = shops["shop_id"]
 
     group = {}
-    for element in uuid:
+    for element in shop_id:
         for item in Products.objects(shop_id__exact=element, group__exact=True):
             if item["uuid"] not in group:
                 group.update({item["uuid"]: item["name"]})
@@ -2215,6 +2212,26 @@ def calculate_for_shops(shops):
                 print(f"Error processing shop {shop}: {e}")
     return result_data
 
+
 s = "2024-02-21T10:12:23.000+0000"
 s = "2024-02-21T21:00:00.000+0000"
 
+
+def get_top_n_sales(sales_by_product: dict, n=50):
+    """
+    Функция для получения топ N элементов из словаря с продажами по продуктам.
+
+    :param sales_by_product: Исходный словарь с продажами по продуктам.
+    :param n: Количество элементов для включения в топ (по умолчанию 50).
+    :return: Словарь с топ N элементами по продажам.
+    """
+    # Сортировка словаря по значениям в порядке убывания
+    sorted_sales = dict(
+        OrderedDict(sorted(sales_by_product.items(), key=lambda t: -t[1]))
+    )
+
+    # Выбор только первых N элементов
+    top_n_sales = dict(list(sorted_sales.items())[:n])
+
+    # Возврат результата
+    return top_n_sales, len(top_n_sales)

@@ -150,7 +150,7 @@ def generate(session: Session):
         # %{value:$,s}: подставляет значение с форматированием в долларах и использованием запятых
         # <br>: добавляет перенос строки (HTML тег)
         # %{percent}: подставляет процентное соотношение
-        texttemplate="%{label} %{percent} %{value:₽,s}",
+        # texttemplate="%{label} %{percent} ",
     )
 
     fig.add_trace(inner_trace["data"][0])  # Добавляем внутренний круг как трассировку

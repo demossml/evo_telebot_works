@@ -260,28 +260,37 @@ async def handle_ready_state(bot, message, session, next):
                 for m in messages
             ]
     if report.mime == "image_bytes":
-        # Получение изображения
-        image_bytes = result[1]
-        # print(image_bytes)
+        # print(result)
 
-        # # Отправка изображения как фото
-        await bot.send_photo(
-            message.chat_id,
-            photo=image_bytes,
-        )
-        # Отправляем сообщения
-        messages = format_message_list4(result[0])
-        [
-            await bot.send_message(message.chat_id, m, parse_mode="MarkdownV2")
-            for m in messages
-        ]
-    else:
-        # Если нет файлов изображений, только отправляем сообщения
-        messages = format_message_list4(result)
-        [
-            await bot.send_message(message.chat_id, m, parse_mode="MarkdownV2")
-            for m in messages
-        ]
+        if result[1] != None:
+            print("result2")
+
+            # Получение изображения
+            image_bytes = result[1]
+            # print(image_bytes)
+
+            # # Отправка изображения как фото
+            await bot.send_photo(
+                message.chat_id,
+                photo=image_bytes,
+            )
+            if len(result) > 0:
+
+                # Отправляем сообщения
+                messages = format_message_list4(result[0])
+                [
+                    await bot.send_message(message.chat_id, m, parse_mode="MarkdownV2")
+                    for m in messages
+                ]
+        else:
+            print("result")
+
+            # Если нет файлов изображений, только отправляем сообщения
+            messages = format_message_list4(result[0])
+            [
+                await bot.send_message(message.chat_id, m, parse_mode="MarkdownV2")
+                for m in messages
+            ]
     # Переход в состояние INPUT(Обработка начального состояния)
     session.state = State.INIT
 

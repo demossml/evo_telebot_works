@@ -694,6 +694,7 @@ class GroupInput:
     type = "SELECT"
 
     def get_options(self, session: Session) -> list:
+
         output = [{"id": "all", "name": "{} ➡️".format("Все группы").upper()}]
 
         for k, v in get_group(session).items():

@@ -1,5 +1,11 @@
 from bd.model import Shop, Products, Documents, Session, Employees
-from .util import get_intervals, get_period, get_shops_user_id, get_shops
+from .util import (
+    get_intervals,
+    get_period,
+    get_shops_user_id,
+    get_shops,
+    get_top_n_sales,
+)
 from pprint import pprint
 from collections import OrderedDict
 
@@ -16,6 +22,9 @@ from .inputs import (
 from io import BytesIO
 import plotly.express as px
 import io
+import plotly.subplots as sp
+import plotly.graph_objects as go
+import math
 
 name = "🛒 ОТЧЕТЫ ПО ПРОДАЖАМ ➡️"
 desc = "ОТЧЕТЫ по ПРОДАЖАМ"
@@ -92,9 +101,13 @@ def generate(session: Session):
         # Создаем базовый запрос с условием, что 'shop_id' находится в списке магазинов
         query = {"shop_id": {"$in": shop_id}}
 
+        products_name = "все группы"
         # Если параметр 'group' не равен "all", добавляем условие для 'parentUuid' в запрос
         if params["group"] != "all":
             query["parentUuid"] = params["group"]
+            products_name = (
+                Products.objects(uuid=params["group"]).only("name").first().name
+            )
 
         # Выполняем запрос к базе данных с использованием сформированного запроса
         products = Products.objects(__raw__=query)
@@ -202,7 +215,8 @@ def generate(session: Session):
                 dict_total[payment_type[k]] = "{} {}".format(v, "₽")
         dict_total["Сумма:"] = "{} {}".format(sum_sell_total, "₽")
         result.append(dict_total)
-        return result
+
+        return result, None
 
     # Проверяем условие "report" для определения выполняемой задачи
     if params["report"] == "get_sales_by_shop_product_group_rub":
@@ -240,52 +254,76 @@ def generate(session: Session):
         sorted_sales_data = dict(
             OrderedDict(sorted(sales_data.items(), key=lambda t: -t[1]))
         )
+        # Сортируем словарь по убыванию количества продаж
+        sorted_sales = get_top_n_sales(sales_data)
 
-        # pprint(sorted_sales_data)
-        # Извлекаем названия магазина и суммы продаж
-        shop_names = list(sorted_sales_data.keys())
-        sum_sales_quantity = list(sorted_sales_data.values())
+        if len(sorted_sales[0]) > 0:
 
-        # Создаем фигуру для гистограммы
-        fig = px.bar(
-            y=shop_names,
-            x=sum_sales_quantity,
-            title="Продажи по магазинам в ₽",
-            labels={"y": "Магазин", "x": "Сумма продаж"},
-            # Цвет фона графика
-            # Дополнительные настройки могут быть добавлены по вашему усмотрению
-        )
+            # Извлекаем названия магазина и суммы продаж
+            shop_names = list(sorted_sales[0].keys())
+            sum_sales_quantity = list(sorted_sales[0].values())
+            sum_sales_quantity_total = sum(sorted_sales[0].values())
 
-        # Настройки внешнего вида графика
-        fig.update_layout(
-            font=dict(size=24, family="Arial, sans-serif", color="black"),
-            # plot_bgcolor="black",  # Цвет фона графика
-        )
+            # Создаем фигуру для гистограммы
+            fig = px.bar(
+                y=shop_names,
+                x=sum_sales_quantity,
+                title=f"Продажи в ₽. по {products_name}. Топ {sorted_sales[1]}.Начало/Окончание периода - {since[0:10]}/{until[0:10]}",
+                labels={"y": "Магазин", "x": "Сумма продаж"},
+                # Цвет фона графика
+                # Дополнительные настройки могут быть добавлены по вашему усмотрению
+            )
+            # Настройки внешнего вида графика
+            font_size = 24  # Задаем начальный размер шрифта
 
-        # Добавляем аннотации с суммами продаж
-        for i, value in enumerate(sum_sales_quantity):
-            fig.add_annotation(
-                x=value,
-                y=shop_names[i],
-                text=f"{value:,}",  # Форматируем число с разделителями тысяч
-                showarrow=True,
-                arrowhead=2,
-                arrowcolor="black",
-                ax=-40,
-                ay=0,
+            pprint(font_size)
+            # Настройки внешнего вида графика
+            fig.update_layout(
+                font=dict(size=font_size, family="Arial, sans-serif", color="black"),
+                # plot_bgcolor="black",  # Цвет фона графика
             )
 
-        # Устанавливаем ориентацию осей
-        fig.update_xaxes(title="Сумма продаж")
-        fig.update_yaxes(title="Магазин", autorange="reversed")  # Разворачиваем ось Y
+            # Добавляем аннотации с суммами продаж
+            for i, value in enumerate(sum_sales_quantity):
+                fig.add_annotation(
+                    x=value,
+                    y=shop_names[i],
+                    text=f"{value:,}",  # Форматируем число с разделителями тысяч
+                    showarrow=True,
+                    arrowhead=2,
+                    arrowcolor="black",
+                    ax=40,
+                    ay=0,
+                )
 
-        # Сохраняем гистограмму в формате PNG в объект BytesIO
-        image_buffer = io.BytesIO()
+            # Устанавливаем ориентацию осей
+            fig.update_xaxes(title=f"Сумма продаж {sum_sales_quantity_total} ₽.")
 
-        fig.write_image(image_buffer, format="png", width=1400, height=2000)
+            fig.update_yaxes(
+                title=f"Магазин {shop_name}", autorange="reversed"
+            )  # Разворачиваем ось Y
 
-        # Очищаем буфер изображения и перемещаем указатель в начало
-        image_buffer.seek(0)
+            # Сохраняем гистограмму в формате PNG в объект BytesIO
+            image_buffer = io.BytesIO()
+
+            target_width = 1700
+            # target_height = 2000
+            target_height = len(shop_names) * 54
+
+            # Динамический расчет оптимальной ширины и высоты на основе количества магазинов
+            dynamic_aspect_ratio = (
+                len(shop_names) / 70
+            )  # Пример: корректируйте это значение по своему усмотрению
+            optimal_width = min(target_width, target_height / dynamic_aspect_ratio)
+            optimal_height = min(target_height, target_width * target_height)
+
+            # Сохраняем гистограмму в формате PNG с оптимальным разрешением
+            fig.write_image(
+                image_buffer, format="png", width=optimal_width, height=optimal_height
+            )
+
+            # Очищаем буфер изображения и перемещаем указатель в начало
+            image_buffer.seek(0)
         # Вычисляем общую сумму продаж
         total_sales = sum(sorted_sales_data.values())
 
@@ -330,78 +368,207 @@ def generate(session: Session):
                     else:
                         sales_by_product[commodity_name] = quantity
 
-        # Сортируем словарь по убыванию количества продаж
-        sorted_sales = dict(
+        # Сортируем словарь с данными о продажах
+        sorted_sales_data = dict(
             OrderedDict(sorted(sales_by_product.items(), key=lambda t: -t[1]))
         )
 
-        # Предположим, у вас есть данные в формате, аналогичном sorted_sales
-        # sorted_sales = {"Магазин1": сумма1, "Магазин2": сумма2, ...}
+        # Сортируем словарь по убыванию количества продаж
+        sorted_sales = get_top_n_sales(sales_by_product)
 
-        # Извлекаем названия магазина и суммы продаж
-        shop_names = list(sorted_sales.keys())
-        sum_sales_quantity = list(sorted_sales.values())
+        if len(sorted_sales[0]) > 0:
 
-        # Создаем фигуру для гистограммы
-        fig = px.bar(
-            y=shop_names,
-            x=sum_sales_quantity,
-            title="Продажи по магазинам в шт.",
-            labels={"y": "Магазин", "x": "Сумма продаж"},
-            # Цвет фона графика
-            # Дополнительные настройки могут быть добавлены по вашему усмотрению
-        )
+            # Извлекаем названия магазина и суммы продаж
+            shop_names = list(sorted_sales[0].keys())
+            sum_sales_quantity = list(sorted_sales[0].values())
+            sum_sales_quantity_total = sum(sorted_sales[0].values())
 
-        # Настройки внешнего вида графика
-        fig.update_layout(
-            font=dict(size=24, family="Arial, sans-serif", color="black"),
-            # plot_bgcolor="black",  # Цвет фона графика
-        )
+            # Создаем фигуру для гистограммы
+            fig = px.bar(
+                y=shop_names,
+                x=sum_sales_quantity,
+                title=f"Продажи в шт. по {products_name}. Топ {sorted_sales[1]}.Начало/Окончание периода - {since[0:10]}/{until[0:10]}",
+                labels={"y": "Магазин", "x": "Сумма продаж"},
+                # Цвет фона графика
+                # Дополнительные настройки могут быть добавлены по вашему усмотрению
+            )
+            # Настройки внешнего вида графика
+            font_size = 24  # Задаем начальный размер шрифта
 
-        # Добавляем аннотации с суммами продаж
-        for i, value in enumerate(sum_sales_quantity):
-            fig.add_annotation(
-                x=value,
-                y=shop_names[i],
-                text=f"{value:,}",  # Форматируем число с разделителями тысяч
-                showarrow=True,
-                arrowhead=2,
-                arrowcolor="black",
-                ax=-40,
-                ay=0,
+            pprint(font_size)
+            # Настройки внешнего вида графика
+            fig.update_layout(
+                font=dict(size=font_size, family="Arial, sans-serif", color="black"),
+                # plot_bgcolor="black",  # Цвет фона графика
             )
 
-        # Устанавливаем ориентацию осей
-        fig.update_xaxes(title="Сумма продаж")
-        fig.update_yaxes(title="Магазин", autorange="reversed")  # Разворачиваем ось Y
+            # Добавляем аннотации с суммами продаж
+            for i, value in enumerate(sum_sales_quantity):
+                fig.add_annotation(
+                    x=value,
+                    y=shop_names[i],
+                    text=f"{value:,}",  # Форматируем число с разделителями тысяч
+                    showarrow=True,
+                    arrowhead=2,
+                    arrowcolor="black",
+                    ax=40,
+                    ay=0,
+                )
 
-        # Сохраняем гистограмму в формате PNG в объект BytesIO
-        image_buffer = io.BytesIO()
+            # Устанавливаем ориентацию осей
+            fig.update_xaxes(title=f"Сумма продаж {sum_sales_quantity_total}шт.")
 
-        fig.write_image(image_buffer, format="png", width=1400, height=2000)
+            fig.update_yaxes(
+                title=f"Магазин {shop_name}", autorange="reversed"
+            )  # Разворачиваем ось Y
 
-        # Очищаем буфер изображения и перемещаем указатель в начало
-        image_buffer.seek(0)
+            # Сохраняем гистограмму в формате PNG в объект BytesIO
+            image_buffer = io.BytesIO()
 
-        # Вычисляем общее количество продаж
-        total_quantity = sum(sorted_sales.values())
+            target_width = 1700
+            # target_height = 2000
+            target_height = len(shop_names) * 54
 
-        # Создаем словарь для вывода результатов отчета
-        report_data = {}
+            # Динамический расчет оптимальной ширины и высоты на основе количества магазинов
+            dynamic_aspect_ratio = (
+                len(shop_names) / 70
+            )  # Пример: корректируйте это значение по своему усмотрению
+            optimal_width = min(target_width, target_height / dynamic_aspect_ratio)
+            optimal_height = min(target_height, target_width * target_height)
 
-        # Добавляем данные о продажах в словарь результатов
-        for product_name, quantity in sorted_sales.items():
-            report_data.update({product_name: f"{quantity} шт."})
+            # Сохраняем гистограмму в формате PNG с оптимальным разрешением
+            fig.write_image(
+                image_buffer, format="png", width=optimal_width, height=optimal_height
+            )
 
-        # Добавляем общее количество продаж в результаты
-        report_data.update({"Итого:": f"{total_quantity} шт."})
+            # Очищаем буфер изображения и перемещаем указатель в начало
+            image_buffer.seek(0)
 
-        report_data.update(
-            {
-                "Магазин:": shop_name,
-                "Начало периода:": since[0:10],
-                "Окончание периода:": until[0:10],
-            }
-        )
+            # Вычисляем общее количество продаж
+            total_quantity = sum(sorted_sales[0].values())
 
-        return [report_data], image_buffer
+            # Создаем словарь для вывода результатов отчета
+            report_data = {}
+
+            # Добавляем данные о продажах в словарь результатов
+            for product_name, quantity in sorted_sales_data.items():
+                report_data.update({product_name: f"{quantity} шт."})
+
+            # Добавляем общее количество продаж в результаты
+            report_data.update({"Итого:": f"{total_quantity} шт."})
+
+            report_data.update(
+                {
+                    "Магазин:": shop_name,
+                    "Начало периода:": since[0:10],
+                    "Окончание периода:": until[0:10],
+                }
+            )
+
+            return [report_data], image_buffer
+        else:
+            return [
+                {
+                    "Магазин:": shop_name,
+                    "Начало периода:": since[0:10],
+                    "Окончание периода:": until[0:10],
+                    "Итого:": " 0 шт.",
+                }
+            ]
+
+
+# # Извлекаем названия магазина и суммы продаж
+#         shop_names = list(sorted_sales.keys())
+#         sum_sales_quantity = list(sorted_sales.values())
+#         sum_sales_quantity_total = sum(sorted_sales.values())
+
+#         pprint(len(list(sorted_sales.keys())))
+
+#         # Определите количество строк в каждом подграфике
+#         rows_per_subplot = 50
+
+#         # Определите количество подграфиков, необходимых для отображения всех данных
+#         num_subplots = math.ceil(len(shop_names) / rows_per_subplot)
+
+#         # Создайте подграфики с использованием subplot
+#         fig = sp.make_subplots(
+#             rows=num_subplots,
+#             cols=1,
+#             subplot_titles=[f"Subplot {i+1}" for i in range(num_subplots)],
+#             shared_xaxes=True,
+#             vertical_spacing=0.05,
+#         )
+
+#         # Добавляем бары в каждый подграфик
+#         for i in range(num_subplots):
+#             start_idx = i * rows_per_subplot
+#             end_idx = min((i + 1) * rows_per_subplot, len(shop_names))
+
+#             subplot_data = go.Bar(
+#                 y=shop_names[start_idx:end_idx],
+#                 x=sum_sales_quantity[start_idx:end_idx],
+#                 orientation="h",
+#                 text=[f"{value:,}" for value in sum_sales_quantity[start_idx:end_idx]],
+#                 hoverinfo="text",
+#             )
+
+#             fig.add_trace(subplot_data, row=i + 1, col=1)
+
+#         # Настройки внешнего вида графика
+#         font_size = 24  # Задаем начальный размер шрифта
+
+#         # Изменяем размер шрифта в зависимости от количества магазинов
+#         if len(shop_names) > 50 and len(shop_names) < 90:
+#             font_size = 18
+#         elif len(shop_names) >= 90 and len(shop_names) < 130:
+#             font_size = 14
+#         elif len(shop_names) >= 130:
+#             font_size = 10
+
+#         # Настройки внешнего вида графика
+#         fig.update_layout(
+#             font=dict(size=font_size, family="Arial, sans-serif", color="black"),
+#             title_text=f"Продажи в шт. по {products_name}. Начало/Окончание периода - {since[0:10]}/{until[0:10]}",
+#             showlegend=False,
+#             height=1000 * num_subplots,  # Высота графика, чтобы охватить все строки
+#         )
+
+#         # Добавляем аннотации с суммами продаж
+#         for i, value in enumerate(sum_sales_quantity):
+#             fig.add_annotation(
+#                 x=value,
+#                 y=shop_names[i],
+#                 text=f"{value:,}",  # Форматируем число с разделителями тысяч
+#                 showarrow=True,
+#                 arrowhead=2,
+#                 arrowcolor="black",
+#                 # font=dict(color="black", size=12),  # Цвет и размер текста аннотации
+#                 ax=40,
+#                 ay=0,
+#             )
+
+#         # Устанавливаем ориентацию осей
+#         fig.update_xaxes(title=f"Сумма продаж {sum_sales_quantity_total}шт.")
+
+#         fig.update_yaxes(
+#             title=f"Магазин {shop_name}", autorange="reversed"
+#         )  # Разворачиваем ось Y
+
+#         # Сохраняем гистограмму в формате PNG в объект BytesIO
+#         image_buffer = io.BytesIO()
+
+#         target_width = 1200
+#         target_height = 2000
+
+#         # Вычисляем оптимальное разрешение, сохраняя соотношение сторон
+#         aspect_ratio = target_width / target_height
+#         optimal_width = min(target_width, target_height * aspect_ratio)
+#         optimal_height = min(target_height, target_width / aspect_ratio)
+
+#         # Сохраняем гистограмму в формате PNG с оптимальным разрешением
+#         fig.write_image(
+#             image_buffer, format="png", width=optimal_width, height=optimal_height
+#         )
+
+#         # Очищаем буфер изображения и перемещаем указатель в начало
+#         image_buffer.seek(0)

@@ -7,7 +7,7 @@
 from bd.model import Session, Shop, Products, Documents
 from arrow import utcnow, get
 from pprint import pprint
-from .util import get_shops_user_id
+from .util import get_shops_user_id, get_top_n_sales
 from collections import OrderedDict
 from io import BytesIO
 import plotly.express as px
@@ -86,48 +86,75 @@ def generate(session: Session):
 
     _dict = dict(OrderedDict(sorted(_dict.items(), key=lambda t: -t[1])))
 
-    products_names = list(_dict.keys())
-    sum_sales_quantity = list(_dict.values())
+    # Сортируем словарь по убыванию количества продаж
+    sorted_sales = get_top_n_sales(_dict)
 
-    # Создаем фигуру для гистограммы
-    fig = px.bar(
-        y=products_names,
-        x=sum_sales_quantity,
-        title="Продажи по Электро в шт.",
-        labels={"y": "Магазин", "x": "Сумма продаж"},
-        # Цвет фона графика
-        # Дополнительные настройки могут быть добавлены по вашему усмотрению
-    )
+    if len(sorted_sales[0]) > 0:
 
-    # Настройки внешнего вида графика
-    fig.update_layout(
-        font=dict(size=24, family="Arial, sans-serif", color="black"),
-        # plot_bgcolor="black",  # Цвет фона графика
-    )
+        # Извлекаем названия магазина и суммы продаж
+        shop_names = list(sorted_sales[0].keys())
+        sum_sales_quantity = list(sorted_sales[0].values())
+        sum_sales_quantity_total = sum(sorted_sales[0].values())
 
-    # Добавляем аннотации с суммами продаж
-    for i, value in enumerate(sum_sales_quantity):
-        fig.add_annotation(
-            x=value,
-            y=products_names[i],
-            text=f"{value:,}",  # Форматируем число с разделителями тысяч
-            showarrow=True,
-            arrowhead=2,
-            arrowcolor="black",
-            ax=-40,
-            ay=0,
+        # Создаем фигуру для гистограммы
+        fig = px.bar(
+            y=shop_names,
+            x=sum_sales_quantity,
+            title=f"Продажи в шт. . Топ {sorted_sales[1]}.Начало/Окончание периода - {since[0:10]}/{until[0:10]}",
+            labels={"y": "Магазин", "x": "Сумма продаж"},
+            # Цвет фона графика
+            # Дополнительные настройки могут быть добавлены по вашему усмотрению
+        )
+        # Настройки внешнего вида графика
+        font_size = 24  # Задаем начальный размер шрифта
+
+        pprint(font_size)
+        # Настройки внешнего вида графика
+        fig.update_layout(
+            font=dict(size=font_size, family="Arial, sans-serif", color="black"),
+            # plot_bgcolor="black",  # Цвет фона графика
         )
 
-    # Устанавливаем ориентацию осей
-    fig.update_xaxes(title="Сумма продаж")
-    fig.update_yaxes(title="Магазин", autorange="reversed")  # Разворачиваем ось Y
+        # Добавляем аннотации с суммами продаж
+        for i, value in enumerate(sum_sales_quantity):
+            fig.add_annotation(
+                x=value,
+                y=shop_names[i],
+                text=f"{value:,}",  # Форматируем число с разделителями тысяч
+                showarrow=True,
+                arrowhead=2,
+                arrowcolor="black",
+                ax=40,
+                ay=0,
+            )
 
-    # Сохраняем гистограмму в формате PNG в объект BytesIO
-    image_buffer = io.BytesIO()
+        # Устанавливаем ориентацию осей
+        fig.update_xaxes(title=f"Сумма продаж {sum_sales_quantity_total}шт.")
 
-    fig.write_image(image_buffer, format="png", width=1400, height=2000)
+        fig.update_yaxes(
+            title=f"Магазин {shop_name}", autorange="reversed"
+        )  # Разворачиваем ось Y
 
-    # Очищаем буфер изображения и перемещаем указатель в начало
-    image_buffer.seek(0)
+        # Сохраняем гистограмму в формате PNG в объект BytesIO
+        image_buffer = io.BytesIO()
+
+        target_width = 1700
+        # target_height = 2000
+        target_height = max(700, len(shop_names) * 54)
+
+        # Динамический расчет оптимальной ширины и высоты на основе количества магазинов
+        dynamic_aspect_ratio = (
+            len(shop_names) / 70
+        )  # Пример: корректируйте это значение по своему усмотрению
+        optimal_width = min(target_width, target_height / dynamic_aspect_ratio)
+        optimal_height = min(target_height, target_width * target_height)
+
+        # Сохраняем гистограмму в формате PNG с оптимальным разрешением
+        fig.write_image(
+            image_buffer, format="png", width=optimal_width, height=optimal_height
+        )
+
+        # Очищаем буфер изображения и перемещаем указатель в начало
+        image_buffer.seek(0)
 
     return result, image_buffer
