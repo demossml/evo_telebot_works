@@ -238,6 +238,8 @@ async def handle_ready_state(bot, message, session, next):
     # Генерируем результат на основе выбранного отчета
     result = report.generate(session)
 
+    print(report.mime)
+
     # Если тип отчета - изображение
     if report.mime == "image":
         # Если есть файлы изображений, отправляем их
@@ -283,7 +285,6 @@ async def handle_ready_state(bot, message, session, next):
                     for m in messages
                 ]
         else:
-            print("result")
 
             # Если нет файлов изображений, только отправляем сообщения
             messages = format_message_list4(result[0])
@@ -291,6 +292,14 @@ async def handle_ready_state(bot, message, session, next):
                 await bot.send_message(message.chat_id, m, parse_mode="MarkdownV2")
                 for m in messages
             ]
+    else:
+        print(result)
+        # Если нет файлов изображений, только отправляем сообщения
+        messages = format_message_list4(result)
+        [
+            await bot.send_message(message.chat_id, m, parse_mode="MarkdownV2")
+            for m in messages
+        ]
     # Переход в состояние INPUT(Обработка начального состояния)
     session.state = State.INIT
 
