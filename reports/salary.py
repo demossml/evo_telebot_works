@@ -897,6 +897,7 @@ def generate(session: Session):
         period = get_period_day(session)
         since = period["since"]
         until = period["until"]
+        pprint(until)
 
         intervals = get_intervals(since, until, "days", 1)
         for since_, until_ in intervals:
@@ -909,6 +910,7 @@ def generate(session: Session):
             )
             # pprint(documents_open_session)
             for doc in documents_open_session:
+
                 # Название магазина (shop.name)
                 shop = Shop.objects(uuid=doc["shop_id"]).only("name").first()
                 sho_id = doc["shop_id"]
@@ -973,6 +975,7 @@ def generate(session: Session):
         ]
 
         user = Employees.objects(lastName=employee_last_name).only("name").first()
+        pprint(user)
 
         # Получение периода из сессии
         period = get_period(session)
@@ -996,6 +999,7 @@ def generate(session: Session):
             ).first()
             # Если найдена открытая сессия документов
             if documents_open_session:
+
                 # Получаем магазин, связанный с этим документом
                 shop = (
                     Shop.objects(uuid=documents_open_session.shop_id)
@@ -1193,6 +1197,20 @@ def generate(session: Session):
                         if trans["x_type"] == "REGISTER_POSITION"
                         and trans["commodityUuid"] in products_uuid
                     )
+                    # sum_sales = sum(
+                    #     (
+                    #         (
+                    #             decimal.Decimal(trans["sum"])
+                    #             if isinstance(trans["sum"], (int, float))
+                    #             else decimal.Decimal(0)
+                    #         )
+                    #         for doc in documents_sale
+                    #         for trans in doc["transactions"]
+                    #         if trans["x_type"] == "REGISTER_POSITION"
+                    #         and trans["commodityUuid"] in products_uuid
+                    #     )
+                    # )
+                    pprint(sum_sales)
 
                     # Вычисление зарплаты за день
                     salary_total_day = decimal.Decimal(sum_sales) / 100 * 5

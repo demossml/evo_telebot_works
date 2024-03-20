@@ -319,6 +319,70 @@ def get_shops_in(session: Session, _in=[], id_=[]) -> object:
     return Shop.objects(uuid__in=uuid)
 
 
+def period_to_date_(
+    session: Session,
+) -> utcnow:
+    """
+    :param period: строка, представляющая период времени ("day", "week", "fortnight", "month", "two months", "6 months", "12 months", "24 months", "48 months")
+    :return: строка с датой и временем в ISO формате, отстоящая на указанный период времени назад от текущего времени в UTC с временем 03:00.
+    """
+    period = session.params["inputs"]["0"]["period"]
+    documents_open_session = Documents.objects(
+        __raw__={
+            # "openUserUuid": {"$in": user_uuid},
+            "x_type": "OPEN_SESSION",
+        }
+    ).first()
+    # Проверяем значение параметра "period" и выполняем соответствующее смещение времени
+    if period == "day":
+        return utcnow().to("local").replace(hour=3, minute=00).isoformat()
+    if period == "week":
+        return (
+            utcnow().to("local").shift(days=-7).replace(hour=3, minute=00).isoformat()
+        )
+    if period == "fortnight":
+        return (
+            utcnow().to("local").shift(days=-14).replace(hour=3, minute=00).isoformat()
+        )
+    if period == "month":
+        return (
+            utcnow().to("local").shift(months=-1).replace(hour=3, minute=00).isoformat()
+        )
+    if period == "two months":
+        return (
+            utcnow().to("local").shift(months=-2).replace(hour=3, minute=00).isoformat()
+        )
+    if period == "6 months":
+        return (
+            utcnow().to("local").shift(months=-6).replace(hour=3, minute=00).isoformat()
+        )
+    if period == "12 months":
+        return (
+            utcnow()
+            .to("local")
+            .shift(months=-12)
+            .replace(hour=3, minute=00)
+            .isoformat()
+        )
+    if period == "24 months":
+        return (
+            utcnow()
+            .to("local")
+            .shift(months=-24)
+            .replace(hour=3, minute=00)
+            .isoformat()
+        )
+    if period == "48 months":
+        return (
+            utcnow()
+            .to("local")
+            .shift(months=-48)
+            .replace(hour=3, minute=00)
+            .isoformat()
+        )
+    raise Exception("Period is not supported")
+
+
 def period_to_date(period: str) -> utcnow:
     """
     :param period: строка, представляющая период времени ("day", "week", "fortnight", "month", "two months", "6 months", "12 months", "24 months", "48 months")
@@ -645,10 +709,10 @@ def get_period_day(session: Session) -> dict[str:str]:
         # Если период не "day", то возвращаем весь день (от 00:01 до 23:59) указанной даты
         return {
             "since": get(session.params["inputs"]["0"]["openDate"])
-            .replace(hour=0, minute=1)
+            .floor("day")
             .isoformat(),
             "until": get(session.params["inputs"]["0"]["openDate"])
-            .replace(hour=23, minute=59)
+            .ceil("day")
             .isoformat(),
         }
 
@@ -660,7 +724,7 @@ def get_period_order(session: Session) -> dict[str:str]:
     """
     # Получаем данные о периоде заказа
     data = get(period_to_date(session.params["inputs"]["0"]["period"]))
-    pprint(data)
+    # pprint(data)
     if session.params["inputs"]["0"]["period"] == "day":
         # Строим диапазон "since" с началом дня и концом дня, сдвинутыми на 7 дней назад.
         return {
@@ -861,7 +925,7 @@ def generate_plan():
                                 sum_sell += trans["sum"]
             else:
                 sum_sell = 0
-            pprint(sum_sell)
+            # pprint(sum_sell)
 
             _day = 4
             # Обновляем словарь суммами продаж
@@ -1294,12 +1358,18 @@ def get_total_salary(
     result = {}
     # Получаем информацию о заработной плате с помощью различных функций
     result.update(get_aks_salary(shop_id, since_, until_))
+    pprint(1)
     result.update(get_mot_salary(shop_id, since_, until_))
+    pprint(2)
     result.update(get_plan_bonus(shop_id, since_, until_))
+    pprint(3)
     result.update(get_salary(shop_id, until_))
+    pprint(4)
     result.update(get_surcharge(employee_uuid, until_))
+    pprint(5)
     # Добавляем дату окончания периода в результат (обрезанную до дня)
-    result.update({"closeDate": until_[:10]})
+    result.update({"closeDate": until_})
+    pprint(7)
     # Вычисляем общую заработную плату
     total_salary = (
         result["bonus_accessory"]
@@ -1368,7 +1438,7 @@ def cash() -> int:
 
     if cash:
         for doc in cash:
-            pprint(doc["cash"])
+            # pprint(doc["cash"])
             if doc["x_type"] == "CASH_INCOME":
                 sum_ += int(doc["cash"])
 
@@ -1579,7 +1649,7 @@ def generate_plan_():
     for k, v in _dict.items():
         params = {"closeDate": utcnow().isoformat(), "shop_id": k}
 
-        params["sum"] = max(int(3500), v)
+        params["sum"] = max(int(5200), v)
 
         Plan.objects(closeDate=utcnow().isoformat()).update(**params, upsert=True)
 
@@ -1604,7 +1674,7 @@ def get_plan(shop: str) -> object:
     if plan:
         return plan
     else:
-        pprint("generate_plan_")
+        # pprint("generate_plan_")
         generate_plan_()
         return (
             Plan.objects(
@@ -2058,7 +2128,7 @@ def generate_plan_parallel(shops, start_date, end_date):
         key=lambda x: (list(x.keys())[0], x[list(x.keys())[0]].split(" | ")[1]),
     )
 
-    pprint(sorted_result_data)
+    # pprint(sorted_result_data)
     return sorted_result_data
 
 
