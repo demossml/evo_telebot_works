@@ -941,7 +941,7 @@ def generate_plan():
     for k, v in _dict.items():
         params = {"closeDate": utcnow().isoformat(), "shop_id": k}
         # Выставляем минимальное значение 3500
-        params["sum"] = max(int(3500), v)
+        params["sum"] = max(int(5200), v)
 
         # print(params)
         Plan.objects(closeDate=utcnow().isoformat()).update(**params, upsert=True)
