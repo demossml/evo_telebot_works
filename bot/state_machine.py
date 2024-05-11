@@ -4,6 +4,7 @@ import telebot
 from telebot import types
 from arrow import utcnow
 from io import BytesIO
+import sys
 
 
 # Импорт моделей и функций из других модулей
@@ -36,14 +37,18 @@ async def handle_message(bot: telebot.TeleBot, message: Message, session: Sessio
     try:
         # Вызов соответствующего обработчика состояния на основе состояния сессии
         await states[session.state](bot, message, session, next)
-    except Exception as ex:
-        print(ex)
+    except Exception as e:
+        print(e)
         # raise ex
         # Обработка исключений и уведомление пользователя
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         btn_address = types.KeyboardButton("Меню")
         markup.add(btn_address)
-        await bot.send_message(message.chat_id, "Произошла ошибка", reply_markup=markup)
+        await bot.send_message(
+            message.chat_id,
+            f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}",
+            reply_markup=markup,
+        )
         session.state = State.INIT
         next()
 

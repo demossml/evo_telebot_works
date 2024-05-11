@@ -1,4 +1,4 @@
-from bd.model import Shop, Products, Documents, Session, Employees
+from bd.model import Shop, Products, Documents, Session, Employees, GroupUuidAks
 from .util import (
     get_intervals,
     period_to_date,
@@ -18,6 +18,7 @@ from .util import (
 
 from arrow import utcnow, get
 from pprint import pprint
+import sys
 
 
 class ReportsMarriageInput:
@@ -331,8 +332,37 @@ class ReportGroupUuidAccessoryInput:
                 "name": "Просмотр групп аксессуаров ➡️".upper(),
             },
             {
+                "id": "change_group_uuid_accessory",
+                "name": "Изменить группы аксессуаров ➡️".upper(),
+            },
+            {
                 "id": "assigning_group_uuid_accessory",
                 "name": "Назначить группы аксессуаров ➡️".upper(),
+            },
+        )
+        return output
+
+
+class ChangeGroupUuidAccessoryInput:
+    """
+    Добавление или удаление групп аксессуаров
+    """
+
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        pprint("ChangesGroupUuidAccessoryInput")
+
+        output = (
+            {
+                "id": "add_group_uuid_accessory",
+                "name": "Добавить группы аксесс. ➡️".upper(),
+            },
+            {
+                "id": "delete_group_uuid_accessory",
+                "name": "Удалить группу(ы) аксесс. ➡️".upper(),
             },
         )
         return output
@@ -736,6 +766,57 @@ class GroupsInput:
                     uuids.append(item["uuid"])
 
         return output
+
+
+class GroupsDeleteInput:
+    try:
+        pprint("GroupsDelitInput")
+        """
+        Группы продуктов
+        """
+        name = "Магазин"
+        desc = "Выберите группу(ы)".upper()
+
+        type = "SELECT"
+
+        def get_options(self, session: Session):
+            output = []
+
+            shop_id = get_shops_uuid_user_id(session)
+
+            # Получаем последние документы по групповым UUID с типом "MOTIVATION_PARENT_UUID"
+            documents = (
+                GroupUuidAks.objects(
+                    shop_id=shop_id[0], x_type="MOTIVATION_PARENT_UUID"
+                )
+                .order_by("-closeDate")
+                .first()
+            )
+
+            # Получаем продукты, относящиеся к parentUuid
+            products = Products.objects(group=True, uuid__in=documents.parentUuids)
+
+            room = session["room"]
+            uuid = []
+            # содоет ключи в session.params["inputs"]
+            for i in range(int(session["room"]) + 1):
+                # если в 'uuid' есть в session.params["inputs"][str(i)]
+                if "parentUuid" in session.params["inputs"][str(i)]:
+                    # если 'uuid' нет в словаре с ключем i в списке uuid
+                    if session.params["inputs"][str(i)]["parentUuid"] not in uuid:
+                        # добовляет 'uuid' в список uuid
+                        uuid.append(session.params["inputs"][str(i)]["parentUuid"])
+            uuids = []
+            for item in products:
+                if item["uuid"] not in uuid:
+                    if item["uuid"] not in uuids:
+                        output.append({"id": item["uuid"], "name": item["name"]})
+                        uuids.append(item["uuid"])
+
+            return output
+
+    except Exception as e:
+        print(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
 
 
 class ProductsInput:

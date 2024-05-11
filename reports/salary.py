@@ -36,6 +36,8 @@ from .inputs import (
     PeriodDateInput,
     OpenDatePastInput,
     CloseDatePastInput,
+    ChangeGroupUuidAccessoryInput,
+    GroupsDeleteInput,
 )
 
 from arrow import utcnow, get
@@ -43,6 +45,7 @@ import decimal
 import concurrent.futures
 from collections import defaultdict
 from pprint import pprint
+import sys
 
 
 name = "🛒 Зарплата ➡️".upper()
@@ -75,191 +78,223 @@ class EmployeesSurchargeInput:
 
 
 def get_inputs(session: Session):
-    # Получаем входные данные из сессии
-    inputs = session.params.get("inputs", {}).get("0", {})
-    # pprint(inputs)
+    try:
+        # Получаем входные данные из сессии
+        inputs = session.params.get("inputs", {}).get("0", {})
+        # pprint(inputs)
 
-    if not inputs:
-        return {"reports": ReportSalaryInput}
+        if not inputs:
+            return {"reports": ReportSalaryInput}
 
-    # Извлекаем период и тип отчета из входных данных
-    period = inputs.get("period", None)
-    close_date = inputs.get("closeDate", None)
-    report_type = inputs.get("reports", None)
+        # Извлекаем период и тип отчета из входных данных
+        period = inputs.get("period", None)
+        close_date = inputs.get("closeDate", None)
+        report_type = inputs.get("reports", None)
 
-    # Обработка вводных данных в зависимости от периода
-    if period in ("day", "week", "fortnight", "month", "two months") and not close_date:
-        # Если период - день, возвращаем пустой ввод, в противном случае возвращаем ввод с датами
-        return (
-            {"openDate": OpenDatePastInput, "closeDate": CloseDatePastInput}
-            if period != "day"
-            else {}
-        )
-
-    elif report_type == "setting":
-        # Обработка настроек отчета о зарплате
-        report_type_salary_setting = inputs.get("reports_salary_setting", None)
-
-        if not report_type_salary_setting:
-            # Если тип настройки не указан, возвращаем ввод для настройки отчета о зарплате
-            return {
-                "reports_salary_setting": ReportsSalarySettingInput,
-            }
-        # Добавление и просмотр групп аксессуаров
-        elif report_type_salary_setting == "group_uuid_accessory":
-
-            report_type_accessor_setting = inputs.get(
-                "report_type_accessor_setting", None
+        # Обработка вводных данных в зависимости от периода
+        if (
+            period in ("day", "week", "fortnight", "month", "two months")
+            and not close_date
+        ):
+            # Если период - день, возвращаем пустой ввод, в противном случае возвращаем ввод с датами
+            return (
+                {"openDate": OpenDatePastInput, "closeDate": CloseDatePastInput}
+                if period != "day"
+                else {}
             )
 
-            if not report_type_accessor_setting:
-                # Ввод для добавления и просмотра групп аксессуаров
-                return {"report_type_accessor_setting": ReportGroupUuidAccessoryInput}
+        elif report_type == "setting":
+            # Обработка настроек отчета о зарплате
+            report_type_salary_setting = inputs.get("reports_salary_setting", None)
 
-            # Назначить группы аксессуаров
-            elif report_type_accessor_setting == "assigning_group_uuid_accessory":
-                if period:
-                    # Ввод для назначения групп аксессуаров
-                    return {
-                        "parentUuid": GroupsInput,
-                        "docStatus": DocStatusInput,
-                    }
-                else:
-                    return {
-                        "period": PeriodDateInput,
-                    }
-            # Просмотр группы аксессуаров
-            elif report_type_accessor_setting == "get_group_uuid_accessory":
-                # Ввод для получения групп аксессуаров
+            if not report_type_salary_setting:
+                # Если тип настройки не указан, возвращаем ввод для настройки отчета о зарплате
                 return {
-                    "shop": ShopInput,
+                    "reports_salary_setting": ReportsSalarySettingInput,
                 }
-        # Добавление и просмотр мотивационого товара
-        elif report_type_salary_setting == "motivation_uuid_accessory":
-            report_type_motivation_uuid_setting = inputs.get(
-                "report_type_motivation_uuid_setting", None
-            )
+            # Добавление и просмотр групп аксессуаров
+            elif report_type_salary_setting == "group_uuid_accessory":
 
-            if not report_type_motivation_uuid_setting:
-                # Ввод для добавления и просмотра мотивационного товараы
-                return {
-                    "report_type_motivation_uuid_setting": ReportMotivationUuidInput
-                }
+                report_type_accessor_setting = inputs.get(
+                    "report_type_accessor_setting", None
+                )
 
-            elif report_type_motivation_uuid_setting == "product_ext_motivation":
-                if period:
-                    if inputs.get("parentUuid", None):
-                        # отдает список импутов
+                if not report_type_accessor_setting:
+                    # Ввод для добавления и просмотра групп аксессуаров
+                    return {
+                        "report_type_accessor_setting": ReportGroupUuidAccessoryInput
+                    }
+
+                # Назначить группы аксессуаров
+                elif report_type_accessor_setting == "assigning_group_uuid_accessory":
+                    if period:
+                        # Ввод для назначения групп аксессуаров
                         return {
-                            "uuid": ProductInput,
-                            "motivation": MotivationUuidInput,
+                            "parentUuid": GroupsInput,
                             "docStatus": DocStatusInput,
                         }
                     else:
-                        return {"parentUuid": GroupInput}
-                else:
-                    return {
-                        "period": PeriodDateInput,
-                    }
-            elif report_type_motivation_uuid_setting == "get_product_ext_motivation":
-                return {
-                    "shop": ShopInput,
-                }
-        # Назначение и просмотр окладов на ТТ
-        elif report_type_salary_setting == "assigning_salary":
+                        return {
+                            "period": PeriodDateInput,
+                        }
+                # Изьенить группы аксессуаров
+                elif report_type_accessor_setting == "change_group_uuid_accessory":
+                    changes = inputs.get("change", None)
 
-            report_type_assign_setting = inputs.get("report_type_assign_setting", None)
+                    if not changes:
+                        return {"change": ChangeGroupUuidAccessoryInput}
 
-            if not report_type_assign_setting:
-                # Ввод для назначения окладов
-                return {"report_type_assign_setting": ReportАssignSalaryInput}
+                    elif changes == "add_group_uuid_accessory":
+                        # Ввод для назначения групп аксессуаров
+                        return {
+                            "parentUuid": GroupsInput,
+                            "docStatus": DocStatusInput,
+                        }
+                    elif changes == "delete_group_uuid_accessory":
+                        # Ввод для назначения групп аксессуаров
+                        return {
+                            "parentUuid": GroupsDeleteInput,
+                            "docStatus": DocStatusInput,
+                        }
 
-            elif report_type_assign_setting == "assigning_salary_":
-                if period:
-                    # Ввод для назначения окладов на ТТ
-                    return {
-                        "shop": ShopInput,
-                        "salary": SalaryInput,
-                        "docStatus": DocStatusInput,
-                    }
-                else:
-                    return {
-                        "period": PeriodDateInput,
-                    }
-            # Запрос назначенных окладов
-            elif report_type_assign_setting == "get_salary":
-                # Ввод для получения назначенных окладов
-                return {
-                    "shop": ShopInput,
-                }
-
-        elif report_type_salary_setting == "motivation":
-
-            report_type_motivation_setting = inputs.get(
-                "report_type_motivation_setting", None
-            )
-
-            if not report_type_motivation_setting:
-                return {"report_type_motivation_setting": ReportMotivationInput}
-
-            elif report_type_motivation_setting == "amount_of_motivation":
-                if period:
+                # Просмотр группы аксессуаров
+                elif report_type_accessor_setting == "get_group_uuid_accessory":
+                    # Ввод для получения групп аксессуаров
                     return {
                         "shop": ShopInput,
-                        "motivation": MotivationInput,
-                        "docStatus": DocStatusInput,
                     }
-                else:
+            # Добавление и просмотр мотивационого товара
+            elif report_type_salary_setting == "motivation_uuid_accessory":
+                report_type_motivation_uuid_setting = inputs.get(
+                    "report_type_motivation_uuid_setting", None
+                )
+
+                if not report_type_motivation_uuid_setting:
+                    # Ввод для добавления и просмотра мотивационного товараы
                     return {
-                        "period": PeriodDateInput,
+                        "report_type_motivation_uuid_setting": ReportMotivationUuidInput
                     }
-            # Запрос назначенной сум. за выпол. пл.
-            elif report_type_motivation_setting == "get_amount_of_motivation":
-                return {"shop": ShopInput}
 
-        elif report_type_salary_setting == "surcharge":
-
-            report_type_surcharge_setting = inputs.get(
-                "report_type_surcharge_setting", None
-            )
-
-            if not report_type_surcharge_setting:
-                # Ввод для настройки мотивации
-                return {"report_type_surcharge_setting": ReportSurchargeInput}
-
-            elif report_type_surcharge_setting == "assign_a_surcharge":
-                if period:
+                elif report_type_motivation_uuid_setting == "product_ext_motivation":
+                    if period:
+                        if inputs.get("parentUuid", None):
+                            # отдает список импутов
+                            return {
+                                "uuid": ProductInput,
+                                "motivation": MotivationUuidInput,
+                                "docStatus": DocStatusInput,
+                            }
+                        else:
+                            return {"parentUuid": GroupInput}
+                    else:
+                        return {
+                            "period": PeriodDateInput,
+                        }
+                elif (
+                    report_type_motivation_uuid_setting == "get_product_ext_motivation"
+                ):
                     return {
-                        "uuid": EmployeesInput,
-                        "surcharge": EmployeesSurchargeInput,
-                        "docStatus": DocStatusInput,
+                        "shop": ShopInput,
                     }
-                else:
+            # Назначение и просмотр окладов на ТТ
+            elif report_type_salary_setting == "assigning_salary":
+
+                report_type_assign_setting = inputs.get(
+                    "report_type_assign_setting", None
+                )
+
+                if not report_type_assign_setting:
+                    # Ввод для назначения окладов
+                    return {"report_type_assign_setting": ReportАssignSalaryInput}
+
+                elif report_type_assign_setting == "assigning_salary_":
+                    if period:
+                        # Ввод для назначения окладов на ТТ
+                        return {
+                            "shop": ShopInput,
+                            "salary": SalaryInput,
+                            "docStatus": DocStatusInput,
+                        }
+                    else:
+                        return {
+                            "period": PeriodDateInput,
+                        }
+                # Запрос назначенных окладов
+                elif report_type_assign_setting == "get_salary":
+                    # Ввод для получения назначенных окладов
                     return {
-                        "period": PeriodDateInput,
+                        "shop": ShopInput,
                     }
-            # Запрос назначенной суммы за выполнение плана
-            elif report_type_surcharge_setting == "get_surcharge":
-                return {
-                    "employee_uuid": EmployeesInput,
-                }
-    # Обработка различных типов отчетов о зарплате
-    elif report_type in (
-        "get_salary_aks",
-        "get_salary_plan_day",
-        "get_salary_day",
-        "get_salary_motivation_uuid",
-        "get_salary_total",
-    ):
-        # Ввод для получения данных о зарплате по определенному сотруднику и периоду
-        return {
-            "employee_uuid": EmployeesInput,
-            "period": PeriodDateInput,
-        }
-    elif report_type == "get_salary_total_day":
-        return {
-            "period": PeriodDateInput,
-        }
+
+            elif report_type_salary_setting == "motivation":
+
+                report_type_motivation_setting = inputs.get(
+                    "report_type_motivation_setting", None
+                )
+
+                if not report_type_motivation_setting:
+                    return {"report_type_motivation_setting": ReportMotivationInput}
+
+                elif report_type_motivation_setting == "amount_of_motivation":
+                    if period:
+                        return {
+                            "shop": ShopInput,
+                            "motivation": MotivationInput,
+                            "docStatus": DocStatusInput,
+                        }
+                    else:
+                        return {
+                            "period": PeriodDateInput,
+                        }
+                # Запрос назначенной сум. за выпол. пл.
+                elif report_type_motivation_setting == "get_amount_of_motivation":
+                    return {"shop": ShopInput}
+
+            elif report_type_salary_setting == "surcharge":
+
+                report_type_surcharge_setting = inputs.get(
+                    "report_type_surcharge_setting", None
+                )
+
+                if not report_type_surcharge_setting:
+                    # Ввод для настройки мотивации
+                    return {"report_type_surcharge_setting": ReportSurchargeInput}
+
+                elif report_type_surcharge_setting == "assign_a_surcharge":
+                    if period:
+                        return {
+                            "uuid": EmployeesInput,
+                            "surcharge": EmployeesSurchargeInput,
+                            "docStatus": DocStatusInput,
+                        }
+                    else:
+                        return {
+                            "period": PeriodDateInput,
+                        }
+                # Запрос назначенной суммы за выполнение плана
+                elif report_type_surcharge_setting == "get_surcharge":
+                    return {
+                        "employee_uuid": EmployeesInput,
+                    }
+        # Обработка различных типов отчетов о зарплате
+        elif report_type in (
+            "get_salary_aks",
+            "get_salary_plan_day",
+            "get_salary_day",
+            "get_salary_motivation_uuid",
+            "get_salary_total",
+        ):
+            # Ввод для получения данных о зарплате по определенному сотруднику и периоду
+            return {
+                "employee_uuid": EmployeesInput,
+                "period": PeriodDateInput,
+            }
+        elif report_type == "get_salary_total_day":
+            return {
+                "period": PeriodDateInput,
+            }
+    except Exception as e:
+        print(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
 
 
 def generate(session: Session):
@@ -364,6 +399,88 @@ def generate(session: Session):
                 uuid.append(prod["uuid"])
                 number_ += 1
         return result
+
+    elif inputs.get("change", None) == "add_group_uuid_accessory":
+        try:
+            # pprint("add_group_uuid_accessory")
+            # Получение идентификаторов магазинов пользователя
+            shops_id = get_shops_uuid_user_id(session)
+            # pprint(shops_id[0])
+            # Список для хранения родительских UUID
+            parentUuids = []
+
+            # содоет ключи в session.params["inputs"]
+            for i in range(int(room) + 1):
+                # Проверяем, есть ли "parentUuid" в параметрах комнаты i
+                if "parentUuid" in session.params["inputs"][str(i)]:
+                    # Добавляем "parentUuid" в список
+                    parentUuids.append(session.params["inputs"][str(i)]["parentUuid"])
+
+            # Получаем последние документы по групповым UUID с типом "MOTIVATION_PARENT_UUID"
+            documents = (
+                GroupUuidAks.objects(
+                    shop_id=shops_id[0], x_type="MOTIVATION_PARENT_UUID"
+                )
+                .order_by("-closeDate")
+                .first()
+            )
+
+            # Получаем продукты, относящиеся к parentUuid
+            products = Products.objects(group=True, uuid__in=documents.parentUuids)
+
+            for prod in products:
+                if prod["uuid"] not in parentUuids:
+                    parentUuids.append(prod["uuid"])
+
+            # Получаем текущую дату и время в формате ISO
+            close_date = utcnow().to("local").isoformat()[:10]
+
+            # Итерируемся по идентификаторам магазинов
+            for shop_id in shops_id:
+                # Создаем словарь с данными для обновления в базе данных
+                dict_ = {
+                    "shop_id": shop_id,
+                    "closeDate": close_date,
+                    "parentUuids": parentUuids,
+                    "user_id": user_id,
+                    "x_type": "MOTIVATION_PARENT_UUID",
+                }
+
+                # Обновляем или добавляем запись в базе данных
+                GroupUuidAks.objects(
+                    shop_id=shop_id,
+                    closeDate=close_date,
+                    x_type="MOTIVATION_PARENT_UUID",
+                ).update(**dict_, upsert=True)
+
+            # Получаем названия магазинов по их идентификаторам
+            shops = Shop.objects(uuid__in=shops_id).only("name")
+
+            shop_name = ""
+
+            # Собираем названия магазинов в строку
+            for shop in shops:
+                shop_name += "{}, ".format(shop.name)
+
+            # Формируем результат в виде списка словарей
+            result = [
+                {"ДАТА:": close_date},
+                {"ГРУППЫ:": "ЗП АКС"},
+                {"МАГАЗИН(Ы):".upper(): shop_name},
+            ]
+
+            number_ = 1
+
+            # Нумеруем и добавляем информацию о продуктах для каждого родительского UUID
+            for uuid in parentUuids:
+                products = Products.objects(group=True, uuid=uuid).first()
+                result.append({"{}:".format(number_): products.name})
+                number_ += 1
+
+            # Возвращаем результат
+            return result
+        except Exception as e:
+            print(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
 
     # Назначить товар доб. мотивации
     elif (
