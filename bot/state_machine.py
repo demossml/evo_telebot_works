@@ -251,7 +251,11 @@ async def handle_ready_state(bot, message, session, next):
         if len(result[0]) > 0:
             for k, v in result[0].items():
                 file_id = v
-                await bot.send_photo(message.chat_id, file_id)
+                try:
+                    await bot.send_photo(message.chat_id, file_id)
+
+                except Exception as e:
+                    print(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
 
                 # Форматируем и отправляем сообщения из списка результатов
                 messages = format_message_list4(result[1])
@@ -270,17 +274,19 @@ async def handle_ready_state(bot, message, session, next):
         # print(result)
 
         if result[1] != None:
-            print("result2")
-
             # Получение изображения
             image_bytes = result[1]
             # print(image_bytes)
 
             # # Отправка изображения как фото
-            await bot.send_photo(
-                message.chat_id,
-                photo=image_bytes,
-            )
+            try:
+                await bot.send_photo(
+                    message.chat_id,
+                    photo=image_bytes,
+                )
+            except Exception as e:
+                print(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
+
             if len(result) > 0:
 
                 # Отправляем сообщения
@@ -315,7 +321,7 @@ async def handle_ready_state(bot, message, session, next):
 
     # Удаляем сообщение о результате и отправляем приветственное сообщение с клавиатурой
     await bot.delete_message(message.chat_id, message.message_id)
-    await bot.send_message(message.chat_id, "Привет", reply_markup=markup)
+    await bot.send_message(message.chat_id, "👇", reply_markup=markup)
 
     # Обновляем состояние сессии
     session.update(state=session.state)

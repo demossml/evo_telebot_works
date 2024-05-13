@@ -428,6 +428,7 @@ def generate(session: Session):
             target_width = 1700
             # target_height = 2000
             target_height = len(shop_names) * 54
+            # pprint(len(shop_names))
 
             # Динамический расчет оптимальной ширины и высоты на основе количества магазинов
             dynamic_aspect_ratio = (
