@@ -23,6 +23,7 @@ from reports import (
     cash_balance_in_tt,
     cash_balance_in_tt_all,
     balances,
+    get_for_product_liquidity,
 )
 
 
@@ -72,6 +73,7 @@ def get_reports(session: Session):
                     "get_electro_sales_plan": get_electro_sales_plan,
                     "get_salary_today": get_salary_today,
                     "sales_today": sales_today,
+                    "get_for_product_liquidity": get_for_product_liquidity,
                 }
     if session.user_id in ids:
         return {
@@ -109,4 +111,5 @@ reports = {
     "cash_balance_in_tt": cash_balance_in_tt,
     "cash_balance_in_tt_all": cash_balance_in_tt_all,
     "balances": balances,
+    "get_for_product_liquidity": get_for_product_liquidity,
 }

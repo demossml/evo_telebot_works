@@ -1,3 +1,16 @@
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
+import openpyxl
+import traceback
+import io
+from numbers_parser import Document
+
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def format_message_list2(obj):
     text = ""  # Создаем пустую строку, в которую будем добавлять текст
     messages = []  # Создаем пустой список для хранения сообщений
@@ -92,3 +105,101 @@ def format_message_list4(obj):
             text = text[index:].strip()  # и удаляем ее из исходного текста.
 
         return messages  # Возвращаем список отформатированных сообщений.
+
+
+import io
+import json
+import openpyxl
+from openpyxl.utils import get_column_letter
+from numbers_parser import Document
+import traceback
+import logging
+
+# Инициализация логгера
+logger = logging.getLogger(__name__)
+
+
+def xls_to_json_format_change(downloaded_file, file_format):
+    try:
+        logger.info("Начало преобразования файла в JSON")
+
+        if file_format == ".xls" or file_format == ".xlsx":
+            # Создаем буферизированный объект для чтения из загруженного файла
+            file_buffer = io.BytesIO(downloaded_file)
+
+            # Открываем книгу Excel
+            book = openpyxl.load_workbook(file_buffer)
+
+            # Получаем активный лист из книги Excel
+            ws = book.active
+
+            my_list = []  # Создаем пустой список для хранения словарей
+
+            # Находим номер последнего столбца и строки
+            last_column = len(list(ws.columns))
+            last_row = len(list(ws.rows))
+
+            # Проходимся по каждой строке в таблице Excel
+            for row in range(1, last_row + 1):
+                my_dict = {}  # Создаем пустой словарь для текущей строки
+                # Проходимся по каждому столбцу в текущей строке
+                for column in range(1, last_column + 1):
+                    column_letter = get_column_letter(
+                        column
+                    )  # Получаем буквенное обозначение столбца
+
+                    if row > 1:  # Пропускаем первую строку, так как это заголовки
+                        # Добавляем элементы в словарь в формате "значение заголовка: значение ячейки"
+                        header = str(
+                            ws[column_letter + str(1)].value
+                        ).strip()  # Убираем пробелы в заголовках
+                        cell_value = ws[column_letter + str(row)].value
+                        if isinstance(cell_value, str):
+                            cell_value = (
+                                cell_value.strip()
+                            )  # Убираем пробелы в значениях
+                        my_dict[header] = cell_value
+                if len(my_dict) > 0:  # Убеждаемся, что словарь не пустой
+                    my_list.append(my_dict)  # Добавляем словарь в список
+
+        elif file_format == ".numbers":
+            # Создаем буферизированный объект для чтения из загруженного файла
+            file_buffer = io.BytesIO(downloaded_file)
+
+            # Открываем документ .numbers
+            doc = Document(file_buffer)
+            sheets = doc.sheets()
+            table = sheets[0].tables()[0]  # Используем первую таблицу в первом листе
+
+            my_list = []  # Создаем пустой список для хранения словарей
+
+            # Получаем данные из таблицы
+            rows = table.rows()
+            headers = rows[0]  # Первая строка - заголовки
+
+            # Проходимся по каждой строке в таблице .numbers
+            for row in rows[1:]:  # Пропускаем первую строку с заголовками
+                my_dict = {}  # Создаем пустой словарь для текущей строки
+                for header, cell in zip(headers, row):
+                    header = header.strip()  # Убираем пробелы в заголовках
+                    cell_value = cell.value
+                    if isinstance(cell_value, str):
+                        cell_value = cell_value.strip()  # Убираем пробелы в значениях
+                    my_dict[header] = cell_value
+                if len(my_dict) > 0:  # Убеждаемся, что словарь не пустой
+                    my_list.append(my_dict)  # Добавляем словарь в список
+
+        logger.info("Преобразование завершено")
+        return my_list  # Возвращаем список словарей
+
+    except openpyxl.utils.exceptions.InvalidFileException:
+        logger.error("Загруженный файл не является действительным файлом Excel.")
+        return None
+    except Exception as e:
+        logger.error(f"Произошла ошибка: {e}")
+        traceback.print_exc()
+        return None
+
+
+# Пример вызова функции
+# result = xls_to_json_format_change(downloaded_file, '.xlsx')

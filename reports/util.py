@@ -22,6 +22,12 @@ import time
 from decimal import Decimal
 from collections import OrderedDict
 
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Принимает словарь с данными о продукте
 
@@ -1855,8 +1861,32 @@ def cash_outcome(shop_id, since, until):
                         ) + Decimal(trans["sum"]).quantize(Decimal("0.00"))
     return sum_payment_category
 
+def json_to_xls_format_change(data_list: list,):
+    # Создаем новую книгу Excel
+    book = Workbook()
 
-# # Функция для вычисления продаж для одного магазина
+    # Выбираем активный лист в книге
+    sheet = book.active
+
+    # Задаем порядок столбцов
+    columns_name = ['name', 'sum', 'average_sales', 'sales_days']
+
+    # Записываем названия столбцов в первую строку
+    for col_idx, column_name in enumerate(columns_name, start=1):
+        sheet.cell(row=1, column=col_idx, value=column_name)
+
+    # Записываем данные из входного списка в ячейки
+    for row_idx, item in enumerate(data_list, start=2):
+        # Проходим по названиям столбцов
+        for col_idx, column_name in enumerate(columns_name, start=1):
+            # Записываем значение в соответствующую ячейку, если оно есть в словаре
+            sheet.cell(row=row_idx, column=col_idx, value=item.get(column_name))
+
+    # Возвращаем созданную книгу Excel и количество удаленных дубликатов
+    return book
+
+
+
 # def calculate_sales(
 #     shop,
 #     group_id,
@@ -2305,3 +2335,32 @@ def get_top_n_sales(sales_by_product: dict, n=50):
 
     # Возврат результата
     return top_n_sales, len(top_n_sales)
+
+
+def xls_to_json_format_change(book):
+
+    # Получаем активный лист из книги Excel
+    ws = book.active
+
+    my_list = []  # Создаем пустой список для хранения словарей
+
+    # Находим номер последнего столбца и строки
+    last_column = len(list(ws.columns))
+    last_row = len(list(ws.rows))
+
+    # Проходимся по каждой строке в таблице Excel
+    for row in range(1, last_row + 1):
+        my_dict = {}  # Создаем пустой словарь для текущей строки
+        # Проходимся по каждому столбцу в текущей строке
+        for column in range(1, last_column + 1):
+            column_letter = get_column_letter(
+                column
+            )  # Получаем буквенное обозначение столбца
+            if row > 1:  # Пропускаем первую строку, так как это заголовки
+                # Добавляем элементы в словарь в формате "значение заголовка: значение ячейки"
+                my_dict[ws[column_letter + str(1)].value] = ws[
+                    column_letter + str(row)
+                ].value
+        if len(my_dict) > 0:  # Убеждаемся, что словарь не пустой
+            my_list.append(my_dict)  # Добавляем словарь в список
+    return my_list  # Возвращаем список словарей
