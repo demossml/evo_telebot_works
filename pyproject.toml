@@ -33,7 +33,6 @@ python-dotenv = "^1.0.0"
 uvloop = "^0.19.0"
 requests = "^2.31.0"
 psutil = "^5.9.8"
-logging = "^0.4.9.6"
 openpyxl = "^3.1.2"
 numbers-parser = "^4.10.5"
 
