@@ -73,7 +73,7 @@ def get_reports(session: Session):
                     "get_electro_sales_plan": get_electro_sales_plan,
                     "get_salary_today": get_salary_today,
                     "sales_today": sales_today,
-                    "get_for_product_liquidity": get_for_product_liquidity,
+                    # "get_for_product_liquidity": get_for_product_liquidity,
                 }
     if session.user_id in ids:
         return {
