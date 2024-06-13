@@ -489,7 +489,29 @@ class ReportsSettingsInput:
                 "id": "delete_restore_employees",
                 "name": "удаление сотрудника.➡️".upper(),
             },
-            {"id": "plan_generation", "name": "генирация плана ➡️".upper()},
+            {"id": "plan_generation", "name": "Генирация плана ➡️".upper()},
+            {"id": "operating_mode", "name": "Режима работы ТТ ➡️".upper()},
+            {"id": "openData", "name": "openData ➡️".upper()},
+        )
+        return output
+
+
+class ReportsOperatingModeShopInput:
+    """
+    Меню очистки базы данных
+    """
+
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        output = (
+            {"id": "operating_shops", "name": " Назаначить время работы ТТ ➡️".upper()},
+            {
+                "id": "get_operating_shops",
+                "name": "🟢 Запрос времяни  работы ТТ ➡️".upper(),
+            },
         )
         return output
 

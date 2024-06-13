@@ -2,7 +2,7 @@ from bd.model import (
     Session,
     Status,
     Documents,
-    Users,
+    Shift_Opening_Report,
     Employees,
     Shop,
     Products,
@@ -23,15 +23,32 @@ from .inputs import (
     PeriodDateInput,
     OpenDatePastInput,
     CloseDatePastInput,
+    ReportsOperatingModeShopInput,
 )
 
 from .util import get_period, generate_plan_parallel, get_shops_uuid_user_id
+
+import sys
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 from pprint import pprint
 
 name = "🛠 Настройки ➡️".upper()
 desc = ""
 mime = "text"
+
+
+class СloseDateInput:
+    desc = "Напишите время открытия ТТ в формате ч:м (00:00)✍️".upper()
+    type = "MESSAGE"
+
+
+class OpenDateInput:
+    desc = "Напишите время закрытие ТТ в формате ч:м (00:00)✍️".upper()
+    type = "MESSAGE"
 
 
 def get_inputs(session: Session):
@@ -85,50 +102,20 @@ def get_inputs(session: Session):
                 "docStatus": DocStatusInput,
             }
 
-    # # Если входные параметры сессии существуют
-    # if session.params["inputs"]["0"]:
-    #     # Если тип отчета - "shift_opening_report"
-    #     if session.params["inputs"]["0"]["report"] == "clear_db":
-    #         return {"report": ReportsClearDbInput}
-    #     if session.params["inputs"]["0"]["report"] == "delete_restore_shop":
-    #         if "param" in session.params["inputs"]["0"]:
-    #             if session.params["inputs"]["0"]["param"] == "delete_shops":
-    #                 return {
-    #                     "shop": ShopInput,
-    #                     "docStatus": DocStatusInput,
-    #                 }
-    #             if session.params["inputs"]["0"]["param"] == "restore_shops":
-    #                 return {
-    #                     "shop": ShopInput,
-    #                     "docStatus": DocStatusInput,
-    #                 }
-
-    #         else:
-    #             return {"param": ReportsDeleteRestoreShopInput}
-    #     if session.params["inputs"]["0"]["report"] == "delete_restore_employees":
-    #         if "param" in session.params["inputs"]["0"]:
-    #             if session.params["inputs"]["0"]["param"] == "delete_employees":
-    #                 return {
-    #                     "employee": EmployeesUuidInput,
-    #                     "docStatus": DocStatusInput,
-    #                 }
-    #             if session.params["inputs"]["0"]["param"] == "restore_employees":
-    #                 return {
-    #                     "employee": EmployeesUuidInput,
-    #                     "docStatus": DocStatusInput,
-    #                 }
-
-    #         else:
-    #             return {"param": ReportsDeleteRestoreEmployeesInput}
-    #     # if session.params["inputs"]["0"]["report"] == "delete_restore_shop":
-    #     #     # print(session.params["inputs"]["0"]["report"])
-    #     #     return {"report1": ReportsDeleteRestoreEmployeesInput}
-
-    # else:
-    #     pprint("ReportsSettingsInput")
-    #     return {
-    #         "report": ReportsSettingsInput,
-    #     }
+    elif report_type == "operating_mode":
+        if not report_type_d:
+            return {"report_d": ReportsOperatingModeShopInput}
+        if report_type_d == "operating_shops":
+            return {
+                "shop": ShopInput,
+                "openDate": OpenDateInput,
+                "closeDate": СloseDateInput,
+                "docStatus": DocStatusInput,
+            }
+        elif report_type_d == "get_operating_shops":
+            return {}
+    elif report_type == "openData":
+        return {}
 
 
 def generate(session: Session):
@@ -151,7 +138,7 @@ def generate(session: Session):
             report_data.append({"shop": shop.name, "status": "deleted"})
         return report_data
 
-    if report_type_d == "restore_shops":
+    elif report_type_d == "restore_shops":
         report_data = []
         # содоет ключи в session.params["inputs"]
         for i in range(int(room) + 1):
@@ -165,7 +152,7 @@ def generate(session: Session):
             report_data.append({"shop": shop.name, "status": "restored"})
         return report_data
 
-    if report_type_d == "delete_employees":
+    elif report_type_d == "delete_employees":
         report_data = []
         # содоет ключи в session.params["inputs"]
         for i in range(int(room) + 1):
@@ -184,7 +171,7 @@ def generate(session: Session):
             report_data.append({"employee": employee.name, "status": "deleted"})
         return report_data
 
-    if report_type_d == "restore_employees":
+    elif report_type_d == "restore_employees":
         report_data = []
         # содоет ключи в session.params["inputs"]
         for i in range(int(room) + 1):
@@ -199,14 +186,12 @@ def generate(session: Session):
                 "user_id": employee["lastName"],
                 "status": "restore",
             }
-            pprint(1)
             Status.objects(employee=employee_uuid).update(**data_params, upsert=True)
-            pprint(2)
 
             report_data.append({"employee": employee.name, "status": "restore"})
         return report_data
 
-    if report_type == "clean_up_the_database":
+    elif report_type == "clean_up_the_database":
         collection = {
             "clear_db_employees": Employees,
             "clear_db_shops": Shop,
@@ -227,7 +212,7 @@ def generate(session: Session):
 
         return [{"Коллекция": "Очищена"}]
 
-    if report_type == "plan_generation":
+    elif report_type == "plan_generation":
 
         # Получение начальной и конечной дат периода
         since = session.params["inputs"]["0"]["openDate"]
@@ -236,3 +221,61 @@ def generate(session: Session):
         shops_id = get_shops_uuid_user_id(session)
 
         return generate_plan_parallel(shops_id, since, until)
+
+    elif report_type == "openData":
+        logger.info("openData")
+        try:
+            for doc in Shift_Opening_Report.objects(locationData__exists=True):
+                Shift_Opening_Report.objects(id=doc.id).update(
+                    set__openData=doc.locationData, unset__locationData=1
+                )
+
+            return [{"1": 1}]
+        except Exception as e:
+            logger.info(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
+
+    elif report_type_d == "operating_shops":
+        report_data = []
+        # содоет ключи в session.params["inputs"]
+        for i in range(int(room) + 1):
+            # Добавляем "shop_id" в список shop_ids
+            shop_id = session.params["inputs"][str(i)]["shop"]
+            shop = Shop.objects(uuid=shop_id).first()
+
+            openDate = session.params["inputs"][str(i)]["openDate"]
+            closeDate = session.params["inputs"][str(i)]["closeDate"]
+
+            data_params = {
+                "x_type": "OPERATING_SHOPS",
+                "shop": shop_id,
+                "openDate": openDate,
+                "closeDate": closeDate,
+            }
+            Status.objects(shop=shop_id, x_type="OPERATING_SHOPS").update(
+                **data_params, upsert=True
+            )
+
+            report_data.append(
+                {
+                    "shop": shop.name,
+                    "openDate": openDate,
+                    "closeDate": closeDate,
+                }
+            )
+        return report_data
+
+    elif report_type_d == "get_operating_shops":
+        report_data = []
+
+        documents = Status.objects(x_type="OPERATING_SHOPS")
+
+        for doc in documents:
+            shop = Shop.objects(uuid=doc["shop"]).only("name").first().name
+            report_data.append(
+                {
+                    "ТТ": shop,
+                    "openDate": doc.openDate,
+                    "closeDate": doc.closeDate,
+                }
+            )
+        return report_data

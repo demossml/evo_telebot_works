@@ -13,7 +13,7 @@ mime = "text"
 
 
 def get_inputs(session: Session):
-    return {"shop": ShopAllInInput}
+    return {}
 
 
 def generate(session: Session):
