@@ -239,6 +239,8 @@ def generate(session: Session):
             calculate_difference_ = calculate_difference(open_data, status.openDate)
             logger.info(calculate_difference_)
 
+            penalty = 0
+
             if calculate_difference_ is not None:
                 until_delay_time = (
                     utcnow().shift(months=-1).replace(hour=20, minute=59).isoformat()
@@ -260,7 +262,7 @@ def generate(session: Session):
                     lateness.update({i.openData[:16]: f"{i.delay_time} мин."})
                 number_of_tardies = len(get_delay_time)
                 lateness.update({"кол. опозданий за 30д.": f"{number_of_tardies}"})
-                penalty = 0
+
                 if number_of_tardies > 0:
                     if number_of_tardies == 2:
                         penalty = 300
@@ -360,7 +362,7 @@ def generate(session: Session):
 
             return {}, result
         except Exception as e:
-            logger.info(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
+            logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
     if session.params["inputs"]["0"]["report"] == "get_shift_opening_report":
         try:
             params = session.params["inputs"]["0"]
