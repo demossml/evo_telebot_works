@@ -147,3 +147,7 @@ def generate(session: Session):
     )
 
     return result
+
+
+# {shop_id: "20190327-A48C-407F-801F-DA33CB4FBBE9", x_type: "OPEN_SESSION"}
+# "20230929-E4B5-4056-800A-82A936C4D5F5"

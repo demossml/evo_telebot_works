@@ -447,7 +447,7 @@ def generate(session: Session):
             else:
                 return {}, [{"Нет данных".upper(): ""}]
         except Exception as e:
-            logger.info(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
+            logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
 
     if session.params["inputs"]["0"]["report"] == "get_schedules":
         shops = get_shops_user_id(session)
@@ -482,59 +482,76 @@ def generate(session: Session):
         return {}, [result]
 
     if session.params["inputs"]["0"]["report"] == "get_break":
-        params = session.params["inputs"]["0"]
+        try:
+            params = session.params["inputs"]["0"]
+            logger.info(
+                "Starting to process get_break report with parameters: %s", params
+            )
 
-        period = get_period_day(session)
-        since = period["since"]
-        until = period["until"]
+            period = get_period_day(session)
+            since = period["since"]
+            until = period["until"]
+            logger.info("Period determined: since=%s, until=%s", since, until)
 
-        shops = get_shops(session)
-        shop_id = shops["shop_id"]
-        shop_name = shops["shop_name"]
+            shops = get_shops(session)
+            shop_id = shops["shop_id"]
+            shop_name = shops["shop_name"]
+            logger.info("Shops information retrieved: %s", shops)
 
-        documents_break_report = Shift_Opening_Report.objects(
-            __raw__={
-                "openData": {"$gte": since, "$lt": until},
-                "x_type": "BREAK",
-                "shop_id": {"$in": shop_id},
-            }
-        )
-        break_data = []
-        total_delta = 0
-        if len(documents_break_report) > 0:
-            for doc in documents_break_report:
-                employees = (
-                    Employees.objects(lastName=str(doc["user_id"])).only("name").first()
-                )
-                if "closeDate" in doc:
-                    delta = (
-                        (get(doc["closeDate"]) - get(doc["openData"])).seconds
-                        // 60
-                        % 60
-                    )
-                    total_delta += delta
-                    break_data.append(
-                        {
-                            "перерыв начался".upper(): doc["openData"][:16],
-                            "перерыв закончился".upper(): doc["closeDate"][:16],
-                            "Время перерыва".upper(): f"{delta} минут",
-                        }
-                    )
-                else:
-                    break_data.append(
-                        {
-                            "перерыв начался".upper(): doc["openData"][:16],
-                        }
-                    )
-
-            break_data.append(
-                {
-                    "Магазин:": shop_name,
-                    "Продавец:": employees.name,
-                    "Итого время перерыва".upper(): f"{total_delta} минут",
+            documents_break_report = Shift_Opening_Report.objects(
+                __raw__={
+                    "openData": {"$gte": since, "$lt": until},
+                    "x_type": "BREAK",
+                    "shop_id": {"$in": shop_id},
                 }
             )
-        else:
-            break_data.append({since[:10]: "Нет данных".upper()})
+            logger.info(
+                "Break reports retrieved, count: %d", len(documents_break_report)
+            )
 
-        return [], break_data
+            break_data = []
+            total_delta = 0
+            if len(documents_break_report) > 0:
+                for doc in documents_break_report:
+                    employees = (
+                        Employees.objects(lastName=str(doc["user_id"]))
+                        .only("name")
+                        .first()
+                    )
+                    if "closeDate" in doc:
+                        delta = (
+                            (get(doc["closeDate"]) - get(doc["openData"])).seconds
+                            // 60
+                            % 60
+                        )
+                        total_delta += delta
+                        break_data.append(
+                            {
+                                "перерыв начался".upper(): doc["openData"][:16],
+                                "перерыв закончился".upper(): doc["closeDate"][:16],
+                                "Время перерыва".upper(): f"{delta} минут",
+                            }
+                        )
+                    else:
+                        break_data.append(
+                            {
+                                "перерыв начался".upper(): doc["openData"][:16],
+                            }
+                        )
+
+                break_data.append(
+                    {
+                        "Магазин:": shop_name,
+                        "Продавец:": employees.name,
+                        "Итого время перерыва".upper(): f"{total_delta} минут",
+                    }
+                )
+                logger.info("Total break time calculated: %d minutes", total_delta)
+
+            else:
+                logger.info("No break data found for the given period")
+                break_data.append({since[:10]: "Нет данных".upper()})
+
+            return [], break_data
+        except Exception as e:
+            logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
