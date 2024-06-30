@@ -10,10 +10,16 @@ import os
 
 
 # Импорт моделей и функций из других модулей
-from bd.model import Message, Session, GetTime, Employees, Shop
+from bd.model import Message, Session, GetTime, Employees, Shop, Schedules
 from reports import reports, get_reports
-from util_s import format_message_list4, xls_to_json_format_change
+from util_s import (
+    format_message_list4,
+    xls_to_json_format_change,
+    send_scheduled_message,
+)
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 import logging
 
 
@@ -25,6 +31,34 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+# Инициализация планировщика задач
+scheduler = AsyncIOScheduler()
+
+# Глобальная переменная для хранения времени последнего приветственного сообщения
+last_welcome_time = None
+
+
+# Функция для отправки приветственного сообщения
+async def send_daily_welcome_message(bot: telebot.TeleBot):
+    global last_welcome_time
+    try:
+        now = utcnow().to("Etc/GMT-3")
+        if last_welcome_time is None or now.date() > last_welcome_time.date():
+            messages = format_message_list4(send_scheduled_message())
+            for m in messages:
+                await bot.send_message(5700958253, m, parse_mode="MarkdownV2")
+
+            last_welcome_time = now
+    except Exception as e:
+        logger.exception("Error handling message")
+        logger.error(f" Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
+
+
+scheduler.add_job(
+    lambda: send_daily_welcome_message(),
+    CronTrigger(hour=21, minute=50, timezone="Etc/GMT-3"),
+)
 
 
 # Определить состояния сессии
@@ -40,40 +74,46 @@ class State(str, Enum):
 async def handle_message(bot: telebot.TeleBot, message: Message, session: Session):
     # Определить список стартовых команд
     start = ("Menu", "/start", "Меню")
-    # Проверьте, является ли сообщение командой запуска.
-    if message.text in start:
-        # Сброс состояния сессии и комнаты
-        session.state = State.INIT
-        session.room = "0"
-        session.update(room=session.room, state=session.state)
-    if message.text == "/log":
-        text_file_path = "bot.log"
-        with open(text_file_path, "rb") as text_file:
-            await bot.send_document(message.chat_id, document=text_file)
-    # Определим функцию для следующего шага
-    next = lambda: handle_message(bot, message, session)
-    try:
-        # Вызов соответствующего обработчика состояния на основе состояния сессии
-        logger.info(f"{session.state} {message.chat_id}")
-        await states[session.state](bot, message, session, next)
-    except Exception as e:
-        # print(e)
-        # raise ex
-        logger.exception("Error handling message")
-        logger.error(
-            f"{ message.chat_id}, Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}"
-        )
-        # Обработка исключений и уведомление пользователя
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        btn_address = types.KeyboardButton("Меню")
-        markup.add(btn_address)
-        await bot.send_message(
-            message.chat_id,
-            f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}",
-            reply_markup=markup,
-        )
-        session.state = State.INIT
-        next()
+
+    if str(message.chat_id) == "-1001157232415":
+        logger.info(message)
+    else:
+        # Проверьте, является ли сообщение командой запуска.
+        if message.text in start:
+            # Сброс состояния сессии и комнаты
+            session.state = State.INIT
+            session.room = "0"
+            session.update(room=session.room, state=session.state)
+        if message.text == "/log":
+            text_file_path = "bot.log"
+            with open(text_file_path, "rb") as text_file:
+                await bot.send_document(message.chat_id, document=text_file)
+        # Проверяем, нужно ли отправлять приветственное сообщение
+        # await send_daily_welcome_message(bot)
+        # Определим функцию для следующего шага
+        next = lambda: handle_message(bot, message, session)
+        try:
+            # Вызов соответствующего обработчика состояния на основе состояния сессии
+            logger.info(f"{session.state} {message.chat_id}")
+            await states[session.state](bot, message, session, next)
+        except Exception as e:
+            # print(e)
+            # raise ex
+            logger.exception("Error handling message")
+            logger.error(
+                f"{ message.chat_id}, Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}"
+            )
+            # Обработка исключений и уведомление пользователя
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+            btn_address = types.KeyboardButton("Меню")
+            markup.add(btn_address)
+            await bot.send_message(
+                message.chat_id,
+                f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}",
+                reply_markup=markup,
+            )
+            session.state = State.INIT
+            next()
 
 
 # Обработка состояния INIT (начальное состояние)

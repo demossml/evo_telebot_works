@@ -207,6 +207,14 @@ class Surplus(DynamicDocument):
     pass
 
 
+class Schedules(DynamicDocument):
+    pass
+
+
+class Сonsent(DynamicDocument):
+    pass
+
+
 class GetTime(DynamicDocument):
     pass
 

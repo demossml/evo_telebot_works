@@ -4,9 +4,6 @@ from bot.util import format_message_list2
 from pprint import pprint
 
 
-import asyncio
-
-
 # # Функция для отправки сообщений по расписанию
 async def send_scheduled_message(bot):
     pprint(4)

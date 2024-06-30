@@ -1,4 +1,12 @@
-from bd.model import Shop, Products, Documents, Session, Employees, GroupUuidAks
+from bd.model import (
+    Shop,
+    Products,
+    Documents,
+    Session,
+    Employees,
+    GroupUuidAks,
+    Сonsent,
+)
 from .util import (
     get_intervals,
     period_to_date,
@@ -1322,3 +1330,87 @@ class AfsInput:
         output = [{"name": "чекин"}]
 
         return output
+
+
+class QuestionnaireInput:
+    desc = "Выберите отчет"
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        if session.employee.role == "ADMIN":
+            output = [
+                {
+                    "id": "process_questionnaires",
+                    "name": "Обработать анкеты 📄".upper(),
+                },
+                {"id": "get_questionnaires", "name": "Просмотреть анкеты 👀".upper()},
+            ]
+
+        else:
+            output = [
+                {
+                    "id": "personal_information 📝",
+                    "name": "Личная информация".upper(),
+                },
+                {
+                    "id": "contact_information",
+                    "name": "Контактная информация 📞".upper(),
+                },
+                {
+                    "id": "family_status",
+                    "name": "Семейное положение 👪".upper(),
+                },
+                {
+                    "id": "relatives_information",
+                    "name": "Сведения о близких родственниках 👨‍👩‍👧‍👦".upper(),
+                },
+                {
+                    "id": "education",
+                    "name": "Образование 🎓".upper(),
+                },
+                {
+                    "id": "skills",
+                    "name": "Навыки 🛠️".upper(),
+                },
+                {
+                    "id": "references",
+                    "name": "Рекомендатели 🗣️".upper(),
+                },
+                {
+                    "id": "work_experience",
+                    "name": "Трудовая деятельность 💼".upper(),
+                },
+                {
+                    "id": "desired_salary",
+                    "name": "Желаемый уровень заработной платы 💰".upper(),
+                },
+                {
+                    "id": "advantages",
+                    "name": "Преимущества Вашей кандидатуры 🌟".upper(),
+                },
+                {
+                    "id": "hobbies",
+                    "name": "Ваши хобби 🎨".upper(),
+                },
+                {
+                    "id": "additional_information",
+                    "name": "Какую информацию Вы хотели бы добавить о себе 📝".upper(),
+                },
+            ]
+
+        return output
+
+
+class QuestionnaireInput:
+    desc = "Выберите отчет"
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+
+        output = [
+            {
+                "id": "process_questionnaires",
+                "name": "Обработать анкеты 📄".upper(),
+            },
+            {"id": "get_questionnaires", "name": "Просмотреть анкеты 👀".upper()},
+        ]

@@ -5,6 +5,12 @@ import traceback
 import io
 from numbers_parser import Document
 
+from numbers_parser import Document
+import traceback
+import logging
+from arrow import utcnow, get
+from bd.model import Shop, AfsRequest, Employees, GetTime, Status
+
 
 import logging
 
@@ -107,14 +113,6 @@ def format_message_list4(obj):
         return messages  # Возвращаем список отформатированных сообщений.
 
 
-import io
-import json
-import openpyxl
-from openpyxl.utils import get_column_letter
-from numbers_parser import Document
-import traceback
-import logging
-
 # Инициализация логгера
 logger = logging.getLogger(__name__)
 
@@ -201,5 +199,34 @@ def xls_to_json_format_change(downloaded_file, file_format):
         return None
 
 
-# Пример вызова функции
-# result = xls_to_json_format_change(downloaded_file, '.xlsx')
+def status_shop(shop_id: str) -> bool:
+    # Получаем объект статуса из базы данных для указанного магазина со статусом "deleted"
+    doc_status = Status.objects(shop=shop_id, status="deleted").first()
+    # Возвращаем True, если объект не найден или его статус "restore", иначе возвращаем False
+    return not (doc_status and doc_status.status != "restore")
+
+
+# # Функция для отправки сообщений по расписанию
+def send_scheduled_message():
+    since = utcnow().replace(hour=2).isoformat()
+
+    result = {}
+    for shop in Shop.objects():
+        if status_shop(shop["uuid"]):
+            documents = GetTime.objects(
+                __raw__={"openingData": {"$gte": since}, "shopUuid": shop["uuid"]}
+            )
+
+            result[shop["name"]] = "ЕЩЕ НЕ ОТКРЫТА!!!"
+
+            for doc in documents:
+                user_id = str(doc.user_id)
+                employees = [
+                    element["name"]
+                    for element in Employees.objects(lastName=user_id).only("name")
+                ]
+                if doc["openingData"]:
+                    result[shop["name"]] = "{} {}".format(
+                        employees[0], doc["openingData"][11:16]
+                    )
+    return [result]

@@ -1,7 +1,7 @@
 from telegram import Telegram
 from config import TELEGRAM_TOKEN_2
 from bd.model import get_session, create_massage, find_employee
-from state_machine import handle_message
+from state_machine import handle_message, send_daily_welcome_message
 
 import logging
 
@@ -14,7 +14,7 @@ async def handler(params, bot):
 
         # Создание сообщения
         message = create_massage(params)
-        logger.debug(f"Созданное сообщение: {message}")
+        logger.info(f"Созданное сообщение: {message}")
 
         # Получение сессии пользователя
         session = get_session(message.user_id)
@@ -25,6 +25,7 @@ async def handler(params, bot):
 
         # Обработка сообщения
         await handle_message(bot, message, session)
+        await send_daily_welcome_message(bot)
         logger.info(f" Message processed successfully {session.user_id}")
     except Exception as e:
         logger.error(f"Ошибка при обработке сообщения: {e}", exc_info=True)
