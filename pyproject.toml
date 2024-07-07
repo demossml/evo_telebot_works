@@ -36,6 +36,7 @@ psutil = "^5.9.8"
 openpyxl = "^3.1.2"
 numbers-parser = "^4.10.5"
 apscheduler = "^3.10.4"
+python-docx = "^1.1.2"
 
 
 [tool.poetry.dev-dependencies]

@@ -16,6 +16,7 @@ from util_s import (
     format_message_list4,
     xls_to_json_format_change,
     send_scheduled_message,
+    welcome_message,
 )
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -73,11 +74,24 @@ class State(str, Enum):
 # Обработчик входящие сообщения
 async def handle_message(bot: telebot.TeleBot, message: Message, session: Session):
     # Определить список стартовых команд
+    start_ = ("/start",)
+    # Определить список стартовых команд
     start = ("Menu", "/start", "Меню")
 
     if str(message.chat_id) == "-1001157232415":
         logger.info(message)
     else:
+        # Проверьте, является ли сообщение командой запуска.
+        if message.text in start_:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+            btn_address = types.KeyboardButton("Меню")
+            markup.add(btn_address)
+            await bot.send_message(
+                message.chat_id,
+                welcome_message,
+                reply_markup=markup,
+            )
+
         # Проверьте, является ли сообщение командой запуска.
         if message.text in start:
             # Сброс состояния сессии и комнаты
@@ -555,7 +569,7 @@ async def handle_ready_state(bot, message, session, next):
 
         try:
             book_number = 1
-            for book in result:
+            for book in result[1]:
                 book_name = "book_" + str(book_number) + ".xlsx"
 
                 binary_book_he = io.BytesIO()
@@ -566,6 +580,23 @@ async def handle_ready_state(bot, message, session, next):
                 )
                 await bot.send_document(message.chat_id, document=binary_book_he)
                 book_number += 1
+
+        except Exception as e:
+            logger.exception("Error sending messages")
+            logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
+            await bot.send_message(message.chat_id, f"Error sending messages: {e}")
+    elif report.mime == "docx":
+
+        try:
+            # # print(result)
+            # print(type(result))
+            binary_book = io.BytesIO()
+            result.save(binary_book)
+            binary_book.seek(0)
+            binary_book.name = (
+                "anketa.docx"  # Устанавливаем имя файла в объекте BytesIO
+            )
+            await bot.send_document(message.chat_id, document=binary_book)
 
         except Exception as e:
             logger.exception("Error sending messages")
