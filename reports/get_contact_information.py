@@ -32,7 +32,6 @@ def generate(session: Session):
 
     result = {
         "Адрес (место жительства)": params["residence_address"],
-        "Адрес (место прописки)": params["registration_address"],
         "Телефон": params["home_phone"],
         "Данные внесены в Вашу анкету": "📝",
     }
