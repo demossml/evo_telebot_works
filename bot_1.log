@@ -1,3 +1,9 @@
 2024-07-11 13:06:02,810 - check_store_opening - INFO - Время выполнения функции sync_evo: 2.43 секунд
 2024-07-11 13:07:03,281 - __main__ - INFO - Photo sent successfully to chat_id -1001157232415
 2024-07-11 13:07:03,424 - __main__ - INFO - Messages sent successfully to chat_id -1001157232415
+2024-07-11 18:03:24,026 - __main__ - ERROR - Failed to get chat ID for username @Tester73_bot: name 'bot' is not defined
+2024-07-11 18:03:24,026 - __main__ - ERROR - Failed to get chat ID for username @Tester73_bot: name 'bot' is not defined
+2024-07-11 18:03:56,661 - __main__ - ERROR - Failed to get chat ID for username @Tester73_bot: name 'bot' is not defined
+2024-07-11 18:03:56,661 - __main__ - ERROR - Failed to get chat ID for username @Tester73_bot: name 'bot' is not defined
+2024-07-11 18:05:17,863 - __main__ - ERROR - Failed to get chat ID for username @💸💸💸: A request to the Telegram API was unsuccessful. Error code: 400. Description: Bad Request: chat not found
+2024-07-11 18:05:18,028 - __main__ - ERROR - Failed to get chat ID for username @💸💸💸: A request to the Telegram API was unsuccessful. Error code: 400. Description: Bad Request: chat not found

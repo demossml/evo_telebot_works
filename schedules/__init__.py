@@ -45,7 +45,7 @@ def send_message2():
 
     # # Отправка изображения как фото
     try:
-        bot.send_photo(CHAT_ID, photo=image_bytes)
+        bot.send_photo(CHAT_ID_2, photo=image_bytes)
         logger.info(f"Photo sent successfully to chat_id {CHAT_ID_2}")
     except Exception as e:
         logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
