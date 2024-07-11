@@ -29,7 +29,7 @@ def generate(session: Session) -> list[dict]:
     start_time = time.time()
 
     data_resul = {}
-    data_sale = analyze_sales_parallel(session)
+    data_sale = analyze_sales_parallel()
     pprint(data_sale)
     sales_data = {}
     data_last_time = {}

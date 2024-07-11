@@ -9,6 +9,7 @@ packages = [
     { include = "bot" },
     { include = "evotor" },
     { include = "reports" },
+    { include = "schedules" },
 ]
 
 # [tool.poetry.scripts]

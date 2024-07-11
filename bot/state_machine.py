@@ -6,6 +6,10 @@ from arrow import utcnow
 import io
 import sys
 import mimetypes
+import asyncio
+import time
+
+
 import os
 
 
@@ -33,33 +37,19 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Инициализация планировщика задач
-scheduler = AsyncIOScheduler()
-
-# Глобальная переменная для хранения времени последнего приветственного сообщения
-last_welcome_time = None
-
 
 # Функция для отправки приветственного сообщения
 async def send_daily_welcome_message(bot: telebot.TeleBot):
-    global last_welcome_time
-    try:
-        now = utcnow().to("Etc/GMT-3")
-        if last_welcome_time is None or now.date() > last_welcome_time.date():
-            messages = format_message_list4(send_scheduled_message())
-            for m in messages:
-                await bot.send_message(5700958253, m, parse_mode="MarkdownV2")
+    logger.info("start send_daily_welcome_message")
 
-            last_welcome_time = now
+    try:
+        messages = format_message_list4(send_scheduled_message())
+        for m in messages:
+            await bot.send_message(5700958253, m, parse_mode="MarkdownV2")
+
     except Exception as e:
         logger.exception("Error handling message")
         logger.error(f" Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
-
-
-scheduler.add_job(
-    lambda: send_daily_welcome_message(),
-    CronTrigger(hour=21, minute=50, timezone="Etc/GMT-3"),
-)
 
 
 # Определить состояния сессии

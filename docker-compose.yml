@@ -53,6 +53,26 @@ services:
     #      - ./:/app
     command: sh -c "poetry run python3 evotor/sync.py" # Команда для запуска синхронизации
 
+  evo_telebot_schedules:
+    # Сервис evo_telebot_sync
+    platform: linux/amd64
+    build: .
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGODB_DATABASE: tc
+      MONGODB_HOSTNAME: mongodb
+      TELEGRAM_TOKEN: "5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84"
+
+    volumes:
+      - ./app:/home/nonroot/app # Монтирование кода синхронизации в контейнер
+    #    volumes:
+    #      - ./:/app
+    command: sh -c "poetry run python3 schedules/__init__.py" # Команда для запуска синхронизации
+
+
+    
 #    depends_on:
 #      - mongodb    -
 

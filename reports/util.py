@@ -267,6 +267,27 @@ def get_shops_user_id(session: Session) -> object:
     return Shop.objects(uuid__in=uuid)
 
 
+def get_shops_all() -> object:
+    """
+    Получить магазины, связанные с пользователем Telegram бота.
+
+    :param session: Объект сессии пользователя.
+    :return: Магазины, связанные с пользователем.
+    """
+    # Создаем пустой список для хранения уникальных идентификаторов магазинов (uuid).
+    uuid = []
+    # Итерируемся по сотрудникам с фамилией, равной user_id из сессии
+    for store in Shop.objects():
+        # Для каждого найденного сотрудника итерируемся по его магазинам.
+        if status_shop(store["uuid"]):
+            # Проверяем, не находится ли магазин уже в списке UUID.
+            if store["uuid"] not in uuid:
+                # Добавляем магазина в список UUID, если его там нет.
+                uuid.append(store["uuid"])
+    # Возвращаем объект Shop, в котором UUID магазина содержатся в списке UUID
+    return uuid
+
+
 def get_shops_uuid_user_id(session: Session) -> list:
     """
     :param session: Сессия пользователя
@@ -1759,12 +1780,12 @@ def analyze_sales_for_shop(shop_id) -> dict:
     # pprint(sales_data)
 
 
-def analyze_sales_parallel(session):
+def analyze_sales_parallel():
     sales_data = defaultdict(int)
 
     with ThreadPoolExecutor() as executor:
         # Получаем список магазинов
-        shops = get_shops_uuid_user_id(session)
+        shops = get_shops_all()
 
         # Запускаем выполнение задачи для каждого магазина в отдельном потоке
         future_to_shop = {
@@ -1778,7 +1799,8 @@ def analyze_sales_parallel(session):
                 result = future.result()
                 sales_data.update(result)
             except Exception as e:
-                print(f"An error occurred for shop {shop}: {e}")
+                logger.error(f"An error occurred for shop {shop}: {e}")
+                logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
 
     # pprint(sales_data)
     return sales_data
