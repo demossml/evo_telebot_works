@@ -1,5 +1,7 @@
 import telebot
 import schedule
+from datetime import datetime
+import pytz
 import time
 from check_store_opening import (
     format_message_list4,
@@ -62,12 +64,26 @@ def send_message2():
             logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
 
 
-# Расписание сообщений
-schedule.every().day.at("08:00").do(send_message)
-schedule.every().day.at("09:10").do(send_message)
-schedule.every().day.at("14:00").do(send_message2)
-schedule.every().day.at("18:00").do(send_message2)
-schedule.every().day.at("20:00").do(send_message2)
+# Устанавливаем временную зону MSK
+msk = pytz.timezone("Europe/Moscow")
+
+
+# Функция для планирования с учетом MSK
+def schedule_msk_time(hour, minute, job_func):
+    def msk_job():
+        now = datetime.now(msk)
+        if now.hour == hour and now.minute == minute:
+            job_func()
+
+    schedule.every().minute.do(msk_job)
+
+
+# Расписание сообщений по времени МСК
+schedule_msk_time(8, 0, send_message)
+schedule_msk_time(9, 10, send_message)
+schedule_msk_time(14, 0, send_message2)
+schedule_msk_time(18, 0, send_message2)
+schedule_msk_time(20, 0, send_message2)
 
 
 # schedule.every().day.at("18:00").do(send_message, "Время ужина!")
