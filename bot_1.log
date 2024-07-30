@@ -54,3 +54,11 @@
 2024-07-30 10:36:00,941 - root - INFO - Generating text message for user_id: 5640546945
 2024-07-30 10:36:01,359 - root - INFO - Updating consent status to 'sent' for user_id: 5640546945
 2024-07-30 10:36:29,712 - root - INFO - Scheduler stopped by user
+2024-07-30 18:17:13,906 - root - INFO - Scheduling job at 08:00 MSK every day
+2024-07-30 18:17:13,906 - root - INFO - Scheduling job at 09:10 MSK every day
+2024-07-30 18:17:13,907 - root - INFO - Scheduling job at 14:00 MSK every day
+2024-07-30 18:17:13,907 - root - INFO - Scheduling job at 18:00 MSK every day
+2024-07-30 18:17:13,907 - root - INFO - Scheduling job at 20:00 MSK every day
+2024-07-30 18:17:13,907 - root - INFO - Scheduling job at 16:20 MSK every day
+2024-07-30 18:17:13,907 - root - INFO - Starting the scheduler main loop
+2024-07-30 18:17:20,063 - root - INFO - Scheduler stopped by user
