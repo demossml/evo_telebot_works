@@ -8,7 +8,8 @@ from check_store_opening import (
     send_scheduled_message,
     get_electro_sales_plan,
 )
-
+from bd.model import Сonsent
+from get_questionnaire import generate_text_message
 import logging
 import sys
 
@@ -68,14 +69,45 @@ def send_message2():
 msk = pytz.timezone("Europe/Moscow")
 
 
-# Функция для планирования с учетом MSK
+# Function for scheduling with MSK timezone
 def schedule_msk_time(hour, minute, job_func):
     def msk_job():
         now = datetime.now(msk)
         if now.hour == hour and now.minute == minute:
+            logging.info(f"Executing scheduled job at {hour:02d}:{minute:02d} MSK")
             job_func()
 
-    schedule.every().minute.do(msk_job)
+    logging.info(f"Scheduling job at {hour:02d}:{minute:02d} MSK every day")
+    schedule.every().day.at(f"{hour:02d}:{minute:02d}").do(msk_job)
+
+
+def get_consent():
+    try:
+        logging.info("Fetching active consents")
+        consent = Сonsent.objects(status="activ")
+
+        if len(consent) > 0:
+            logging.info(f"Found {len(consent)} active consents")
+
+            for item in consent:
+                user_id = item["user_id"]
+                logging.info(f"Generating text message for user_id: {user_id}")
+
+                message = generate_text_message(user_id)
+                bot.send_message(CHAT_ID, message)
+
+                params = {"status": "sent"}
+                logging.info(
+                    f"Updating consent status to 'sent' for user_id: {user_id}"
+                )
+
+                Сonsent.objects(user_id=user_id).update(**params, upsert=True)
+
+        else:
+            logging.info("No active consents found")
+
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
 
 
 # Расписание сообщений по времени МСК
@@ -84,12 +116,16 @@ schedule_msk_time(9, 10, send_message)
 schedule_msk_time(14, 0, send_message2)
 schedule_msk_time(18, 0, send_message2)
 schedule_msk_time(20, 0, send_message2)
+schedule_msk_time(11, 20, get_consent)
 
 
-# schedule.every().day.at("18:00").do(send_message, "Время ужина!")
-# Добавьте свои собственные расписания, как вам угодно
-
-# Основной цикл программы
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+# Main loop
+try:
+    logging.info("Starting the scheduler main loop")
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+except KeyboardInterrupt:
+    logging.info("Scheduler stopped by user")
+except Exception as e:
+    logging.error(f"An unexpected error occurred: {e}")

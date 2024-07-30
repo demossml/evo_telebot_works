@@ -500,6 +500,7 @@ class ReportsSettingsInput:
             {"id": "plan_generation", "name": "Генирация плана ➡️".upper()},
             {"id": "operating_mode", "name": "Режима работы ТТ ➡️".upper()},
             {"id": "openData", "name": "openData ➡️".upper()},
+            {"id": "32Fm", "name": "32Fm ➡️".upper()},
         )
         return output
 
@@ -582,6 +583,26 @@ class ReportsClearDbInput:
             },
         )
         return output
+
+
+class FmSettingsInput:
+    """
+    Меню fm
+    """
+
+    name = "Выберете".upper()
+    desc = "Выберете".upper()
+    type = "SELECT"
+
+    def get_options(self, session: Session):
+        output = (
+            {"id": "download_data", "name": "Загрузить данные FM ➡️".upper()},
+            {"id": "get_seles", "name": "Продажа за период FM ➡️".upper()},
+            {
+                "id": "stock_balances",
+                "name": "get stock balances ➡️".upper(),
+            },
+        )
 
 
 class ShopAllInput:

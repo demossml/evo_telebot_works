@@ -31,7 +31,7 @@ def generate(session: Session):
     try:
         # Получение параметров из сессии
         params = session.params["inputs"]["0"]
-        params.update({"user_id": session.user_id})
+        params.update({"user_id": session.user_id, "status": "activ"})
 
         Сonsent.objects(user_id=session.user_id).update(**params, upsert=True)
 

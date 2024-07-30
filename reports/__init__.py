@@ -32,6 +32,7 @@ from reports import (
     get_education,
     more_info,
     get_questionnaire,
+    fm,
 )
 
 
@@ -72,6 +73,7 @@ def get_reports(session: Session):
             if session.employee.role == "ADMIN":
                 if status == "yes":
                     return {
+                        "fm": fm,
                         "get_questionnaire": get_questionnaire,
                         "settings": settings,
                         "salary": salary,
@@ -95,7 +97,6 @@ def get_reports(session: Session):
                 "get_relatives_information": get_relatives_information,
                 "get_work_experience": get_work_experience,
                 "get_education": get_education,
-                "more_info": more_info,
                 "more_info": more_info,
                 # "balances": balances,
                 # "cash_balance_in_tt": cash_balance_in_tt,
@@ -142,4 +143,5 @@ reports = {
     "get_education": get_education,
     "more_info": more_info,
     "get_questionnaire": get_questionnaire,
+    "fm": fm,
 }

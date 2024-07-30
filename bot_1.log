@@ -10,3 +10,47 @@
 2024-07-12 09:26:45,722 - check_store_opening - INFO - Время выполнения функции sync_evo: 6.03 секунд
 2024-07-12 09:26:46,656 - __main__ - INFO - Photo sent successfully to chat_id -1001157232415
 2024-07-12 09:26:46,766 - __main__ - INFO - Messages sent successfully to chat_id -1001157232415
+2024-07-30 10:19:10,453 - root - INFO - Fetching active consents
+2024-07-30 10:19:10,467 - root - INFO - No active consents found
+2024-07-30 10:21:19,130 - root - INFO - Fetching active consents
+2024-07-30 10:21:19,142 - root - INFO - Found 1 active consents
+2024-07-30 10:21:19,143 - root - INFO - Generating text message for user_id: 5640546945
+2024-07-30 10:21:19,559 - root - INFO - Updating consent status to 'sent' for user_id: 5640546945
+2024-07-30 10:22:37,163 - root - INFO - Scheduling job at 10:23 MSK every day
+2024-07-30 10:22:37,163 - root - INFO - Starting the scheduler main loop
+2024-07-30 10:23:00,260 - root - INFO - Executing scheduled job at 10:23 MSK
+2024-07-30 10:23:00,261 - root - INFO - Fetching active consents
+2024-07-30 10:23:00,268 - root - INFO - No active consents found
+2024-07-30 10:27:01,113 - root - INFO - Scheduler stopped by user
+2024-07-30 10:31:59,388 - root - INFO - Scheduling job at 08:00 MSK every day
+2024-07-30 10:31:59,389 - root - INFO - Scheduling job at 09:10 MSK every day
+2024-07-30 10:31:59,389 - root - INFO - Scheduling job at 14:00 MSK every day
+2024-07-30 10:31:59,389 - root - INFO - Scheduling job at 18:00 MSK every day
+2024-07-30 10:31:59,389 - root - INFO - Scheduling job at 20:00 MSK every day
+2024-07-30 10:31:59,389 - root - INFO - Scheduling job at 11:00 MSK every day
+2024-07-30 10:31:59,389 - root - INFO - Starting the scheduler main loop
+2024-07-30 10:32:30,207 - root - INFO - Scheduler stopped by user
+2024-07-30 10:32:33,629 - root - INFO - Scheduling job at 08:00 MSK every day
+2024-07-30 10:32:33,629 - root - INFO - Scheduling job at 09:10 MSK every day
+2024-07-30 10:32:33,629 - root - INFO - Scheduling job at 14:00 MSK every day
+2024-07-30 10:32:33,630 - root - INFO - Scheduling job at 18:00 MSK every day
+2024-07-30 10:32:33,630 - root - INFO - Scheduling job at 20:00 MSK every day
+2024-07-30 10:32:33,630 - root - INFO - Scheduling job at 10:34 MSK every day
+2024-07-30 10:32:33,630 - root - INFO - Starting the scheduler main loop
+2024-07-30 10:34:00,974 - root - INFO - Executing scheduled job at 10:34 MSK
+2024-07-30 10:34:00,976 - root - INFO - Fetching active consents
+2024-07-30 10:34:00,985 - root - INFO - No active consents found
+2024-07-30 10:35:13,463 - root - INFO - Scheduler stopped by user
+2024-07-30 10:35:18,787 - root - INFO - Scheduling job at 08:00 MSK every day
+2024-07-30 10:35:18,787 - root - INFO - Scheduling job at 09:10 MSK every day
+2024-07-30 10:35:18,787 - root - INFO - Scheduling job at 14:00 MSK every day
+2024-07-30 10:35:18,787 - root - INFO - Scheduling job at 18:00 MSK every day
+2024-07-30 10:35:18,787 - root - INFO - Scheduling job at 20:00 MSK every day
+2024-07-30 10:35:18,787 - root - INFO - Scheduling job at 10:36 MSK every day
+2024-07-30 10:35:18,787 - root - INFO - Starting the scheduler main loop
+2024-07-30 10:36:00,928 - root - INFO - Executing scheduled job at 10:36 MSK
+2024-07-30 10:36:00,929 - root - INFO - Fetching active consents
+2024-07-30 10:36:00,941 - root - INFO - Found 1 active consents
+2024-07-30 10:36:00,941 - root - INFO - Generating text message for user_id: 5640546945
+2024-07-30 10:36:01,359 - root - INFO - Updating consent status to 'sent' for user_id: 5640546945
+2024-07-30 10:36:29,712 - root - INFO - Scheduler stopped by user

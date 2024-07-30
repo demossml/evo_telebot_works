@@ -11,6 +11,7 @@ from bd.model import (
     Surplus,
     GroupUuidAks,
     Plan,
+    Сonsent,
 )
 from .inputs import (
     ReportsSettingsInput,
@@ -115,6 +116,8 @@ def get_inputs(session: Session):
         elif report_type_d == "get_operating_shops":
             return {}
     elif report_type == "openData":
+        return {}
+    elif report_type == "32Fm":
         return {}
 
 
@@ -233,6 +236,17 @@ def generate(session: Session):
             return [{"1": 1}]
         except Exception as e:
             logger.info(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
+
+    elif report_type == "32Fm":
+        consent = Сonsent.objects()
+
+        for item in consent:
+            if "status" not in item:
+                params = {"status": "activ"}
+
+                Сonsent.objects(user_id=item["user_id"]).update(**params, upsert=True)
+
+        return [{"status": "activ"}]
 
     elif report_type_d == "operating_shops":
         report_data = []
