@@ -116,7 +116,7 @@ schedule_msk_time(9, 10, send_message)
 schedule_msk_time(14, 0, send_message2)
 schedule_msk_time(18, 0, send_message2)
 schedule_msk_time(20, 0, send_message2)
-schedule_msk_time(11, 20, get_consent)
+schedule_msk_time(12, 20, get_consent)
 
 
 # Main loop
