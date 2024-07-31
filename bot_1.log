@@ -62,3 +62,16 @@
 2024-07-30 18:17:13,907 - root - INFO - Scheduling job at 16:20 MSK every day
 2024-07-30 18:17:13,907 - root - INFO - Starting the scheduler main loop
 2024-07-30 18:17:20,063 - root - INFO - Scheduler stopped by user
+2024-07-30 19:41:07,857 - root - INFO - Scheduling job at 08:00 MSK every day
+2024-07-30 19:41:07,859 - root - INFO - Scheduling job at 09:10 MSK every day
+2024-07-30 19:41:07,859 - root - INFO - Scheduling job at 14:00 MSK every day
+2024-07-30 19:41:07,859 - root - INFO - Scheduling job at 18:00 MSK every day
+2024-07-30 19:41:07,859 - root - INFO - Scheduling job at 20:00 MSK every day
+2024-07-30 19:41:07,859 - root - INFO - Scheduling job at 19:50 MSK every day
+2024-07-30 19:41:07,860 - root - INFO - Starting the scheduler main loop
+2024-07-30 19:43:24,314 - root - INFO - Scheduler stopped by user
+2024-07-31 22:24:58,400 - check_store_opening - INFO - Время выполнения функции sync_evo: 39.33 секунд
+2024-07-31 22:24:59,055 - __main__ - INFO - Photo sent successfully to chat_id -1002162641204
+2024-07-31 22:24:59,313 - __main__ - INFO - Messages sent successfully to chat_id -1002162641204
+2024-07-31 22:30:22,844 - root - INFO - Fetching active consents
+2024-07-31 22:30:22,926 - root - INFO - No active consents found

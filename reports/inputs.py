@@ -785,7 +785,7 @@ class GroupInput:
 
 
 class GroupsInput:
-    pprint("GroupsInput")
+    # pprint("GroupsInput")
     """
     Группы продуктов
     """
@@ -821,7 +821,7 @@ class GroupsInput:
 
 class GroupsDeleteInput:
     try:
-        pprint("GroupsDelitInput")
+        # pprint("GroupsDelitInput")
         """
         Группы продуктов
         """
