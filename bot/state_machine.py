@@ -592,6 +592,13 @@ async def handle_ready_state(bot, message, session, next):
             logger.exception("Error sending messages")
             logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
             await bot.send_message(message.chat_id, f"Error sending messages: {e}")
+    elif report.mime == "questionnaires":
+        try:
+            bot.send_message(message.chat_id, result)
+        except Exception as e:
+            logger.exception("Error sending messages")
+            logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
+            await bot.send_message(message.chat_id, f"Error sending messages: {e}")
 
     else:
         print(result)

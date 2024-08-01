@@ -109,7 +109,7 @@ schedule_msk_time(9, 10, send_message)
 schedule_msk_time(14, 0, send_message2)
 schedule_msk_time(18, 0, send_message2)
 schedule_msk_time(20, 0, send_message2)
-schedule_msk_time(23, 55, get_consent)
+schedule_msk_time(10, 15, get_consent)
 
 
 # schedule.every().day.at("18:00").do(send_message, "Время ужина!")
