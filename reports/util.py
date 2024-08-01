@@ -8,7 +8,7 @@ from bd.model import (
     GroupUuidAks,
     CashRegister,
     Status,
-    Сonsent
+    Сonsent,
 )
 from arrow import utcnow, get
 from typing import List, Tuple
@@ -2401,9 +2401,9 @@ def create_document(data):
         logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
 
 
-def generate_text_message(user_id: int):
+def generate_text_message(user_id):
     try:
-        data = Сonsent.objects(user_id=user_id).first()
+        data = Сonsent.objects(user_id=int(user_id)).first()
 
         if not data:
             raise ValueError("No data found for the given user_id.")

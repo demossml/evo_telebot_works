@@ -594,7 +594,13 @@ async def handle_ready_state(bot, message, session, next):
             await bot.send_message(message.chat_id, f"Error sending messages: {e}")
     elif report.mime == "questionnaires":
         try:
-            bot.send_message(message.chat_id, result)
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+            btn_address = types.KeyboardButton("Меню")
+            markup.add(btn_address)
+            # print(result)
+            await bot.send_message(
+                message.chat_id, result, reply_markup=markup, parse_mode="Markdown"
+            )
         except Exception as e:
             logger.exception("Error sending messages")
             logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")

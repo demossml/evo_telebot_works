@@ -28,15 +28,11 @@ def get_inputs(session: Session):
     }
 
 
-from docx import Document
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-import sys
-
-
 def generate(session: Session):
     try:
         # Получение параметров из сессии
         params = session.params["inputs"]["0"]
+        # print(generate_text_message(params["user_id"]))
 
         return generate_text_message(params["user_id"])
     except Exception as e:
