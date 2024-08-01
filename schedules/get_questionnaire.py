@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 def generate_text_message(user_id: int):
     try:
-        data = Сonsent.objects().first()
+        data = Сonsent.objects(user_id=user_id).first()
 
         if not data:
             raise ValueError("No data found for the given user_id.")
