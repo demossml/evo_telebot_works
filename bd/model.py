@@ -237,6 +237,10 @@ class CashRegister(DynamicDocument):
     pass
 
 
+class Chat(DynamicDocument):
+    pass
+
+
 class TimeSync(DynamicDocument):
     pass
 

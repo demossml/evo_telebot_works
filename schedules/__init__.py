@@ -1,4 +1,5 @@
 import telebot
+from telebot import types
 import schedule
 from datetime import datetime
 import pytz
@@ -8,9 +9,9 @@ from check_store_opening import (
     send_scheduled_message,
     get_electro_sales_plan,
 )
-from bd.model import Сonsent
+from bd.model import Сonsent, Chat
 from get_questionnaire import generate_text_message
-
+import threading
 import logging
 import sys
 
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 TOKEN = "5758434493:AAFNF4dj8w45SXReZRVxWzj5PH7L6vfnSqI"
 
 # ID чата (группы), куда будут отправляться сообщения
-CHAT_ID = -1001157232415
+CHAT_ID = -1002170989908
 CHAT_ID_2 = -1002162641204
 
 # Инициализируем бота
@@ -103,6 +104,25 @@ def schedule_msk_time(hour, minute, job_func):
     schedule.every().minute.do(msk_job)
 
 
+@bot.message_handler(content_types=["new_chat_members"])
+def on_user_joined(message: types.Message):
+    logger.info(message)
+    logger.info("New chat member joined: %s", message.new_chat_members)
+    params = {
+        "chat_id": message.chat.id,
+        "chat_title": message.chat.title,
+        "user_id": message.from_user.id,
+        "status_type": "active",
+        "TZ": None,
+    }
+    try:
+        Chat.objects(chat_id=message.chat.id).update(**params, upsert=True)
+        logger.info("User %s added to chat %s", message.from_user.id, message.chat.id)
+
+    except Exception as e:
+        logger.error("Error updating chat database: %s", str(e))
+
+
 # Расписание сообщений по времени МСК
 schedule_msk_time(8, 0, send_message)
 schedule_msk_time(9, 10, send_message)
@@ -112,10 +132,18 @@ schedule_msk_time(20, 0, send_message2)
 schedule_msk_time(10, 15, get_consent)
 
 
-# schedule.every().day.at("18:00").do(send_message, "Время ужина!")
-# Добавьте свои собственные расписания, как вам угодно
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
-# Основной цикл программы
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)  # Настройка уровня логирования
+
+    # Запуск планировщика в отдельном потоке
+    scheduler_thread = threading.Thread(target=run_scheduler)
+    scheduler_thread.start()
+
+    # Запуск бота
+    bot.infinity_polling()
