@@ -128,7 +128,6 @@ async def handle_init_state(
         # Создайте меню «Пуск» с опциями отчета
         start_menu = types.InlineKeyboardMarkup(row_width=2)
         for name, report in get_reports(session).items():
-            # print(name)
             button = types.InlineKeyboardButton(report.name, callback_data=name)
             start_menu.add(button)
         # Отправьте приветственное сообщение через меню «Пуск»
