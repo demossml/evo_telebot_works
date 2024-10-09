@@ -581,6 +581,7 @@ class ReportsClearDbInput:
                 "id": "clear_db_group_uuid_aks",
                 "name": "🛒 Очистить (GroupUuidAks) ➡️",
             },
+            {"clear_db_status": "🛒 Очистить (Status) ➡️".upper()},
         )
         return output
 

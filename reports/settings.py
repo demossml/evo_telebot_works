@@ -206,6 +206,7 @@ def generate(session: Session):
             "clear_db_surplus": Surplus,
             "clear_db_group_uuid_aks": GroupUuidAks,
             "clear_db_plan": Plan,
+            "clear_db_status": Status,
         }
         clear_collection_name = session.params["inputs"]["0"]["collection_name"]
 
