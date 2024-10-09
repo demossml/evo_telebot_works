@@ -1,5 +1,24 @@
 from os import environ
 from typing import Any, List, TypedDict
+from arrow import utcnow
+from dataclasses import dataclass
+from telebot import types
+
+
+from mongoengine import (
+    DynamicDocument,
+    FloatField,
+    IntField,
+    StringField,
+    DictField,
+    BinaryField,
+    connect,
+)
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from os import getenv
 
 
 class Transaction(TypedDict):
@@ -65,28 +84,6 @@ class Document(TypedDict):
     transactions: List[Transaction]
     version: str
     x_type: str
-
-
-from mongoengine import (
-    DynamicDocument,
-    FloatField,
-    IntField,
-    StringField,
-    DictField,
-    BinaryField,
-    connect,
-)
-from arrow import utcnow
-from dataclasses import dataclass
-from telebot import types
-
-from dotenv import load_dotenv
-
-load_dotenv()
-from os import getenv
-
-
-# Модели
 
 
 # Определение data-класса "Message" для хранения сообщений

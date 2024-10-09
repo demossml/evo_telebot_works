@@ -4,12 +4,10 @@ from util import get_intervals, prune
 from bd.model import Shop, Products, Documents, Employees, Users, TimeSync
 from pprint import pprint
 from arrow import utcnow
-import schedule
 import time
 from threading import Thread, Event
 import asyncio
-import psutil
-import concurrent.futures
+
 
 # Сенхронизирует базу tc и облако эватор.
 # Принимает два оргумента shop_id и evotor.
