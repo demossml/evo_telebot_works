@@ -231,14 +231,20 @@ def generate(session: Session):
             until = utcnow().replace(hour=20, minute=59).isoformat()
 
             shop = params["shop"]
+            pprint(session.params)
 
             open_data = get(params["location"]["data"]).isoformat()
+            pprint(open_data)
 
             status = Status.objects(x_type="OPERATING_SHOPS", shop=shop).first()
+            if status:
+                status_ = status.openDate
+            else:
+                status_ = False
 
-            calculate_difference_ = calculate_difference(open_data, status.openDate)
+            pprint(status)
+            calculate_difference_ = calculate_difference(open_data, status_)
             logger.info(calculate_difference_)
-
             penalty = 0
 
             if calculate_difference_ is not None:

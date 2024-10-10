@@ -1,5 +1,5 @@
 from evotor import Evotor
-from config import EVOTOR_TOKEN_2, EVOTOR_TOKEN_4, EVOTOR_TOKEN_5
+from config import EVOTOR_TOKEN_2
 from util import get_intervals, prune
 from bd.model import Shop, Products, Documents, Employees, Users, TimeSync
 from pprint import pprint
@@ -123,7 +123,7 @@ class EvoSync:
             TimeSync.objects(shop=shop["uuid"]).update(**params, upsert=True)
 
 
-tokens = {"token_1": EVOTOR_TOKEN_2, "token_2": EVOTOR_TOKEN_4}
+tokens = {"token_1": EVOTOR_TOKEN_2}
 
 
 async def sync_evo(event):
@@ -133,8 +133,6 @@ async def sync_evo(event):
     )
     evo_1 = EvoSync(EVOTOR_TOKEN_2)
     evo_1.sync_total()
-    evo_2 = EvoSync(EVOTOR_TOKEN_4)
-    evo_2.sync_total()
 
     end_time = time.time()
     execution_time = end_time - start_time

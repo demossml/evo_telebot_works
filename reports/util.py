@@ -2239,19 +2239,35 @@ def xls_to_json_format_change(book):
     return my_list  # Возвращаем список словарей
 
 
+import arrow
+from arrow import get
+
+
 def calculate_difference(open_date: str, status_open_date: str):
-    open_date_ = open_date[11:16]
-    # Convert d_ and v to arrow objects
-    time_open_date = get(open_date_, "HH:mm")
-    time_status_open_date = get(status_open_date, "HH:mm")
+    try:
+        # Извлекаем время из строки open_date (например, "2024-10-10 12:30:00")
+        open_time_str = open_date[11:16]  # Предполагаем, что время в формате HH:mm
+        time_open_date = get(open_time_str, "HH:mm")
 
-    # Calculate the difference in minutes
-    time_difference = (time_open_date - time_status_open_date).total_seconds() / 60
+        if status_open_date:
+            # Конвертируем status_open_date также в объект arrow
+            time_status_open_date = get(status_open_date, "HH:mm")
 
-    if time_difference > 0:
+            # Вычисляем разницу во времени в минутах
+            time_difference = (
+                time_open_date - time_status_open_date
+            ).total_seconds() / 60
 
-        return time_difference
-    else:
+            if time_difference > 0:
+                return time_difference
+            else:
+                return None
+        else:
+            # Если status_open_date не предоставлен (или является None/False)
+            return 0
+    except Exception as e:
+        # Обработка ошибок для диагностики
+        print(f"Ошибка при расчёте: {e}")
         return None
 
 
