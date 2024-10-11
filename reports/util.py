@@ -31,6 +31,9 @@ import os
 from docx import Document
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 import logging
+from evotor.evotor import evo
+from arrow import get, utcnow
+
 
 logger = logging.getLogger(__name__)
 
@@ -1602,7 +1605,9 @@ def get_commodity_balances_p(shop_id: list, product_uuid: list) -> defaultdict:
     return commodity_balances
 
 
-def process_shop(shop_uuid, group_id, period):
+def process_shop(shop_uuid, group_id, period, evo):
+    pprint(shop_uuid)
+    pprint(group_id)
     _dict = {}
 
     for element in period:
@@ -1613,25 +1618,28 @@ def process_shop(shop_uuid, group_id, period):
             __raw__={"shop_id": shop_uuid, "parentUuid": {"$in": group_id}}
         )
 
-        products_uuid = [element.uuid for element in products]
+        products_uuid = evo.get_products_by_group(shop_uuid, group_id)
+        # products_uuid = [element.uuid for element in products]
+        pprint(products_uuid)
 
         x_type = ("SELL", "PAYBACK")
+        documents = evo.get_documents_by_products(shop_uuid, since, until)
 
-        documents = Documents.objects(
-            __raw__={
-                "closeDate": {"$gte": since, "$lt": until},
-                "shop_id": shop_uuid,
-                "x_type": {"$in": x_type},
-                "transactions.commodityUuid": {"$in": products_uuid},
-            }
-        )
+        # documents = Documents.objects(
+        #     __raw__={
+        #         "closeDate": {"$gte": since, "$lt": until},
+        #         "shop_id": shop_uuid,
+        #         "x_type": {"$in": x_type},
+        #         "transactions.commodityUuid": {"$in": products_uuid},
+        #     }
+        # )
 
         sum_sell = 0
 
         if len(documents) > 0:
             for doc in documents:
                 for trans in doc["transactions"]:
-                    if trans["x_type"] == "REGISTER_POSITION":
+                    if trans["type"] == "REGISTER_POSITION":
                         if trans["commodityUuid"] in products_uuid:
                             sum_sell += trans["sum"]
 
@@ -1651,7 +1659,7 @@ def process_shop(shop_uuid, group_id, period):
     return _dict
 
 
-def generate_plan_():
+def generate_plan_(evo):
     group_id = (
         "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
         "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
@@ -1663,8 +1671,8 @@ def generate_plan_():
         "568905bd-9460-11ee-9ef4-be8fe126e7b9",
         "568905be-9460-11ee-9ef4-be8fe126e7b9",
     )
-
-    shop_id = [element.uuid for element in Shop.objects()]
+    shop_id = [element["uuid"] for element in evo.get_shops()]
+    pprint(shop_id)
     period = [7, 14, 21, 28]
 
     _dict = {}
@@ -1672,7 +1680,9 @@ def generate_plan_():
     with ThreadPoolExecutor() as executor:
         # Запускаем потоки для каждого магазина
         results = list(
-            executor.map(lambda shop: process_shop(shop, group_id, period), shop_id)
+            executor.map(
+                lambda shop: process_shop(shop, group_id, period, evo), shop_id
+            )
         )
 
     # Объединяем результаты из всех потоков
@@ -1693,7 +1703,7 @@ def generate_plan_():
     return params
 
 
-def get_plan(shop: str) -> object:
+def get_plan(shop: str, evo) -> object:
     since = utcnow().replace(hour=3, minute=00).isoformat()
     until = utcnow().replace(hour=20, minute=59).isoformat()
 
@@ -1712,7 +1722,7 @@ def get_plan(shop: str) -> object:
         return plan
     else:
         # pprint("generate_plan_")
-        generate_plan_()
+        generate_plan_(evo)
         return (
             Plan.objects(
                 __raw__={
@@ -1725,7 +1735,7 @@ def get_plan(shop: str) -> object:
         )
 
 
-def analyze_sales_for_shop(shop_id) -> dict:
+def analyze_sales_for_shop(shop_id, evo) -> dict:
     # Группы товаров для анализа продаж
     group_id = (
         "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
@@ -1749,31 +1759,33 @@ def analyze_sales_for_shop(shop_id) -> dict:
     until = utcnow().replace(hour=20, minute=59).isoformat()
 
     # Получение списка продуктов, относящихся к группам товаров
-    products = Products.objects(
-        __raw__={"shop_id": shop_id, "parentUuid": {"$in": group_id}}
-    )
+    # products = Products.objects(
+    #     __raw__={"shop_id": shop_id, "parentUuid": {"$in": group_id}}
+    # )
 
     # Формирование списка идентификаторов продуктов
-    products_uuid = [element.uuid for element in products]
-
+    # products_uuid = [element.uuid for element in products]
+    products_uuid = evo.get_products_by_group(shop_id, group_id)
     # Типы операций для анализа (продажи и возвраты)
     x_type = ("SELL", "PAYBACK")
 
-    # Получение документов о продажах и возвратах для продуктов
-    documents_sale = Documents.objects(
-        __raw__={
-            "closeDate": {"$gte": since, "$lt": until},
-            "shop_id": shop_id,
-            "x_type": {"$in": x_type},
-            "transactions.commodityUuid": {"$in": products_uuid},
-        }
-    )
+    documents_sale = evo.get_documents_by_products(shop_id, since, until)
+
+    # # Получение документов о продажах и возвратах для продуктов
+    # documents_sale = Documents.objects(
+    #     __raw__={
+    #         "closeDate": {"$gte": since, "$lt": until},
+    #         "shop_id": shop_id,
+    #         "x_type": {"$in": x_type},
+    #         "transactions.commodityUuid": {"$in": products_uuid},
+    #     }
+    # )
 
     sum_sell_today = 0
     # Вычисление суммы продаж за текущий период
     for doc in documents_sale:
         for trans in doc["transactions"]:
-            if trans["x_type"] == "REGISTER_POSITION":
+            if trans["type"] == "REGISTER_POSITION":
                 if trans["commodityUuid"] in products_uuid:
                     sum_sell_today += trans["sum"]
     return {shop_id: sum_sell_today}
@@ -1781,7 +1793,7 @@ def analyze_sales_for_shop(shop_id) -> dict:
     # pprint(sales_data)
 
 
-def analyze_sales_parallel():
+def analyze_sales_parallel(evo):
     sales_data = defaultdict(int)
 
     with ThreadPoolExecutor() as executor:
@@ -1790,7 +1802,7 @@ def analyze_sales_parallel():
 
         # Запускаем выполнение задачи для каждого магазина в отдельном потоке
         future_to_shop = {
-            executor.submit(analyze_sales_for_shop, shop): shop for shop in shops
+            executor.submit(analyze_sales_for_shop, shop, evo): shop for shop in shops
         }
 
         # Дожидаемся завершения всех потоков и собираем результаты
@@ -2035,11 +2047,7 @@ def generate_plan_parallel(shops, start_date, end_date):
     return sorted_result_data
 
 
-def get_sales_by_category(
-    shop_id: str,
-    since: str,
-    until: str,
-) -> dict:
+def get_sales_by_category(shop_id: str, since: str, until: str, evo) -> dict:
     """
     Возвращает словарь, содержащий сумму продаж по категориям платежей за определенный период.
 
@@ -2055,20 +2063,22 @@ def get_sales_by_category(
     # Используем defaultdict для автоматического создания ключей с начальным значением 0
     payment_type_sum_sell = defaultdict(Decimal)
 
+    documents = evo.get_sell_documents(shop_id, since, until)
+    # pprint(documents)
     # Ищем документы, соответствующие условиям
-    documents = Documents.objects(
-        __raw__={
-            "closeDate": {"$gte": since, "$lt": until},
-            "shop_id": shop_id,
-            "x_type": "SELL",
-        }
-    )
+    # documents = Documents.objects(
+    #     __raw__={
+    #         "closeDate": {"$gte": since, "$lt": until},
+    #         "shop_id": shop_id,
+    #         "x_type": "SELL",
+    #     }
+    # )
     # Итерируемся по найденным документам  documents (продажам)
     for doc in documents:
         # Итерируемся по транзакциям в каждом документе
         for trans in doc["transactions"]:
             # Если тип транзакции "PAYMENT" (оплата)
-            if trans["x_type"] == "PAYMENT":
+            if trans["type"] == "PAYMENT":
 
                 # Увеличиваем сумму продаж по определенному типу платежа
                 payment_type_sum_sell[trans["paymentType"]] += Decimal(
@@ -2078,7 +2088,7 @@ def get_sales_by_category(
     return {shop_id: dict(payment_type_sum_sell)}
 
 
-def sales_parallel(shops: list, since: str, until: str) -> dict:
+def sales_parallel(shops: list, since: str, until: str, evo: object) -> dict:
     """
     Возвращает словарь, содержащий сумму продаж по категориям платежей для нескольких магазинов.
 
@@ -2096,7 +2106,7 @@ def sales_parallel(shops: list, since: str, until: str) -> dict:
     with ThreadPoolExecutor() as executor:
         # Запускаем обработку каждого магазина в отдельном потоке
         futures = {
-            executor.submit(get_sales_by_category, shop_id, since, until): shop_id
+            executor.submit(get_sales_by_category, shop_id, since, until, evo): shop_id
             for shop_id in shops
         }
 

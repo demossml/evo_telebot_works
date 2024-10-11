@@ -3,6 +3,8 @@ Evotor Client
 """
 
 import requests
+from arrow import get, utcnow
+from pprint import pprint
 
 
 # URL запросов к APIv1
@@ -34,6 +36,53 @@ class Evotor:
         # URL для получения всех документов
         self.get_doc_url = "https://api.evotor.ru/api/v1/inventories/stores/{}/documents?gtCloseDate={}&ltCloseDate={}"
 
+    def get_sell_documents(self, shop_id: str, since: str, until: str) -> list:
+        """
+        Получает документы типа SELL (продажи) для данного магазина в указанный диапазон дат.
+        :param shop_id: Идентификатор магазина
+        :param since: Начальная дата (в формате ISO)
+        :param until: Конечная дата (в формате ISO)
+        :return: Список документов
+        """
+        # Формирование URL с параметрами дат и идентификатором магазина
+        url = self.get_sell_url.format(shop_id, since, until)
+
+        # Получение документов
+        response = requests.get(url, headers=self.headers)
+        if response.ok:
+            documents = response.json()
+            # print(documents)
+
+            # Фильтруем документы по полю x_type = "SELL"
+            filtered_documents = [doc for doc in documents if doc.get("type") == "SELL"]
+            return filtered_documents
+        return []
+
+    #  метод для получения документов о продажах и возвратах
+    def get_documents_by_products(self, shop_id: str, since: str, until: str) -> dict:
+        """Получает документы о продажах и возвратах для указанных продуктов"""
+        # Формируем URL для запроса
+        url = self.get_sell_url.format(shop_id, since, until)
+
+        # Получаем данные о документах
+        response = requests.get(url, headers=self.headers)
+
+        # Проверка успешности запроса
+        if response.ok:
+            documents = response.json()
+
+            # Фильтруем документы по типам операций и products_uuid
+            filtered_documents = [
+                doc
+                for doc in documents
+                if doc["type"] in ("SELL", "PAYBACK")  # Фильтр по типам
+            ]
+
+            return filtered_documents
+        else:
+            # Возвращаем пустой список или выбрасываем исключение в зависимости от ситуации
+            return []
+
     def get_shops(self) -> dict:
         """Получает данные магазинов"""
         return requests.get(self.get_shops_url, headers=self.headers).json()
@@ -53,6 +102,22 @@ class Evotor:
         url = self.get_products_url.format(shop_id)
         products = requests.get(url, headers=self.headers).json()
         return list(filter(lambda x: x["group"] is True, products))
+
+    def get_products_by_group(
+        self,
+        shop_id: str,
+        group_ids: tuple,
+    ) -> list:
+        """Получает идентификаторы продуктов по заданным группам товаров и времени"""
+        # Получаем список продуктов
+        products = self.get_products(shop_id)
+        # Формируем список идентификаторов продуктов, относящихся к заданным группам
+        products_uuid = [
+            product["uuid"]
+            for product in products
+            if product["parentUuid"] in group_ids
+        ]
+        return products_uuid
 
     def get_z_report(self, shop_id: str, gtCloseDate, ltCloseDate) -> dict:
         """Получает документы z отчетов"""
@@ -77,3 +142,43 @@ class Evotor:
     def get_response(self) -> bool:
         """Получает True или False"""
         return requests.get(self.get_shops_url, headers=self.headers).ok
+
+    def get_last_z_report(self, shop_id: str, gtCloseDate, ltCloseDate) -> dict:
+        """
+        Получает последний документ типа FPRINT_Z_REPORT для данного магазина
+        """
+        url = self.get_z_report_url.format(shop_id, gtCloseDate, ltCloseDate)
+        z_reports = requests.get(url, headers=self.headers).json()
+
+        if not z_reports:
+            return {"message": "No Z-reports found"}
+
+        # Сортируем по дате закрытия и берем последний документ
+        last_z_report = max(z_reports, key=lambda report: report.get("closeDate", ""))
+        return last_z_report
+
+    def get_last_z_report_today(self, shop_id: str) -> dict:
+        """Получает последний документ типа FPRINT_Z_REPORT за текущий день"""
+        # Текущая дата в локальном времени, начало и конец дня
+        today_start = (
+            utcnow().to("local").replace(hour=0, minute=0, second=0).isoformat()
+        )
+        today_end = (
+            utcnow().to("local").replace(hour=23, minute=59, second=59).isoformat()
+        )
+
+        # Формируем URL для поиска Z-отчетов за сегодня
+        url = self.get_z_report_url.format(shop_id, today_start, today_end)
+        response = requests.get(url, headers=self.headers)
+
+        # Проверка успешности запроса и возврат последнего документа, если он есть
+        if response.ok:
+            reports = response.json()
+            if reports:
+                return reports[-1]  # Возвращаем последний документ
+            return {"message": "Z-отчеты не найдены за сегодняшний день"}
+        else:
+            return {"error": "Не удалось получить Z-отчеты"}
+
+
+evo = Evotor("1126f94c-2b19-490e-872c-49ded3be310e")

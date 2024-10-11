@@ -4,6 +4,7 @@ from pprint import pprint
 from arrow import get, utcnow
 import plotly.express as px
 from io import BytesIO
+from evotor.evotor import evo
 
 
 name = "🧾 🛒 продажи сегодня➡️".upper()
@@ -38,7 +39,7 @@ def generate(session: Session):
     result_data = []
     data_last_time = {}
     # pprint(sales_parallel(shops_id, since, until).items())
-    for uuid, payments in sales_parallel(shops_id, since, until).items():
+    for uuid, payments in sales_parallel(shops_id, since, until, evo).items():
         shop_name = Shop.objects(uuid__exact=uuid).only("name").first().name
         time_sync = TimeSync.objects(shop=uuid).only("time").first()
         if time_sync:

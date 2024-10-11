@@ -15,6 +15,7 @@ from io import BytesIO
 import time
 import concurrent.futures
 from collections import defaultdict
+from evotor.evotor import evo
 
 name = "💹 План по Электронкам ➡️".upper()
 desc = "Генерирует отчет по продажам в шт. по одной группе товаров в одном магазине за фиксированный период"
@@ -29,14 +30,13 @@ def generate(session: Session) -> list[dict]:
     start_time = time.time()
 
     data_resul = {}
-    data_sale = analyze_sales_parallel()
-    pprint(data_sale)
+    data_sale = analyze_sales_parallel(evo)
     sales_data = {}
     data_last_time = {}
     for k, v in data_sale.items():
         doc_status = Status.objects(shop=k, status="deleted").first()
         if not doc_status:
-            plan = get_plan(k)
+            plan = get_plan(k, evo)
             # pprint(plan)
             if v >= plan.sum:
                 symbol = "✅"
