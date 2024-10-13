@@ -33,6 +33,7 @@ def generate(session: Session):
 
     since = utcnow().replace(hour=3, minute=00).isoformat()
     until = utcnow().replace(hour=23, minute=00).isoformat()
+    pprint(until)
 
     total_results_shops = {}
     total_result_data_payments = {}

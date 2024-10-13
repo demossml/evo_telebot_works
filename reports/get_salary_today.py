@@ -4,6 +4,7 @@ from .util import (
 )
 from pprint import pprint
 from collections import OrderedDict
+from evotor.evotor import evo
 
 
 from arrow import utcnow, get
@@ -19,82 +20,74 @@ def get_inputs(session: Session):
 
 
 def generate(session: Session):
+    # Получаем текущее локальное время один раз
+    now = utcnow().to("local")
+
+    # Формируем начало и конец дня
     since = utcnow().replace(hour=3, minute=00).isoformat()
-    until = utcnow().replace(hour=20, minute=59).isoformat()
+    until = utcnow().replace(hour=23, minute=59).isoformat()
 
     result = []
     name = Employees.objects(lastName=str(session.user_id)).only("name").first()
     user = Employees.objects(lastName=str(session.user_id)).only("uuid").first()
-    # pprint(name.name)
-    # pprint(user.uuid)
 
-    x_type = ("SELL", "PAYBACK")
+    shops_id = evo.get_shops_uuid()
+    # pprint(shops_id)
 
-    documents_open_session = Documents.objects(
-        __raw__={
-            "closeDate": {"$gte": since, "$lt": until},
-            "openUserUuid": user.uuid,
-            "x_type": "OPEN_SESSION",
-        }
-    ).first()
+    documents_open_session = evo.get_first_open_session(
+        shops_id, since, until, user.uuid
+    )
+    # pprint(documents_open_session)
 
-    if documents_open_session:
-        shop = Shop.objects(uuid=documents_open_session.shop_id).only("name").first()
-        # pprint(shop.name)
+    # documents_open_session = Documents.objects(
+    #     __raw__={
+    #         "closeDate": {"$gte": since, "$lt": until},
+    #         "openUserUuid": "20240924-4BDE-4056-8087-968282CB45C9",
+    #         "x_type": "OPEN_SESSION",
+    #     }
+    # ).first()
+
+    # pprint(documents)
+
+    if documents_open_session is not None:
+        shop_name = evo.get_shop_name(documents_open_session["storeUuid"])
 
         documents_aks = (
             GroupUuidAks.objects(
                 __raw__={
                     "closeDate": {"$lte": until[:10]},
-                    "shop_id": documents_open_session.shop_id,
+                    "shop_id": documents_open_session["storeUuid"],
                     "x_type": "MOTIVATION_PARENT_UUID",
                 }
             )
             .order_by("-closeDate")
             .first()
         )
+        # pprint(documents_aks["parentUuids"])
 
-        group = Products.objects(
-            __raw__={
-                "shop_id": documents_open_session.shop_id,
-                # 'group': True,
-                "parentUuid": {"$in": documents_aks.parentUuids},
-            }
+        # group = Products.objects(
+        #     __raw__={
+        #         "shop_id": documents_open_session["storeUuid"],
+        #         # 'group': True,
+        #         "parentUuid": {"$in": documents_aks.parentUuids},
+        #     }
+        # )
+
+        products_uuid = evo.get_products_by_group(
+            documents_open_session["storeUuid"], documents_aks["parentUuids"]
         )
 
-        products_uuid = [i.uuid for i in group]
-
-        documents_sale = Documents.objects(
-            __raw__={
-                "closeDate": {"$gte": since, "$lt": until},
-                "shop_id": documents_open_session.shop_id,
-                "x_type": {"$in": x_type},
-                "transactions.commodityUuid": {"$in": products_uuid},
-            }
+        documents_sale = evo.get_documents_by_products(
+            documents_open_session["storeUuid"], since, until
         )
+        # pprint(documents_sale)
+
         _dict = {}
         sum_sales = 0
-        last_time = (
-            Documents.objects(
-                __raw__={
-                    "closeDate": {"$gte": since, "$lt": until},
-                    "shop_id": documents_open_session.shop_id,
-                    "x_type": "SELL",
-                    "transactions.commodityUuid": {"$in": products_uuid},
-                }
-            )
-            .order_by("-closeDate")
-            .only("closeDate")
-            .first()
-        )
-        if last_time:
-            time = get(last_time.closeDate).shift(hours=3).isoformat()[11:19]
-            # pprint(time)
-        else:
-            time = 0
+
         for doc in documents_sale:
             for trans in doc["transactions"]:
-                if trans["x_type"] == "REGISTER_POSITION":
+                if trans["type"] == "REGISTER_POSITION":
                     if trans["commodityUuid"] in products_uuid:
                         if trans["commodityName"] in _dict:
                             _dict[trans["commodityName"]] += trans["sum"]
@@ -110,9 +103,9 @@ def generate(session: Session):
 
         result.append(_dict_total)
 
-        sho_id = doc["shop_id"]
+        sho_id = doc["storeUuid"]
 
-        total_salary = get_total_salary(str(session.user_id), sho_id, since, until)
+        total_salary = get_total_salary(str(session.user_id), sho_id, since, until, evo)
         result.append(
             {
                 "Продажа аксс:".upper(): "{}₱".format(
@@ -135,9 +128,8 @@ def generate(session: Session):
                 "Оклад:".upper(): "{}₱".format(total_salary["salary"]),
                 "Доплата:".upper(): "{}₱".format(total_salary["surcharge"]),
                 "Продавец:".upper(): name.name.upper(),
-                "Магазин:".upper(): shop.name.upper(),
+                "Магазин:".upper(): shop_name.upper(),
                 "Дата:".upper(): until[:10],
-                "Время выгрузки": time,
                 "Итго зарплата".upper(): "{}₱".format(total_salary["total_salary"]),
             }
         )

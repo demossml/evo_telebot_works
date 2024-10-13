@@ -1054,7 +1054,7 @@ def remainder(shops_uuid: list) -> list[dict[str:str]]:
 
 
 # Зп по назначенным группам аксессуаров
-def get_aks_salary(shop_id: str, since_: str, until_: str) -> dict:
+def get_aks_salary(shop_id: str, since_: str, until_: str, evo) -> dict:
     """
     Возвращает информацию о зарплате сотрудников в отделе aks.
 
@@ -1089,21 +1089,15 @@ def get_aks_salary(shop_id: str, since_: str, until_: str) -> dict:
             }
         )
         # Получаем список UUID продуктов
-        products_uuid = [i.uuid for i in group]
+        products_uuid = evo.get_products_by_group(shop_id, documents_aks["parentUuids"])
         # Получаем документы о продажах для указанного магазина, периода и продуктов aks
-        documents_sale = Documents.objects(
-            __raw__={
-                "closeDate": {"$gte": since_, "$lt": until_},
-                "shop_id": shop_id,
-                "x_type": "SELL",
-                "transactions.commodityUuid": {"$in": products_uuid},
-            }
-        )
+        documents_sale = evo.get_documents_by_products(shop_id, since_, until_)
+
         # Вычисляем общую сумму продаж аксессуаров.
         sum_sales_aks = 0
         for doc in documents_sale:
             for trans in doc["transactions"]:
-                if trans["x_type"] == "REGISTER_POSITION":
+                if trans["type"] == "REGISTER_POSITION":
                     if trans["commodityUuid"] in products_uuid:
                         sum_sales_aks += trans["sum"]
         # Вычисляем бонус за продажу аксессуаров (5% от общей суммы продаж).
@@ -1120,7 +1114,7 @@ def get_aks_salary(shop_id: str, since_: str, until_: str) -> dict:
 
 
 # Зп по продаже мотивационого товара
-def get_mot_salary(shop_id: str, since_: str, until_: str) -> dict:
+def get_mot_salary(shop_id: str, since_: str, until_: str, evo) -> dict:
     """
     Функция возвращает бонус мотивации для магазина на основе продаж и данных о мотивации.
 
@@ -1149,20 +1143,14 @@ def get_mot_salary(shop_id: str, since_: str, until_: str) -> dict:
         # Извлекаем идентификаторы продуктов из данных о мотивации
         products_uuid = [k for k, v in documents_mot.uuid.items()]
         # Запрашиваем данные о продажах продуктов в указанный период времени
-        documents_sale = Documents.objects(
-            __raw__={
-                "closeDate": {"$gte": since_, "$lt": until_},
-                "shop_id": shop_id,
-                "x_type": "SELL",
-                "transactions.commodityUuid": {"$in": products_uuid},
-            }
-        )
+        documents_sale = evo.get_documents_by_products(shop_id, since_, until_)
+
         # Создаем словарь для хранения данных о зарплате
         dict_salary = {}
 
         for doc in documents_sale:
             for trans in doc["transactions"]:
-                if trans["x_type"] == "REGISTER_POSITION":
+                if trans["type"] == "REGISTER_POSITION":
                     if trans["commodityUuid"] in products_uuid:
                         # Если продукт уже присутствует в словаре, увеличиваем его количество
                         if trans["commodityUuid"] in dict_salary:
@@ -1184,7 +1172,7 @@ def get_mot_salary(shop_id: str, since_: str, until_: str) -> dict:
 
 
 # План по группе, продажи, бонус за выполнение плана
-def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
+def get_plan_bonus(shop_id: str, since_: str, until_: str, evo) -> dict:
     """
     Функция возвращает информацию о бонусах за выполнение плана для магазина на основе данных о планах и продажах.
 
@@ -1238,23 +1226,17 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
         __raw__={"shop_id": shop_id, "parentUuid": {"$in": group_id}}
     )
     # Список UUID товаров
-    products_uuid = [element.uuid for element in products]
+    products_uuid = evo.get_products_by_group(shop_id, group_id)
+
     # Типы транзакций, которые учитываем (продажи и возвраты)
     x_type = ("SELL", "PAYBACK")
     # Получаем документы с продажами и возвратами товаров из списка products_uuid
-    documents_2 = Documents.objects(
-        __raw__={
-            "closeDate": {"$gte": since_, "$lt": until_},
-            "shop_id": shop_id,
-            "x_type": {"$in": x_type},
-            "transactions.commodityUuid": {"$in": products_uuid},
-        }
-    )
+    documents_2 = evo.get_documents_by_products(shop_id, since_, until_)
 
     sum_sell_today = 0
     for doc_2 in documents_2:
         for trans_2 in doc_2["transactions"]:
-            if trans_2["x_type"] == "REGISTER_POSITION":
+            if trans_2["type"] == "REGISTER_POSITION":
                 if trans_2["commodityUuid"] in products_uuid:
                     sum_sell_today += trans_2["sum"]
     # Получаем информацию о мотивации из последнего документа
@@ -1293,7 +1275,7 @@ def get_plan_bonus(shop_id: str, since_: str, until_: str) -> dict:
 
 
 # Функция для получения оклада продавцов в магазине
-def get_salary(shop_id: str, until_: str) -> dict:
+def get_salary(shop_id: str, until_: str, evo) -> dict:
     """
     Возвращает оклад продавцов в магазине до указанной даты.
 
@@ -1366,7 +1348,7 @@ def get_surcharge(employee_uuid: str, until_: str) -> dict:
 
 
 def get_total_salary(
-    employee_uuid: str, shop_id: str, since_: str, until_: str
+    employee_uuid: str, shop_id: str, since_: str, until_: str, evo
 ) -> dict:
     """
     Возвращает структуру, содержащую информацию о заработной плате сотрудника.
@@ -1397,13 +1379,13 @@ def get_total_salary(
     # Инициализируем пустой словарь, в который будем добавлять информацию о заработке сотрудника
     result = {}
     # Получаем информацию о заработной плате с помощью различных функций
-    result.update(get_aks_salary(shop_id, since_, until_))
+    result.update(get_aks_salary(shop_id, since_, until_, evo))
     pprint(1)
-    result.update(get_mot_salary(shop_id, since_, until_))
+    result.update(get_mot_salary(shop_id, since_, until_, evo))
     pprint(2)
-    result.update(get_plan_bonus(shop_id, since_, until_))
+    result.update(get_plan_bonus(shop_id, since_, until_, evo))
     pprint(3)
-    result.update(get_salary(shop_id, until_))
+    result.update(get_salary(shop_id, until_, evo))
     pprint(4)
     result.update(get_surcharge(employee_uuid, until_))
     pprint(5)
@@ -1606,26 +1588,24 @@ def get_commodity_balances_p(shop_id: list, product_uuid: list) -> defaultdict:
 
 
 def process_shop(shop_uuid, group_id, period, evo):
-    pprint(shop_uuid)
-    pprint(group_id)
+
     _dict = {}
 
     for element in period:
         since = utcnow().shift(days=-element).replace(hour=3, minute=00).isoformat()
         until = utcnow().shift(days=-element).replace(hour=21, minute=00).isoformat()
 
-        products = Products.objects(
-            __raw__={"shop_id": shop_uuid, "parentUuid": {"$in": group_id}}
-        )
+        # products = Products.objects(
+        #     __raw__={"shop_id": shop_uuid, "parentUuid": {"$in": group_id}}
+        # )
 
         products_uuid = evo.get_products_by_group(shop_uuid, group_id)
         # products_uuid = [element.uuid for element in products]
-        pprint(products_uuid)
 
-        x_type = ("SELL", "PAYBACK")
+        # x_type = ("SELL", "PAYBACK")
         documents = evo.get_documents_by_products(shop_uuid, since, until)
 
-        # documents = Documents.objects(
+        # documents = Dsocuments.objects(
         #     __raw__={
         #         "closeDate": {"$gte": since, "$lt": until},
         #         "shop_id": shop_uuid,
@@ -1672,7 +1652,6 @@ def generate_plan_(evo):
         "568905be-9460-11ee-9ef4-be8fe126e7b9",
     )
     shop_id = [element["uuid"] for element in evo.get_shops()]
-    pprint(shop_id)
     period = [7, 14, 21, 28]
 
     _dict = {}

@@ -58,6 +58,42 @@ class Evotor:
             return filtered_documents
         return []
 
+    def get_first_open_session(
+        self, shops_id: list[str], since: str, until: str, user_uuid: str
+    ) -> dict:
+        """Проходит по всем shop_id, получает первый документ с типом 'OPEN_SESSION' для каждого магазина и возвращает его, либо None."""
+
+        # Проходим по каждому shop_id в списке
+        for shop_id in shops_id:
+            # pprint(f"shop: {shop_id}")
+            # Формируем URL для запроса
+            url = self.get_doc_url.format(shop_id, since, until)
+
+            # Получаем данные о документах для текущего магазина
+            response = requests.get(url, headers=self.headers)
+
+            # Проверка успешности запроса
+            if response.ok:
+                documents = response.json()
+                # pprint(user_uuid)
+
+                # Поиск первого документа с типом 'OPEN_SESSION' и UUID пользователя
+                for doc in documents:
+
+                    if (
+                        doc.get("type") == "OPEN_SESSION"
+                        and doc.get("openUserUuid") == user_uuid
+                    ):
+                        return doc  # Возвращаем первый найденный документ
+            else:
+                # Логируем ошибку запроса (можно добавить обработку ошибок)
+                print(
+                    f"Ошибка при запросе данных для магазина {shop_id}: {response.status_code}"
+                )
+
+        # Если ничего не найдено, возвращаем None
+        return None
+
     #  метод для получения документов о продажах и возвратах
     def get_documents_by_products(self, shop_id: str, since: str, until: str) -> dict:
         """Получает документы о продажах и возвратах для указанных продуктов"""
@@ -86,6 +122,40 @@ class Evotor:
     def get_shops(self) -> dict:
         """Получает данные магазинов"""
         return requests.get(self.get_shops_url, headers=self.headers).json()
+
+    def get_shop_name(self, shop_uuid: str) -> str:
+        """Получает имя магазина по его UUID."""
+        # Получаем данные о всех магазинах
+        shops = self.get_shops()
+
+        # Проходим по каждому магазину и ищем по UUID
+        for shop in shops:
+            if shop.get("uuid") == shop_uuid:
+                return shop.get(
+                    "name", "Имя магазина не найдено"
+                )  # Возвращаем имя или сообщение о том, что не найдено
+
+        # Если ничего не найдено, возвращаем сообщение
+        return "Магазин с данным UUID не найден"
+
+    def get_shops_uuid(self) -> list[str]:
+        """Получает список UUID магазинов"""
+
+        # Выполняем запрос на получение данных магазинов
+        response = requests.get(self.get_shops_url, headers=self.headers)
+
+        # Проверка успешности запроса
+        if response.ok:
+            # Извлекаем данные магазинов
+            shops = response.json()
+            # pprint(shops)
+            # Извлекаем список uuid магазинов
+            shop_uuids = [shop.get("uuid") for shop in shops if "uuid" in shop]
+
+            return shop_uuids
+        else:
+            # В случае ошибки возвращаем пустой список или можно обработать исключение
+            return []
 
     def get_employees(self) -> dict:
         """Получает данные магазинов сотрудников"""
