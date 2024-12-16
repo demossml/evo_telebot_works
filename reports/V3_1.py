@@ -1,227 +1,69 @@
 from bd.model import (
     Session,
-    Shop,
     Products,
-    Documents,
-    Employees,
-    Message,
-    Shift_Opening_Report,
 )
-from arrow import utcnow, get
-from pprint import pprint
-from .util import get_products, period_to_date, get_intervals, get_shops, get_period
+import json
 
-from .inputs import (
-    ReportSalesInput,
-    ShopAllInput,
-    GroupInput,
-    PeriodDateInput,
-    OpenDatePastInput,
-    CloseDatePastInput,
-)
 
-import plotly.express as px
+from evotor.evotor import evo
+
+
 from io import BytesIO
 
 name = "Отчет 3_1".upper()
 desc = ""
-mime = "image_bytes"
-
-
-class PeriodOpenDateInput:
-    name = "Магазин"
-    desc = "Выберите период"
-    type = "SELECT"
-
-    def get_options(self, session: Session):
-        output = [
-            {"id": "day", "name": "День"},
-            {"id": "week", "name": "Неделя"},
-            {"id": "fortnight", "name": "Две недели"},
-            {"id": "month", "name": "Месяц"},
-        ]
-
-        return output
-
-
-class OpenDateInput:
-    desc = "Выберите дату начало пириода "
-    type = "SELECT"
-
-    def get_options(self, session: Session):
-        output = []
-        # pprint(session['params']['inputs']['period'])
-        since = period_to_date(session["params"]["inputs"]["0"]["periodOpenDate"])
-        until = utcnow().isoformat()
-        intervals = get_intervals(since, until, "days", 1)
-        # pprint(intervals)
-        for left, right in intervals:
-            # pprint(left)
-            output.append({"id": left, "name": left[0:10]})
-
-        return output
-
-
-class PeriodOpenDateInput:
-    name = "Магазин"
-    desc = "Выберите период"
-    type = "SELECT"
-
-    def get_options(self, session: Session):
-        output = [
-            {"id": "day", "name": "День"},
-            {"id": "week", "name": "Неделя"},
-            {"id": "fortnight", "name": "Две недели"},
-            {"id": "month", "name": "Месяц"},
-            {"id": "two months", "name": "Два месяца"},
-        ]
-
-        return output
-
-
-class CloseDateInput:
-    desc = "Выберите дату окончание пириода "
-    type = "SELECT"
-
-    def get_options(self, session: Session):
-        output = []
-        # pprint(session['params']['inputs']['period'])
-        since = session["params"]["inputs"]["0"]["openDate"]
-        until = utcnow().isoformat()
-        intervals = get_intervals(since, until, "days", 1)
-
-        # pprint(intervals)
-        for left, right in intervals:
-            # pprint(left)
-            output.append({"id": left, "name": left[0:10]})
-
-        return output
+mime = "json"
 
 
 def get_inputs(session: Session):
-    period = ["day", "week", "fortnight", "month"]
-    if session.params["inputs"]["0"]:
-        if "period" in session.params["inputs"]["0"]:
-            if session.params["inputs"]["0"]["period"] == "day":
-                return {}
-            if session.params["inputs"]["0"]["period"] not in period:
-                return {"openDate": OpenDatePastInput}
-            else:
-                return {
-                    # 'cash_income1': CachIncome1Input,
-                    "openDate": OpenDatePastInput,
-                    "closeDate": CloseDatePastInput,
-                }
-    else:
-        return {
-            "period": PeriodDateInput,
-        }
+    return {}
 
 
 def generate(session: Session):
-    params = session.params["inputs"]["0"]
 
-    period = get_period(session)
-    since = period["since"]
-    until = period["until"]
+    group_id = (
+        "78ddfd78-dc52-11e8-b970-ccb0da458b5a",
+        "bc9e7e4c-fdac-11ea-aaf2-2cf05d04be1d",
+        "0627db0b-4e39-11ec-ab27-2cf05d04be1d",
+        "2b8eb6b4-92ea-11ee-ab93-2cf05d04be1d",
+        "8a8fcb5f-9582-11ee-ab93-2cf05d04be1d",
+        "97d6fa81-84b1-11ea-b9bb-70c94e4ebe6a",
+        "ad8afa41-737d-11ea-b9b9-70c94e4ebe6a",
+        "568905bd-9460-11ee-9ef4-be8fe126e7b9",
+        "568905be-9460-11ee-9ef4-be8fe126e7b9",
+    )
 
-    shops = [
-        "20220501-DDCF-409A-8022-486441F27458",
-        # '20200630-3E0D-4061-80C1-F7897E112F00',
-        "20220501-9ADF-402C-8012-FB88547F6222",
-        "20220501-3254-40E5-809E-AC6BB204D373",
-        "20230214-33E5-4085-80A3-28C177E34112",
-        "20220501-4D25-40AD-80DA-77FAE02A007E",
-        "20220601-4E97-40A5-801B-1A29127AFA8B",
-        "20220430-A472-40B8-8077-2EE96318B7E7",
-    ]
+    result = []
 
-    shops_id_2 = {
-        "20200630-3E0D-4061-80C1-F7897E112F00": "20220430-A472-40B8-8077-2EE96318B7E7",
-        "20220201-19C9-40B0-8082-DF8A9067705D": "20220501-9ADF-402C-8012-FB88547F6222",
-        "20220222-6C28-4069-8006-082BE12BEB32": "20220601-4E97-40A5-801B-1A29127AFA8B",
-        "20210923-FB1F-4023-80F6-9ECB3F5A0FA8": "20220501-11CA-40E0-8031-49EADC90D1C4",
-        # '20220202-B042-4021-803D-09E15DADE8A4': '20220501-CB2E-4020-808C-E3FD3CB1A1D4',
-        "20210712-1362-4012-8026-5A35685630B2": "20220501-DDCF-409A-8022-486441F27458",
-        "20220201-8B00-40C2-8002-EF7E53ED1220": "20220501-3254-40E5-809E-AC6BB204D373",
-        "20220201-A55A-40B8-8071-EC8733AFFA8E": "20220501-4D25-40AD-80DA-77FAE02A007E",
-        "20220202-B042-4021-803D-09E15DADE8A4": "20230214-33E5-4085-80A3-28C177E34112",
-    }
-    x_type = ["SELL", "PAYBACK"]
-
-    sales_data = {}
-
-    for k, v in shops_id_2.items():
-        sum_sales = 0
-        shop = Shop.objects(uuid=v).only("name").first()
-        documents_sales = Documents.objects(
-            __raw__={
-                "closeDate": {"$gte": since, "$lt": until},
-                "shop_id": v,
-                "x_type": {"$in": x_type},
-                # 'transactions.commodityUuid': {'$in': products_uuid}
+    # Получаем продукты для магазина и группы товаров
+    products = Products.objects(
+        __raw__={
+            "shop_id": "20191117-BF71-40FE-8016-1E7E4A3A4780",
+            "parentUuid": {"$in": group_id},
+        }
+    )
+    for item in products:
+        result.append(
+            {
+                "uuid": item.uuid,
+                "group": item.group,
+                "parentUuid": item.parentUuid,
             }
         )
-        # pprint(documents)
 
-        for doc in documents_sales:
-            for trans in doc["transactions"]:
-                if trans["x_type"] == "REGISTER_POSITION":
-                    # if doc["shop_id"] not in tester:
-                    # #     tester.append(doc["shop_id"])
-                    # products = Products.objects(
-                    #     __raw__={
-                    #         "shop_id": doc["shop_id"],
-                    #         "uuid": trans["commodityUuid"],
-                    #     }
-                    # )
-                    # for item in products:
-                    sum_sales += float(trans["costPrice"] * float(trans["quantity"]))
+    print("Данные успешно сформированы:", result)
 
-            # Добавляем данные о продажах в словарь результатов
-        if sum_sales > 0:
-            sales_data.update({f"{shop.name}".upper(): sum_sales})
+    # Преобразуем результат в JSON строку
+    print("Преобразование данных в JSON...")
+    json_result = json.dumps(result, ensure_ascii=False, indent=4)
 
-    report_data = {
-        "Начало периода:".upper(): since[0:10],
-        "Окончание периода:".upper(): until[0:10],
-    }
-    for k, v in sales_data.items():
-        report_data.update({k: f"{v}₽"})
+    # Создаем объект BytesIO для работы с байтами
+    json_bytes = json_result.encode("utf-8")
+    byte_stream = BytesIO(json_bytes)
+    byte_stream.name = "report.json"  # Задаем имя для файла
+    byte_stream.seek(0)
 
-    # Извлекаем названия магазина и суммы продаж
-    shop_names = list(sales_data.keys())
-    sum_sales_ = list(sales_data.values())
-    # Создаем фигуру для круговой диаграммы
-    fig = px.pie(
-        names=shop_names,
-        values=sum_sales_,
-        title="Доля выручки по магазинам",
-        labels={"names": "Магазины", "values": "Выручка"},
-        # Цвет фона графика
-    )
+    print("Файл JSON успешно сгенерирован. Размер файла:", len(byte_stream.getvalue()))
 
-    # Настройки внешнего вида графика
-    fig.update_layout(
-        title="Продажи по магазинам",
-        font=dict(size=18, family="Arial, sans-serif", color="black"),
-        # plot_bgcolor="black",  # Цвет фона графика
-    )
-
-    # Сохраняем диаграмму в формате PNG в объект BytesIO
-    image_buffer = BytesIO()
-
-    fig.write_image(image_buffer, format="png", width=900, height=900)
-
-    # Очищаем буфер изображения и перемещаем указатель в начало
-    image_buffer.seek(0)
-
-    # Рассчитываем сумму всех продаж
-    total_sales = sum(sum_sales_)
-
-    # Обновляем данные отчета
-    report_data.update({"Итого выручка:".upper(): f"{total_sales}₽"})
-    pprint(report_data)
-    # Отображаем график
-    # fig.show()
-    return [report_data], image_buffer
+    # Возвращаем объект BytesIO, который можно будет отправить как файл
+    return byte_stream

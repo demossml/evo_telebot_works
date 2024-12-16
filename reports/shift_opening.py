@@ -58,7 +58,7 @@ class PhotoTerritory2Input:
     type = "PHOTO"
 
 
-class PhotoMRCInput:
+class PhotoMRCInPhotoMRCInputput:
     name = "Магазин"
     desc = "Отправте фото МРЦ 📷".upper()
     type = "PHOTO"

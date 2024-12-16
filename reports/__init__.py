@@ -33,6 +33,7 @@ from reports import (
     more_info,
     get_questionnaire,
     fm,
+    V3_1,
 )
 
 
@@ -88,6 +89,7 @@ def get_reports(session: Session):
                         "get_electro_sales_plan": get_electro_sales_plan,
                         "get_salary_today": get_salary_today,
                         "sales_today": sales_today,
+                        "V3_1": V3_1,
                     }
         else:
             return {
@@ -144,4 +146,5 @@ reports = {
     "more_info": more_info,
     "get_questionnaire": get_questionnaire,
     "fm": fm,
+    "V3_1": V3_1,
 }

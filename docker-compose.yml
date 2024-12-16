@@ -25,7 +25,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
       MONGODB_DATABASE: tc
       MONGODB_HOSTNAME: mongodb
-      TELEGRAM_TOKEN: "5405385673:AAFvJDIlR4BqQmnXDBGS8XOzEGSpVmE1w84"
+      TELEGRAM_TOKEN: "8169972723:AAEkUFRbsPjstaQd_omZEvokEDR3p28QDKE"
 
     volumes:
       - ./app:/home/nonroot/app # Монтирование кода приложения в контейнер

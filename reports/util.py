@@ -1727,38 +1727,15 @@ def analyze_sales_for_shop(shop_id, evo) -> dict:
         "568905bd-9460-11ee-9ef4-be8fe126e7b9",
         "568905be-9460-11ee-9ef4-be8fe126e7b9",
     )
-    # Определение временного периода для анализа
-    since = utcnow().replace(hour=3, minute=00).isoformat()
-    until = utcnow().isoformat()
 
-    # Словарь для хранения данных о продажах по магазинам
-
-    # dict_last_time.update(last_time(shop["uuid"]))
     since = utcnow().replace(hour=3, minute=00).isoformat()
     until = utcnow().replace(hour=20, minute=59).isoformat()
 
-    # Получение списка продуктов, относящихся к группам товаров
-    # products = Products.objects(
-    #     __raw__={"shop_id": shop_id, "parentUuid": {"$in": group_id}}
-    # )
-
     # Формирование списка идентификаторов продуктов
-    # products_uuid = [element.uuid for element in products]
     products_uuid = evo.get_products_by_group(shop_id, group_id)
     # Типы операций для анализа (продажи и возвраты)
-    x_type = ("SELL", "PAYBACK")
 
     documents_sale = evo.get_documents_by_products(shop_id, since, until)
-
-    # # Получение документов о продажах и возвратах для продуктов
-    # documents_sale = Documents.objects(
-    #     __raw__={
-    #         "closeDate": {"$gte": since, "$lt": until},
-    #         "shop_id": shop_id,
-    #         "x_type": {"$in": x_type},
-    #         "transactions.commodityUuid": {"$in": products_uuid},
-    #     }
-    # )
 
     sum_sell_today = 0
     # Вычисление суммы продаж за текущий период
@@ -1793,7 +1770,6 @@ def analyze_sales_parallel(evo):
             except Exception as e:
                 logger.error(f"An error occurred for shop {shop}: {e}")
                 logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
-
     # pprint(sales_data)
     return sales_data
 
@@ -1852,6 +1828,14 @@ def cash_outcome_parallel(shops: list, since: str, until: str) -> dict:
 
 
 def cash_outcome(shop_id, since, until):
+
+    documents = Documents.objects(
+        __raw__={
+            "closeDate": {"$gte": since, "$lt": until},
+            "shop_id": shop_id,
+            "x_type": x_type,
+        }
+    )
     payment_category = {
         1: "Инкассация",
         2: "Оплата поставщику",
@@ -1865,13 +1849,7 @@ def cash_outcome(shop_id, since, until):
 
     x_type = "CASH_OUTCOME"
 
-    documents = Documents.objects(
-        __raw__={
-            "closeDate": {"$gte": since, "$lt": until},
-            "shop_id": shop_id,
-            "x_type": x_type,
-        }
-    )
+
 
     for doc in documents:
         if doc["x_type"] == "CASH_OUTCOME":

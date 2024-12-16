@@ -26,6 +26,7 @@ def generate(session: Session):
     # Формируем начало и конец дня
     since = utcnow().replace(hour=3, minute=00).isoformat()
     until = utcnow().replace(hour=23, minute=59).isoformat()
+    pprint(since)
 
     result = []
     name = Employees.objects(lastName=str(session.user_id)).only("name").first()

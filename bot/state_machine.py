@@ -604,7 +604,16 @@ async def handle_ready_state(bot, message, session, next):
             logger.exception("Error sending messages")
             logger.error(f"Ошибка: {e} на строке {sys.exc_info()[-1].tb_lineno}")
             await bot.send_message(message.chat_id, f"Error sending messages: {e}")
+    elif report.mime == "json":
+        # Генерация JSON-данных
+        print("Генерация JSON-данных...")
+        image_bytes = result  # Вызов генерации и получение byte_stream
 
+        # Отправка JSON-файла
+        print("Отправка JSON-файла...")
+        await bot.send_document(
+            message.chat_id, document=image_bytes, caption="Ваш отчет в формате JSON."
+        )
     else:
         print(result)
         # Если нет файлов изображений, только отправляем сообщения
